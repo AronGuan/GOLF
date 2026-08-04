@@ -1,0 +1,38 @@
+<view class="page">
+
+  <!-- 正常 / 进行中 -->
+  <block wx:if="{{!failed}}">
+    <view class="loading-area">
+      <view class="ball">⛳</view>
+      <view class="swing-arc"></view>
+    </view>
+
+    <view class="percent">{{progress}}%</view>
+    <view class="bar">
+      <view class="bar-fill" style="width:{{progress}}%"></view>
+    </view>
+
+    <view class="stage-text">{{message}}</view>
+
+    <view class="steps card">
+      <view class="step-row" wx:for="{{steps}}" wx:key="id">
+        <view class="step-icon {{item.state}}">{{item.icon}}</view>
+        <view class="step-name {{item.state}}">{{item.index}} {{item.name}}</view>
+      </view>
+    </view>
+
+    <view class="eta" wx:if="{{etaText}}">{{etaText}}</view>
+  </block>
+
+  <!-- 失败 -->
+  <block wx:else>
+    <view class="fail-area">
+      <view class="fail-icon">!</view>
+      <view class="fail-title">分析失败</view>
+      <view class="fail-reason">{{errorText}}</view>
+    </view>
+
+    <button class="btn btn-primary retry" bindtap="onRetake">重新拍摄</button>
+  </block>
+
+</view>

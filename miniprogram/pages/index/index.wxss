@@ -1,0 +1,300 @@
+.hero {
+  padding: 12rpx 4rpx 28rpx;
+}
+
+.hero-title {
+  font-size: 48rpx;
+  font-weight: 700;
+  letter-spacing: 2rpx;
+}
+
+.hero-sub {
+  margin-top: 10rpx;
+  font-size: 26rpx;
+  color: #9aa6b5;
+}
+
+/* ---------------- 机位示意图（纯 CSS） ---------------- */
+
+.diagram {
+  padding: 34rpx 28rpx 22rpx;
+}
+
+.diagram-row {
+  height: 220rpx;
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+}
+
+.phone {
+  width: 78rpx;
+  height: 140rpx;
+  border: 4rpx solid #48a7f5;
+  border-radius: 12rpx;
+  padding: 8rpx 6rpx;
+  background: #10161f;
+}
+
+.phone-screen {
+  width: 100%;
+  height: 100%;
+  border-radius: 6rpx;
+  background: linear-gradient(180deg, rgba(72, 167, 245, 0.35), rgba(72, 167, 245, 0.08));
+}
+
+.distance {
+  flex: 1;
+  padding: 0 18rpx 40rpx;
+  text-align: center;
+}
+
+.dist-line {
+  height: 2rpx;
+  background: repeating-linear-gradient(90deg, #48a7f5 0 12rpx, transparent 12rpx 24rpx);
+}
+
+.dist-text {
+  margin-top: 10rpx;
+  font-size: 24rpx;
+  color: #48a7f5;
+}
+
+.golfer {
+  position: relative;
+  width: 120rpx;
+  height: 200rpx;
+}
+
+.g-head {
+  position: absolute;
+  left: 44rpx;
+  top: 0;
+  width: 34rpx;
+  height: 34rpx;
+  border-radius: 50%;
+  background: #1fbf75;
+}
+
+.g-body {
+  position: absolute;
+  left: 58rpx;
+  top: 36rpx;
+  width: 6rpx;
+  height: 78rpx;
+  background: #1fbf75;
+}
+
+.g-arm-l,
+.g-arm-r {
+  position: absolute;
+  top: 52rpx;
+  width: 6rpx;
+  height: 56rpx;
+  background: #1fbf75;
+  transform-origin: top center;
+}
+
+.g-arm-l {
+  left: 58rpx;
+  transform: rotate(38deg);
+}
+
+.g-arm-r {
+  left: 58rpx;
+  transform: rotate(-22deg);
+}
+
+.g-leg-l,
+.g-leg-r {
+  position: absolute;
+  top: 112rpx;
+  width: 6rpx;
+  height: 84rpx;
+  background: #1fbf75;
+  transform-origin: top center;
+}
+
+.g-leg-l {
+  left: 58rpx;
+  transform: rotate(14deg);
+}
+
+.g-leg-r {
+  left: 58rpx;
+  transform: rotate(-14deg);
+}
+
+.diagram-caption {
+  margin-top: 18rpx;
+  text-align: center;
+  font-size: 24rpx;
+  color: #9aa6b5;
+}
+
+/* ---------------- 拍摄要求 ---------------- */
+
+.req-card {
+  margin-top: 24rpx;
+}
+
+.card-title {
+  font-size: 32rpx;
+  font-weight: 700;
+  margin-bottom: 16rpx;
+}
+
+.req-item {
+  display: flex;
+  align-items: flex-start;
+  margin-top: 12rpx;
+}
+
+.req-dot {
+  width: 12rpx;
+  height: 12rpx;
+  border-radius: 50%;
+  background: #1fbf75;
+  margin: 16rpx 16rpx 0 0;
+  flex-shrink: 0;
+}
+
+.req-text {
+  flex: 1;
+  font-size: 27rpx;
+  color: #dbe3ec;
+}
+
+.req-note {
+  margin-top: 20rpx;
+  padding-top: 18rpx;
+  border-top: 1rpx dashed #2a323e;
+  font-size: 24rpx;
+  color: #9aa6b5;
+}
+
+.req-strong {
+  color: #ff8c1a;
+  font-weight: 600;
+}
+
+/* ---------------- 选择按钮 ---------------- */
+
+.choose-row {
+  display: flex;
+  gap: 24rpx;
+  margin-top: 28rpx;
+}
+
+.choose-btn {
+  flex: 1;
+  background: #1f2630;
+  border: 1rpx solid #2a323e;
+  border-radius: 20rpx;
+  padding: 26rpx 0;
+  text-align: center;
+}
+
+.choose-icon {
+  font-size: 44rpx;
+}
+
+.choose-text {
+  margin-top: 6rpx;
+  font-size: 28rpx;
+  color: #f2f5f8;
+}
+
+/* ---------------- 已选文件 ---------------- */
+
+.file-card {
+  margin-top: 24rpx;
+}
+
+.file-ok {
+  border-color: rgba(31, 191, 117, 0.6);
+}
+
+.file-bad {
+  border-color: rgba(245, 72, 59, 0.6);
+}
+
+.file-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.file-name {
+  font-size: 28rpx;
+  font-weight: 600;
+  flex: 1;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.file-flag {
+  font-size: 32rpx;
+  font-weight: 700;
+  margin-left: 16rpx;
+}
+
+.file-ok .file-flag {
+  color: #1fbf75;
+}
+
+.file-bad .file-flag {
+  color: #f5483b;
+}
+
+.file-meta {
+  margin-top: 8rpx;
+  font-size: 25rpx;
+  color: #9aa6b5;
+}
+
+.file-error {
+  margin-top: 12rpx;
+  font-size: 25rpx;
+  color: #f5483b;
+}
+
+/* ---------------- 上传进度 ---------------- */
+
+.upload-card {
+  margin-top: 24rpx;
+}
+
+.upload-text {
+  font-size: 26rpx;
+  color: #dbe3ec;
+  margin-bottom: 14rpx;
+}
+
+.bar {
+  height: 14rpx;
+  border-radius: 7rpx;
+  background: #263040;
+  overflow: hidden;
+}
+
+.bar-fill {
+  height: 100%;
+  border-radius: 7rpx;
+  background: linear-gradient(90deg, #1fbf75, #48a7f5);
+  transition: width 200ms linear;
+}
+
+/* ---------------- 提交 ---------------- */
+
+.submit {
+  margin-top: 36rpx;
+}
+
+.tips {
+  margin-top: 22rpx;
+  text-align: center;
+  font-size: 23rpx;
+  color: #6b7686;
+}

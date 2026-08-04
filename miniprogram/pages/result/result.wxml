@@ -1,0 +1,124 @@
+<!--pages/result/result.wxml 分析结果页：8 阶段缩略图 + 大图 + 指标卡 + 全程指标-->
+<view class="page">
+
+  <block wx:if="{{loaded}}">
+
+    <!-- 顶部提示（低帧率 / 估算阶段等） -->
+    <view class="warn-bar" wx:if="{{warnings.length > 0}}">
+      <view class="warn-item" wx:for="{{warnings}}" wx:key="*this">· {{item}}</view>
+    </view>
+
+    <!-- 阶段缩略图横向滚动 -->
+    <scroll-view
+      class="thumbs"
+      scroll-x="true"
+      enable-flex="true"
+      scroll-with-animation="true"
+      scroll-into-view="{{scrollInto}}">
+      <view
+        class="thumb {{index === current ? 'thumb--on' : ''}}"
+        wx:for="{{phases}}"
+        wx:key="key"
+        id="thumb-{{index}}"
+        data-index="{{index}}"
+        bindtap="onSelect">
+        <view class="thumb__imgbox">
+          <image class="thumb__img" src="{{item.image_url}}" mode="aspectFill" lazy-load="true" />
+          <view class="thumb__no">{{item.index}}</view>
+          <view class="thumb__est" wx:if="{{item.estimated}}">估</view>
+        </view>
+        <view class="thumb__name">{{item.name_cn}}</view>
+      </view>
+    </scroll-view>
+
+    <!-- 当前阶段大图 -->
+    <view class="hero">
+      <view class="hero__head">
+        <view class="hero__title">
+          <text class="hero__no">{{cur.index}}</text>
+          <text class="hero__cn">{{cur.name_cn}}</text>
+          <text class="hero__en">{{cur.name_en}}</text>
+        </view>
+        <view class="hero__time">{{cur.timeText}}</view>
+      </view>
+
+      <view class="hero__imgbox" bindtap="onPreview">
+        <image class="hero__img" src="{{cur.image_url}}" mode="aspectFit" show-menu-by-longpress="true" />
+        <view class="hero__tag" wx:if="{{cur.estimated}}">该帧为估算位置</view>
+        <view class="hero__zoom">点击查看大图</view>
+      </view>
+
+      <view class="hero__ops">
+        <view class="op op--ghost" bindtap="onPrev">上一阶段</view>
+        <view class="op op--ghost" bindtap="onNext">下一阶段</view>
+        <view class="op op--ghost" bindtap="onSaveImage">保存本帧</view>
+      </view>
+    </view>
+
+    <!-- 当前阶段 4 项指标 -->
+    <view class="section">
+      <view class="section__title">
+        <text>阶段指标</text>
+        <text class="section__sub">共 {{cur.metrics.length}} 项</text>
+      </view>
+
+      <view class="mcard" wx:for="{{cur.metrics}}" wx:key="key">
+        <view class="mcard__row">
+          <view class="mcard__name">{{item.name}}</view>
+          <view class="mcard__val">
+            <text class="mcard__num status--{{item.status}}">{{item.valueText}}</text>
+            <text class="mcard__unit">{{item.unit}}</text>
+          </view>
+        </view>
+
+        <view class="bar">
+          <view class="bar__track"></view>
+          <view class="bar__ref" style="left:{{item.refFrom}}%;width:{{item.refWidth}}%;"></view>
+          <view class="bar__mark status-bg--{{item.status}}" style="left:{{item.markPct}}%;"></view>
+        </view>
+
+        <view class="mcard__foot">
+          <view class="chip chip--{{item.status}}">{{item.statusText}}</view>
+          <view class="mcard__ref">参考 {{item.refText}}{{item.unit}}</view>
+        </view>
+      </view>
+    </view>
+
+    <!-- 全程指标 -->
+    <view class="section">
+      <view class="section__title"><text>全程指标</text></view>
+      <view class="gbar">
+        <view class="gitem" wx:for="{{globals}}" wx:key="key">
+          <view class="gitem__num status--{{item.status}}">{{item.valueText}}<text class="gitem__unit">{{item.unit}}</text></view>
+          <view class="gitem__name">{{item.name}}</view>
+          <view class="gitem__ref">{{item.statusText}} · 参考 {{item.refText}}</view>
+        </view>
+      </view>
+    </view>
+
+    <!-- 视频信息 -->
+    <view class="section">
+      <view class="section__title"><text>视频信息</text></view>
+      <view class="meta">
+        <view class="meta__i"><text class="meta__k">分辨率</text><text class="meta__v">{{meta.width}}×{{meta.height}}</text></view>
+        <view class="meta__i"><text class="meta__k">帧率</text><text class="meta__v">{{meta.fpsText}} fps</text></view>
+        <view class="meta__i"><text class="meta__k">时长</text><text class="meta__v">{{meta.durationText}} s</text></view>
+        <view class="meta__i"><text class="meta__k">总帧数</text><text class="meta__v">{{meta.frame_count}}</text></view>
+      </view>
+    </view>
+
+    <view class="disclaimer">{{disclaimer}}</view>
+
+    <view class="footer">
+      <view class="btn btn--primary" bindtap="onRetake">再分析一次</view>
+    </view>
+
+  </block>
+
+  <view class="empty" wx:else>
+    <view class="empty__icon">·</view>
+    <view class="empty__text">结果已失效，请重新上传视频</view>
+    <view class="btn btn--primary" bindtap="onRetake">去上传</view>
+  </view>
+
+</view>

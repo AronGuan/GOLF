@@ -1,0 +1,21 @@
+{
+  "pages": [
+    "pages/index/index",
+    "pages/analyzing/analyzing",
+    "pages/result/result"
+  ],
+  "window": {
+    "backgroundTextStyle": "light",
+    "navigationBarBackgroundColor": "#0E1116",
+    "navigationBarTitleText": "挥杆分析",
+    "navigationBarTextStyle": "white",
+    "backgroundColor": "#0E1116"
+  },
+  "style": "v2",
+  "sitemapLocation": "sitemap.json",
+  "permission": {
+    "scope.userLocation": {
+      "desc": "本小程序不需要位置权限"
+    }
+  }
+}

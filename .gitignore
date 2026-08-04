@@ -1,0 +1,42 @@
+# ============================================================
+# 高尔夫挥杆分析 MVP — .gitignore
+# 原则：源码/文档/配置入库；环境、运行时产物、缓存、私密状态忽略
+# ============================================================
+
+# ===== 便携 Python 环境（Windows 专属，830MB，绝不入库） =====
+.tools/
+
+# ===== 本地工作区记忆 / 工具私有状态 =====
+.workbuddy/
+
+# ===== Python 缓存与虚拟环境 =====
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+.eggs/
+.pytest_cache/
+htmlcov/
+.coverage
+coverage.xml
+.venv/
+venv/
+env/
+
+# ===== 后端运行时数据 / 产物（用户视频、渲染图、结果 JSON） =====
+backend/data/
+backend/models/
+
+# ===== 日志 =====
+*.log
+
+# ===== 小程序：本地私有配置与构建产物 =====
+miniprogram/project.private.config.json
+node_modules/
+
+# ===== 编辑器 / 系统文件 =====
+.idea/
+.vscode/
+.DS_Store
+*.swp
+Thumbs.db

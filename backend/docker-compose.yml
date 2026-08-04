@@ -1,0 +1,10 @@
+services:
+  golf-backend:
+    build: .
+    container_name: golf-backend
+    ports:
+      - "8000:8000"
+    restart: unless-stopped
+    volumes:
+      # 任务产物（8 张骨架图等）持久化，容器重建不丢
+      - ./data:/app/data

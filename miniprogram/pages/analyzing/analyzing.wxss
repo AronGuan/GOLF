@@ -1,0 +1,157 @@
+.page {
+  padding-top: 90rpx;
+}
+
+/* ---------------- loading ---------------- */
+
+.loading-area {
+  position: relative;
+  height: 200rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.ball {
+  font-size: 96rpx;
+  animation: swing 1.6s ease-in-out infinite;
+  transform-origin: center bottom;
+}
+
+@keyframes swing {
+  0% { transform: rotate(-24deg) translateY(0); }
+  50% { transform: rotate(24deg) translateY(-14rpx); }
+  100% { transform: rotate(-24deg) translateY(0); }
+}
+
+.swing-arc {
+  position: absolute;
+  bottom: 24rpx;
+  width: 260rpx;
+  height: 130rpx;
+  border-top: 3rpx dashed rgba(31, 191, 117, 0.45);
+  border-radius: 50% 50% 0 0 / 100% 100% 0 0;
+}
+
+/* ---------------- 进度 ---------------- */
+
+.percent {
+  margin-top: 30rpx;
+  text-align: center;
+  font-size: 64rpx;
+  font-weight: 700;
+  letter-spacing: 2rpx;
+}
+
+.bar {
+  margin: 22rpx 20rpx 0;
+  height: 16rpx;
+  border-radius: 8rpx;
+  background: #263040;
+  overflow: hidden;
+}
+
+.bar-fill {
+  height: 100%;
+  border-radius: 8rpx;
+  background: linear-gradient(90deg, #1fbf75, #48a7f5);
+  transition: width 400ms ease;
+}
+
+.stage-text {
+  margin-top: 26rpx;
+  text-align: center;
+  font-size: 30rpx;
+  color: #dbe3ec;
+}
+
+/* ---------------- 步骤 ---------------- */
+
+.steps {
+  margin-top: 46rpx;
+}
+
+.step-row {
+  display: flex;
+  align-items: center;
+  padding: 14rpx 0;
+}
+
+.step-icon {
+  width: 44rpx;
+  text-align: center;
+  font-size: 30rpx;
+  margin-right: 18rpx;
+}
+
+.step-icon.done {
+  color: #1fbf75;
+}
+
+.step-icon.doing {
+  color: #48a7f5;
+}
+
+.step-icon.todo {
+  color: #4c5766;
+}
+
+.step-name {
+  font-size: 28rpx;
+}
+
+.step-name.done {
+  color: #dbe3ec;
+}
+
+.step-name.doing {
+  color: #48a7f5;
+  font-weight: 600;
+}
+
+.step-name.todo {
+  color: #6b7686;
+}
+
+.eta {
+  margin-top: 32rpx;
+  text-align: center;
+  font-size: 25rpx;
+  color: #9aa6b5;
+}
+
+/* ---------------- 失败 ---------------- */
+
+.fail-area {
+  margin-top: 120rpx;
+  text-align: center;
+}
+
+.fail-icon {
+  width: 120rpx;
+  height: 120rpx;
+  line-height: 116rpx;
+  margin: 0 auto;
+  border-radius: 50%;
+  border: 4rpx solid #f5483b;
+  color: #f5483b;
+  font-size: 64rpx;
+  font-weight: 700;
+}
+
+.fail-title {
+  margin-top: 32rpx;
+  font-size: 36rpx;
+  font-weight: 700;
+}
+
+.fail-reason {
+  margin: 20rpx 40rpx 0;
+  font-size: 28rpx;
+  color: #9aa6b5;
+  line-height: 1.7;
+}
+
+.retry {
+  margin-top: 70rpx;
+}

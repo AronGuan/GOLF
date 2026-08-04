@@ -1,0 +1,80 @@
+<view class="page">
+
+  <!-- 标题 -->
+  <view class="hero">
+    <view class="hero-title">⛳ 挥杆分析</view>
+    <view class="hero-sub">拍一段挥杆，30 秒拿到 8 阶段姿态报告</view>
+  </view>
+
+  <!-- 机位示意图（纯 CSS 绘制，不引入图片资源） -->
+  <view class="diagram card">
+    <view class="diagram-row">
+      <view class="phone">
+        <view class="phone-screen"></view>
+      </view>
+
+      <view class="distance">
+        <view class="dist-line"></view>
+        <view class="dist-text">2~3 m</view>
+      </view>
+
+      <view class="golfer">
+        <view class="g-head"></view>
+        <view class="g-body"></view>
+        <view class="g-arm-l"></view>
+        <view class="g-arm-r"></view>
+        <view class="g-leg-l"></view>
+        <view class="g-leg-r"></view>
+      </view>
+    </view>
+    <view class="diagram-caption">正面机位（face-on）· 手机竖持固定 · 全身入镜</view>
+  </view>
+
+  <!-- 拍摄要求 -->
+  <view class="card req-card">
+    <view class="card-title">拍摄要求</view>
+    <view class="req-item" wx:for="{{requirements}}" wx:key="*this">
+      <view class="req-dot"></view>
+      <view class="req-text">{{item}}</view>
+    </view>
+    <view class="req-note">当前版本仅支持<text class="req-strong">右手球手</text>与<text class="req-strong">正面机位</text></view>
+  </view>
+
+  <!-- 选择视频 -->
+  <view class="choose-row">
+    <view class="choose-btn" bindtap="onShoot">
+      <view class="choose-icon">📹</view>
+      <view class="choose-text">拍摄</view>
+    </view>
+    <view class="choose-btn" bindtap="onAlbum">
+      <view class="choose-icon">🖼</view>
+      <view class="choose-text">从相册</view>
+    </view>
+  </view>
+
+  <!-- 已选文件卡片 -->
+  <view class="card file-card {{valid ? 'file-ok' : 'file-bad'}}" wx:if="{{video}}">
+    <view class="file-row">
+      <view class="file-name">已选：{{video.name}}</view>
+      <view class="file-flag">{{valid ? '✓' : '✗'}}</view>
+    </view>
+    <view class="file-meta">时长 {{video.durationText}} · {{video.sizeText}}</view>
+    <view class="file-error" wx:if="{{!valid}}">{{errorText}}</view>
+  </view>
+
+  <!-- 上传进度 -->
+  <view class="card upload-card" wx:if="{{uploading}}">
+    <view class="upload-text">正在上传 {{uploadPercent}}%</view>
+    <view class="bar">
+      <view class="bar-fill" style="width:{{uploadPercent}}%"></view>
+    </view>
+  </view>
+
+  <!-- 开始分析 -->
+  <button
+    class="btn btn-primary submit"
+    disabled="{{!canSubmit}}"
+    bindtap="onSubmit">{{uploading ? '上传中...' : '开始分析'}}</button>
+
+  <view class="tips">分析完成后原视频将被立即删除，结果图保留 7 天</view>
+</view>
