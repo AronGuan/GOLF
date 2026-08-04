@@ -50,6 +50,28 @@ curl http://<公网IP>:8000/api/v1/health
 ```
 
 ### 常用运维
+
+后端目录下已内置一键运维脚本 `backend/manage.sh`，可直接 `bash manage.sh <命令>`（或先 `chmod +x manage.sh` 再 `./manage.sh <命令>`）：
+
+```bash
+./manage.sh start      # 启动服务
+./manage.sh stop       # 停止服务
+./manage.sh restart    # 重启（改完代码后执行）
+./manage.sh status     # 查看服务状态
+./manage.sh logs -f    # 实时日志（默认）；也可 ./manage.sh logs -n 100 看最近 100 行
+./manage.sh check      # 环境自检：打印 python / mediapipe / numpy / cv2 版本
+./manage.sh health     # 健康检查：curl http://127.0.0.1:8000/api/v1/health
+./manage.sh help       # 查看全部命令与示例
+```
+
+示例：
+```bash
+./manage.sh restart    # 改完代码重启后端
+./manage.sh logs -n 100   # 排查问题时看最近 100 行日志
+```
+
+> `manage.sh` 内部统一管理 systemd 命令，等价于下方底层命令；非 systemd 环境会自动提示用 `nohup ... uvicorn` 手动启动。
+
 ```bash
 sudo systemctl status golf-backend      # 查看状态
 sudo systemctl restart golf-backend     # 重启（改完代码后执行）
