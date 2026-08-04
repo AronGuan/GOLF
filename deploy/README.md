@@ -92,12 +92,14 @@ curl http://<公网IP>:8000/api/v1/health
 
 原因：阿里云 ECS 出站访问 Docker Hub 常被限速或不可达。
 
-解决：使用阿里云容器镜像服务（ACR）的 Docker Hub 镜像加速器。
-1. 登录阿里云控制台 → 【容器镜像服务 ACR】→ 左侧【镜像加速器】，复制你的专属加速地址（形如 `https://xxxx.mirror.aliyuncs.com`）。
-2. 部署时传入该地址：
-   `DOCKER_MIRROR=https://xxxx.mirror.aliyuncs.com bash deploy-aliyun.sh`
-3. 脚本会自动写入 `/etc/docker/daemon.json` 并重启 docker；之后镜像即可从加速器拉取。
-> 也可在服务器上手动 `sudo vim /etc/docker/daemon.json` 写入 `{"registry-mirrors":["https://xxxx.mirror.aliyuncs.com"]}` 后 `sudo systemctl restart docker`。
+解决：脚本已内置默认加速器 `https://1mtp2h46.mirror.aliyuncs.com`，**直接运行即可**，无需再手动传变量：
+```bash
+bash deploy-aliyun.sh
+```
+脚本会自动写入 `/etc/docker/daemon.json` 并重启 docker，之后镜像即可从加速器拉取。
+- 如需换用其它加速器，仍可用环境变量覆盖：
+  `DOCKER_MIRROR=https://其它地址.mirror.aliyuncs.com bash deploy-aliyun.sh`
+- 也可在服务器上手动 `sudo vim /etc/docker/daemon.json` 写入 `{"registry-mirrors":["https://1mtp2h46.mirror.aliyuncs.com"]}` 后 `sudo systemctl restart docker`。
 
 ---
 

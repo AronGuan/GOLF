@@ -2,7 +2,7 @@
 # 高尔夫挥杆分析后端 —— 阿里云 ECS (Alibaba Cloud Linux 3) 一键部署
 # 用法:  bash deploy-aliyun.sh
 # 前置:  本项目已放到 $GOLF_PROJECT_DIR (默认 /root/golf/GOLF)
-# 镜像加速器用 DOCKER_MIRROR 环境变量传入（阿里云 ACR 专属地址）
+# 镜像加速器默认 https://1mtp2h46.mirror.aliyuncs.com；可用 DOCKER_MIRROR 环境变量覆盖
 set -euo pipefail
 
 PROJECT_DIR="${GOLF_PROJECT_DIR:-/root/golf/GOLF}"
@@ -51,6 +51,7 @@ EOF
   echo "  然后重新运行: DOCKER_MIRROR=https://<你的加速器>.mirror.aliyuncs.com bash deploy-aliyun.sh"
   exit 1
 }
+DOCKER_MIRROR="${DOCKER_MIRROR:-https://1mtp2h46.mirror.aliyuncs.com}"
 configure_docker_mirror
 
 echo ">>> [2/5] 进入后端目录 $BACKEND_DIR"
