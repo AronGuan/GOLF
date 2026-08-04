@@ -32,17 +32,17 @@
 
 ```bash
 # 方式 A：git（推荐，便于后续更新）
-git clone <你的仓库> /root/GOLF
+git clone <你的仓库> /root/golf/GOLF
 
 # 方式 B：本地 scp（项目根目录 E:\project\golf）
-scp -r E:\project\golf root@<公网IP>:/root/GOLF
+scp -r E:\project\golf root@<公网IP>:/root/golf/GOLF
 ```
 > 只需 `backend/` 和 `deploy/` 两个目录即可跑后端；小程序目录不上传也行。
 
 ### 3. 一键部署
 ```bash
 ssh root@<公网IP>
-cd /root/GOLF/deploy
+cd /root/golf/GOLF/deploy
 bash deploy-aliyun.sh
 ```
 脚本会自动：装 Docker → 构建镜像 → 起容器 → 开防火墙 → 探活。

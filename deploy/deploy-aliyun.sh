@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
 # 高尔夫挥杆分析后端 —— 阿里云 ECS (Alibaba Cloud Linux 3) 一键部署
 # 用法:  bash deploy-aliyun.sh
-# 前置:  本项目已放到 $GOLF_PROJECT_DIR (默认 /root/GOLF)
+# 前置:  本项目已放到 $GOLF_PROJECT_DIR (默认 /root/golf/GOLF)
 set -euo pipefail
 
-PROJECT_DIR="${GOLF_PROJECT_DIR:-/root/GOLF}"
+PROJECT_DIR="${GOLF_PROJECT_DIR:-/root/golf/GOLF}"
 BACKEND_DIR="$PROJECT_DIR/backend"
 PORT=8000
 
