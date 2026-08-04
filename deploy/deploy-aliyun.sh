@@ -28,28 +28,85 @@ fi
 
 echo ">>> 配置 Docker 镜像加速器（阿里云 ECS 直连 Docker Hub 易超时）..."
 configure_docker_mirror() {
-  # 若用户通过环境变量指定了加速器地址，直接写入 daemon.json
+  # 候选镜像加速器列表：用户指定的 DOCKER_MIRROR 放最前（保留覆盖能力），
+  # 之后追加常用公共 fallback（按可能的可用性排序）。
+  local candidates=()
   if [ -n "${DOCKER_MIRROR:-}" ]; then
-    sudo mkdir -p /etc/docker
-    sudo tee /etc/docker/daemon.json >/dev/null <<EOF
+    candidates+=("${DOCKER_MIRROR}")
+  fi
+  local fallbacks=(
+    "https://hub-mirror.c.163.com"
+    "https://mirror.baidubce.com"
+    "https://docker.m.daocloud.io"
+    "https://docker.nju.edu.cn"
+  )
+
+  # 合并候选并去重，避免对同一地址重复探测
+  local seen="" m
+  local merged=()
+  for m in "${candidates[@]:-}" "${fallbacks[@]}"; do
+    [ -z "$m" ] && continue
+    if printf '%s\n' "$seen" | grep -qxF "$m"; then
+      continue
+    fi
+    seen+="$m"$'\n'
+    merged+=("$m")
+  done
+  candidates=("${merged[@]:-}")
+
+  # 逐个探测候选镜像，只收集可用的
+  local working=()
+  local mirror http_code
+  for mirror in "${candidates[@]}"; do
+    http_code=$(curl -gsS -o /dev/null -w "%{http_code}" --connect-timeout 8 --max-time 15 \
+      -H 'Accept: application/vnd.docker.distribution.manifest.v2+json' \
+      "$mirror/v2/library/hello-world/manifests/latest" 2>/dev/null || echo "000")
+    case "$http_code" in
+      200|401)
+        echo "  ✓ 可用: $mirror (HTTP $http_code)"
+        working+=("$mirror")
+        ;;
+      *)
+        echo "  ✗ 跳过不可用: $mirror (HTTP $http_code)"
+        ;;
+    esac
+    # 收集到 2 个可用镜像即可停止，避免不必要的网络等待
+    if [ "${#working[@]}" -ge 2 ]; then
+      break
+    fi
+  done
+
+  # 没有任何可用镜像：给出指引并退出（不尝试直连 Docker Hub）
+  if [ "${#working[@]}" -eq 0 ]; then
+    echo "✗ 所有候选镜像加速器均不可用（探测 /v2 均非 200/401）。"
+    echo "  请检查本服务器出站网络（安全组/防火墙是否放行 443），或手动指定可用加速器："
+    echo "  DOCKER_MIRROR=https://<你的加速器>.mirror.aliyuncs.com bash deploy-aliyun.sh"
+    exit 1
+  fi
+
+  # 生成 daemon.json（只写入可用的镜像）
+  sudo mkdir -p /etc/docker
+  local json="["
+  local first=1
+  for mirror in "${working[@]}"; do
+    if [ "$first" -eq 1 ]; then
+      first=0
+    else
+      json+=","
+    fi
+    json+="\"$mirror\""
+  done
+  json+="]"
+  sudo tee /etc/docker/daemon.json >/dev/null <<EOF
 {
-  "registry-mirrors": ["${DOCKER_MIRROR}"]
+  "registry-mirrors": ${json}
 }
 EOF
-    sudo systemctl restart docker
-    echo "已配置 registry-mirrors: ${DOCKER_MIRROR}"
-    return 0
-  fi
-  # 否则检测是否能直连 Docker Hub
-  if curl -fsS --connect-timeout 5 --max-time 8 https://registry-1.docker.io/v2/ >/dev/null 2>&1; then
-    echo "可直连 Docker Hub，无需镜像加速器。"
-    return 0
-  fi
-  # 既不能直连也没指定镜像：给出指引并退出
-  echo "✗ 无法直连 Docker Hub，且未设置 DOCKER_MIRROR。"
-  echo "  请到阿里云控制台【容器镜像服务 ACR】->【镜像加速器】获取专属加速地址，"
-  echo "  然后重新运行: DOCKER_MIRROR=https://<你的加速器>.mirror.aliyuncs.com bash deploy-aliyun.sh"
-  exit 1
+  sudo systemctl restart docker
+  echo "已配置 registry-mirrors:"
+  for mirror in "${working[@]}"; do
+    echo "  - $mirror"
+  done
 }
 DOCKER_MIRROR="${DOCKER_MIRROR:-https://1mtp2h46.mirror.aliyuncs.com}"
 configure_docker_mirror

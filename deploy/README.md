@@ -90,16 +90,25 @@ curl http://<公网IP>:8000/api/v1/health
 
 现象：`docker compose build` 卡在 `pulling python:3.12-slim` 并最终报 `TLS handshake timeout` / `context deadline exceeded`（连不上 `registry-1.docker.io`）。
 
-原因：阿里云 ECS 出站访问 Docker Hub 常被限速或不可达。
+原因：阿里云 ECS 出站访问 Docker Hub 常被限速或不可达；且专属加速器（如阿里云 ACR 镜像加速器）也可能已停止代理 Docker Hub，导致直连超时。
 
-解决：脚本已内置默认加速器 `https://1mtp2h46.mirror.aliyuncs.com`，**直接运行即可**，无需再手动传变量：
-```bash
-bash deploy-aliyun.sh
-```
-脚本会自动写入 `/etc/docker/daemon.json` 并重启 docker，之后镜像即可从加速器拉取。
-- 如需换用其它加速器，仍可用环境变量覆盖：
+解决：脚本现在会**自动测试多个镜像加速器**，只把探测可用的写入 `/etc/docker/daemon.json`，无需手动找地址：
+
+- 脚本内置常用 fallback 列表（按可用性排序）：
+  - `https://hub-mirror.c.163.com`
+  - `https://mirror.baidubce.com`
+  - `https://docker.m.daocloud.io`
+  - `https://docker.nju.edu.cn`
+- 探测逻辑：对每个候选访问 `<mirror>/v2/library/hello-world/manifests/latest`，HTTP `200`/`401` 视为可用，收集到 **2 个可用**即停止（减少网络等待）；全部不可用才报错退出（不再尝试直连 Docker Hub，中国大陆 ECS 直连几乎必超时）。
+- 用户指定的 `DOCKER_MIRROR` 会被放在候选**最前**优先测试，保留覆盖能力。直接运行即可：
+  ```bash
+  bash deploy-aliyun.sh
+  ```
+- 如需换用其它加速器，仍可用环境变量覆盖（它会被当成第一候选优先探测）：
   `DOCKER_MIRROR=https://其它地址.mirror.aliyuncs.com bash deploy-aliyun.sh`
-- 也可在服务器上手动 `sudo vim /etc/docker/daemon.json` 写入 `{"registry-mirrors":["https://1mtp2h46.mirror.aliyuncs.com"]}` 后 `sudo systemctl restart docker`。
+- 也可在服务器上手动 `sudo vim /etc/docker/daemon.json` 写入可用镜像后 `sudo systemctl restart docker`。
+- 若自动挑选后构建仍卡住，可尝试关闭 BuildKit 重试：
+  `DOCKER_BUILDKIT=0 bash deploy-aliyun.sh`
 
 ---
 
