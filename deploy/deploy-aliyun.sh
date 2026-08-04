@@ -8,13 +8,17 @@ PROJECT_DIR="${GOLF_PROJECT_DIR:-/root/golf}"
 BACKEND_DIR="$PROJECT_DIR/backend"
 PORT=8000
 
-echo ">>> [1/5] 安装 Docker ..."
-if ! command -v docker >/dev/null 2>&1; then
-  sudo dnf -y install docker
+echo ">>> [1/5] 安装 Docker (docker-ce) ..."
+# 注: Alibaba Cloud Linux 3 (RHEL9 系) 默认仓库的 `dnf install docker` 装的是
+#     podman 兼容层, 没有 docker.service, 会导致 `systemctl enable docker` 失败。
+#     这里改用 Docker 官方仓库的 docker-ce, 它提供真正的 docker.service 与 daemon。
+if ! systemctl list-unit-files 2>/dev/null | grep -q '^docker.service'; then
+  sudo dnf -y install dnf-plugins-core
+  sudo dnf config-manager --add-repo https://mirrors.aliyun.com/docker-ce/linux/centos/docker-ce.repo
+  # ALinux3 的 $releasever 是 3, 而 docker-ce 仓库目录只有 7/8/9, 强制按 9 解析
+  sudo sed -i 's/\$releasever/9/g' /etc/yum.repos.d/docker-ce.repo
+  sudo dnf -y install docker-ce docker-ce-cli containerd.io docker-compose-plugin
   sudo systemctl enable --now docker
-fi
-if ! docker compose version >/dev/null 2>&1; then
-  sudo dnf -y install docker-compose-plugin
 fi
 
 echo ">>> [2/5] 进入后端目录 $BACKEND_DIR"
