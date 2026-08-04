@@ -87,6 +87,8 @@ fi
 # [6/7] 注册 systemd 服务
 #      systemd 不展开环境变量/shell 变量，必须把占位符替换成绝对路径
 # ---------------------------------------------------------------------------
+# 探测本机公网 IP（阿里云元数据接口），失败则回退到已知地址
+PUBLIC_IP="$(curl -fsS --max-time 5 http://100.100.100.200/latest/meta-data/eipv4 2>/dev/null || echo 39.102.63.30)"
 echo ">>> [6/7] 安装 systemd 服务 $SERVICE_NAME ..."
 if [ ! -f "$SERVICE_TEMPLATE" ]; then
   echo "✗ 缺少 systemd 模板: $SERVICE_TEMPLATE"
@@ -94,6 +96,7 @@ if [ ! -f "$SERVICE_TEMPLATE" ]; then
 fi
 sed -e "s#__PYTHON_PATH__#${PYTHON}#g" \
     -e "s#^WorkingDirectory=.*#WorkingDirectory=${BACKEND_DIR}#" \
+    -e "s#__PUBLIC_BASE_URL__#${PUBLIC_IP}#g" \
     "$SERVICE_TEMPLATE" | sudo tee "$SERVICE_TARGET" >/dev/null
 sudo systemctl daemon-reload
 sudo systemctl enable --now "$SERVICE_NAME"
@@ -128,5 +131,6 @@ else
 fi
 echo
 echo "重要: 到阿里云控制台【安全组】放行 入方向 ${PORT}/tcp (ECS 真正的防火墙)"
+echo "图片地址: GOLF_PUBLIC_BASE_URL=http://${PUBLIC_IP}:${PORT} (结果页截图将用此公网地址)"
 echo "运维: sudo systemctl status|restart ${SERVICE_NAME}   /   sudo journalctl -u ${SERVICE_NAME} -f"
 echo "============================================================"

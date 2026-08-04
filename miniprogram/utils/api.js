@@ -7,7 +7,7 @@
  */
 
 /** 后端基地址 */
-const BASE_URL = 'http://127.0.0.1:8000';
+const BASE_URL = 'http://39.102.63.30:8000';
 
 /** 接口前缀 */
 const API_PREFIX = '/api/v1';
