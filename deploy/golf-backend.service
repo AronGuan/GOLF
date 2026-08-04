@@ -1,0 +1,13 @@
+[Unit]
+Description=Golf Swing Analysis Backend (conda)
+After=network.target
+
+[Service]
+Type=simple
+WorkingDirectory=/root/golf/GOLF/backend
+ExecStart=__PYTHON_PATH__ -m uvicorn app.main:app --host 0.0.0.0 --port 8000 --workers 1
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

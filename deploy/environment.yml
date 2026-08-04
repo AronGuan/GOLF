@@ -1,0 +1,28 @@
+# 高尔夫挥杆分析后端 —— conda 环境定义
+#
+# 硬约束（改动前务必回看 docs/ARCHITECTURE.md §10.1）：
+#   1. python 必须 3.12：mediapipe 0.10.14 没有 3.13 的完整 wheel，
+#      3.13 的精简包移除了 legacy `mp.solutions.pose`，算法层会直接报错。
+#   2. mediapipe 锁 0.10.14：1.0.0 已删除 legacy solutions API。
+#   3. numpy 锁 1.26.4（<2）：mediapipe 0.10.14 不兼容 numpy 2.x。
+#
+# 用法：
+#   conda env create -f environment.yml     # 首次创建
+#   conda env update -f environment.yml     # 已存在则更新
+name: golf
+channels:
+  - https://mirrors.tuna.tsinghua.edu.cn/anaconda/pkgs/main
+  - https://mirrors.tuna.tsinghua.edu.cn/anaconda/pkgs/free
+dependencies:
+  - python=3.12
+  - pip
+  - pip:
+      # conda 会把下面的列表写成临时 requirements.txt 再交给 pip，
+      # 因此 --index-url 作为首个列表项即可让 mediapipe / opencv 这两百 MB 走清华源。
+      - --index-url https://pypi.tuna.tsinghua.edu.cn/simple
+      - mediapipe==0.10.14
+      - numpy==1.26.4
+      - opencv-python-headless
+      - fastapi
+      - "uvicorn[standard]"
+      - python-multipart

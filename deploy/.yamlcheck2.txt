@@ -1,0 +1,6 @@
+﻿YAML_PARSE_OK
+name= golf
+channels= ['https://mirrors.tuna.tsinghua.edu.cn/anaconda/pkgs/main', 'https://mirrors.tuna.tsinghua.edu.cn/anaconda/pkgs/free']
+deps= ['python=3.12', 'pip']
+pip_first= '--index-url https://pypi.tuna.tsinghua.edu.cn/simple'
+pip_all= ['--index-url https://pypi.tuna.tsinghua.edu.cn/simple', 'mediapipe==0.10.14', 'numpy==1.26.4', 'opencv-python-headless', 'fastapi', 'uvicorn[standard]', 'python-multipart']

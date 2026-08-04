@@ -1,11 +1,83 @@
-# 部署指南：阿里云 ECS (Alibaba Cloud Linux 3) + Docker
+# 部署指南：阿里云 ECS (Alibaba Cloud Linux 3)
 
 > 适用场景：已购阿里云 ECS，想把高尔夫挥杆分析后端跑在云上，小程序**仅用开发者工具预览**（暂不做域名/HTTPS/真机）。
-> 算法层零改动：`mediapipe==0.10.14` + legacy API 在 Linux 容器里同样自带模型、零外网依赖。
+> 算法层零改动：`mediapipe==0.10.14` + legacy API 在 Linux 上同样自带模型、零外网依赖。
+>
+> 有两套部署方式：
+> - **[Conda 部署](#conda-部署推荐免-docker)（推荐）** —— 免 Docker，直接用 Anaconda 虚拟环境 + uvicorn + systemd。
+> - **[Docker 部署](#docker-部署备选)（备选）** —— 阿里云 ECS 上装 Docker 慢、拉镜像易超时，不再作为首选。
 
 ---
 
-## 架构
+## Conda 部署（推荐，免 Docker）
+
+### 前提
+- ECS 上**已安装 Anaconda**（假设 `conda` 在 PATH，或位于 `/root/anaconda3/bin/conda`）
+- 项目已放到服务器目录 `/root/golf/GOLF`（后端在 `/root/golf/GOLF/backend`）
+- 阿里云控制台**安全组**放行入方向 `8000/tcp`
+
+### 一键部署
+```bash
+ssh root@<公网IP>
+cd /root/golf/GOLF/deploy
+bash deploy-aliyun-conda.sh
+```
+
+### 脚本做了什么
+| 步骤 | 动作 |
+|---|---|
+| 1 | 定位 conda（`command -v conda`，回退 `/root/anaconda3/bin/conda`），由 `conda info --base` 推导出 env 内的 python 绝对路径 |
+| 2 | `dnf install mesa-libGL`（`opencv-python-headless` 运行所需的 libGL） |
+| 3 | 按 `environment.yml` 创建 conda 环境 **`golf` (python 3.12)**；环境已存在则自动改为 `env update` |
+| 4 | 用 env 内的 pip 安装 `backend/requirements.txt`，走**清华镜像** `https://pypi.tuna.tsinghua.edu.cn/simple` |
+| 5 | firewalld 放行 `8000/tcp`（未启用 firewalld 则跳过） |
+| 6 | 把 `golf-backend.service` 里的 `__PYTHON_PATH__` 替换为真实 python 路径，写入 `/etc/systemd/system/`，`daemon-reload` + `enable --now` |
+| 7 | 健康检查 `curl http://127.0.0.1:8000/api/v1/health`，并打印访问地址 |
+
+> 为什么要替换占位符：systemd 的 `ExecStart` **不展开** shell 变量/环境变量，必须写死绝对路径（形如 `/root/anaconda3/envs/golf/bin/python`）。
+
+### 验证
+```bash
+# 服务器上
+curl http://127.0.0.1:8000/api/v1/health
+# 期望: {"code":0,"data":{"status":"ok","mediapipe":"0.10.14"}}
+
+# 本地电脑（验证公网可达）
+curl http://<公网IP>:8000/api/v1/health
+
+# 依赖版本自检（确认 py3.12 / mediapipe 0.10.14 / numpy<2）
+/root/anaconda3/envs/golf/bin/python /root/golf/GOLF/backend/run.py check
+```
+
+### 常用运维
+```bash
+sudo systemctl status golf-backend      # 查看状态
+sudo systemctl restart golf-backend     # 重启（改完代码后执行）
+sudo systemctl stop golf-backend        # 停止
+sudo journalctl -u golf-backend -f      # 实时日志
+sudo journalctl -u golf-backend -n 100 --no-pager   # 最近 100 行
+```
+
+### 环境约束（硬性，勿改）
+- **Python 3.12**：3.13 的 mediapipe wheel 是精简包，没有 `mp.solutions`，算法层直接崩。
+- **`mediapipe==0.10.14`**：1.0.0 已移除 legacy `mp.solutions.pose` API。
+- **`numpy==1.26.4`（<2）**：0.10.14 不兼容 numpy 2.x。
+- **`--workers 1`**：任务状态是内存 dict，多 worker 会让轮询请求落到没有该任务的进程。
+
+### 部署产物（Conda）
+| 文件 | 作用 |
+|---|---|
+| `deploy/environment.yml` | conda 环境定义（env 名 `golf`，python 3.12 + 锁版本依赖） |
+| `deploy/deploy-aliyun-conda.sh` | conda 一键部署脚本 |
+| `deploy/golf-backend.service` | systemd unit 模板（`__PYTHON_PATH__` 由脚本替换） |
+
+---
+
+## Docker 部署（备选）
+
+> ⚠️ **Docker 方式在阿里云 ECS 上安装/拉镜像较慢、易超时**（`registry-1.docker.io` 常不可达），推荐改用上面的 **Conda 方式**。以下内容保留作为备选方案。
+
+### 架构
 
 ```
 阿里云 ECS (Alibaba Cloud Linux 3)
@@ -20,7 +92,7 @@
 
 ---
 
-## 步骤
+### 步骤
 
 ### 1. 准备 ECS
 - 系统：Alibaba Cloud Linux 3（已选）
@@ -65,7 +137,7 @@ curl http://<公网IP>:8000/api/v1/health
 
 ---
 
-## 部署产物
+### 部署产物
 
 | 文件 | 作用 |
 |---|---|
@@ -77,7 +149,7 @@ curl http://<公网IP>:8000/api/v1/health
 
 ---
 
-## 重要注意事项
+### 重要注意事项
 
 1. **单 worker 限制**：任务状态是内存字典 + `BackgroundTasks`，故 `docker-compose.yml` / Dockerfile 固定 **1 个 worker**。多 worker 会让轮询请求落到没有该任务的进程。并发上来后再考虑换 Redis/数据库。
 2. **公网暴露无鉴权**：当前 8000 端口直接对公网开放、无任何认证。仅适合开发预览。正式上线前务必加：反向代理 + 鉴权 + 限速，或至少限制来源 IP。
@@ -86,7 +158,7 @@ curl http://<公网IP>:8000/api/v1/health
 
 ---
 
-## Docker Hub 拉取超时（阿里云 ECS 常见）
+### Docker Hub 拉取超时（阿里云 ECS 常见）
 
 现象：`docker compose build` 卡在 `pulling python:3.12-slim` 并最终报 `TLS handshake timeout` / `context deadline exceeded`（连不上 `registry-1.docker.io`）。
 
@@ -112,7 +184,7 @@ curl http://<公网IP>:8000/api/v1/health
 
 ---
 
-## 常见问题
+### 常见问题
 
 ### Q1: `Failed to enable unit: Unit file docker.service does not exist`
 原因：Alibaba Cloud Linux 3 默认 `dnf install docker` 装的是 podman 兼容层，没有 `docker.service`。
@@ -135,7 +207,7 @@ sudo systemctl enable --now docker
 原因：系统中已有的 podman 与 docker-ce 的 runc/containerd 冲突。
 修复：先 `sudo dnf remove -y podman podman-docker runc`，再装 docker-ce。
 
-## 后续升级（不在本次范围）
+### 后续升级（不在本次范围）
 
 - **真机访问**：需要 ① 已备案域名 ② SSL 证书（阿里云免费或 Let's Encrypt）③ 在微信公众平台把该域名加入「request 合法域名」。届时在容器前加 nginx 反代 + HTTPS，小程序 `BASE_URL` 改 `https://域名`。
 - **多实例 / 高可用**：把内存任务存储换成 Redis，worker 数可上调。
