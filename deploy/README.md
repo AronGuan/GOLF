@@ -86,6 +86,29 @@ curl http://<公网IP>:8000/api/v1/health
 
 ---
 
+## 常见问题
+
+### Q1: `Failed to enable unit: Unit file docker.service does not exist`
+原因：Alibaba Cloud Linux 3 默认 `dnf install docker` 装的是 podman 兼容层，没有 `docker.service`。
+修复：脚本已改用 Docker 官方仓库的 `docker-ce`，如果仍遇到此错误，手动执行：
+```bash
+sudo rm -f /etc/yum.repos.d/docker-ce.repo
+sudo dnf remove -y podman podman-docker runc 2>/dev/null || true
+sudo dnf -y install dnf-plugins-core
+sudo dnf config-manager --add-repo https://mirrors.aliyun.com/docker-ce/linux/centos/docker-ce.repo
+sudo sed -i 's/$releasever/8/g' /etc/yum.repos.d/docker-ce.repo
+sudo dnf -y install docker-ce docker-ce-cli containerd.io docker-compose-plugin
+sudo systemctl enable --now docker
+```
+
+### Q2: `nothing provides libc.so.6(GLIBC_2.34) needed by docker-ce`
+原因：误把 docker-ce 仓库按 **el9** 解析（RHEL 9 需要 GLIBC 2.34），但 Alibaba Cloud Linux 3 实际兼容 **el8**。
+修复：把 `/etc/yum.repos.d/docker-ce.repo` 里的 `$releasever` 改成 `8`（即上面 Q1 的 `sed -i 's/$releasever/8/g'`），然后重新安装。
+
+### Q3: `podman ... requires runc >= 1.0.0-57, but none of the providers can be installed`
+原因：系统中已有的 podman 与 docker-ce 的 runc/containerd 冲突。
+修复：先 `sudo dnf remove -y podman podman-docker runc`，再装 docker-ce。
+
 ## 后续升级（不在本次范围）
 
 - **真机访问**：需要 ① 已备案域名 ② SSL 证书（阿里云免费或 Let's Encrypt）③ 在微信公众平台把该域名加入「request 合法域名」。届时在容器前加 nginx 反代 + HTTPS，小程序 `BASE_URL` 改 `https://域名`。

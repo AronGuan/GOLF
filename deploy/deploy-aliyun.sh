@@ -9,14 +9,18 @@ BACKEND_DIR="$PROJECT_DIR/backend"
 PORT=8000
 
 echo ">>> [1/5] 安装 Docker (docker-ce) ..."
-# 注: Alibaba Cloud Linux 3 (RHEL9 系) 默认仓库的 `dnf install docker` 装的是
-#     podman 兼容层, 没有 docker.service, 会导致 `systemctl enable docker` 失败。
-#     这里改用 Docker 官方仓库的 docker-ce, 它提供真正的 docker.service 与 daemon。
+# 注: Alibaba Cloud Linux 3 兼容 RHEL 8 / CentOS 8 系。
+#     默认仓库的 `dnf install docker` 装的是 podman 兼容层, 没有 docker.service,
+#     会导致 `systemctl enable docker` 失败。这里改用 Docker 官方仓库的 docker-ce。
 if ! systemctl list-unit-files 2>/dev/null | grep -q '^docker.service'; then
+  # 清掉可能已存在的错误仓库配置(el9 会依赖 GLIBC 2.34)
+  sudo rm -f /etc/yum.repos.d/docker-ce.repo
+  # 移除 podman 兼容层, 避免与 docker-ce 的 runc/containerd 冲突
+  sudo dnf remove -y podman podman-docker runc 2>/dev/null || true
+  # 安装仓库工具并添加阿里云 docker-ce 镜像源 (ALinux3 对应 el8)
   sudo dnf -y install dnf-plugins-core
   sudo dnf config-manager --add-repo https://mirrors.aliyun.com/docker-ce/linux/centos/docker-ce.repo
-  # ALinux3 的 $releasever 是 3, 而 docker-ce 仓库目录只有 7/8/9, 强制按 9 解析
-  sudo sed -i 's/\$releasever/9/g' /etc/yum.repos.d/docker-ce.repo
+  sudo sed -i 's/\$releasever/8/g' /etc/yum.repos.d/docker-ce.repo
   sudo dnf -y install docker-ce docker-ce-cli containerd.io docker-compose-plugin
   sudo systemctl enable --now docker
 fi
