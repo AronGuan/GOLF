@@ -86,6 +86,21 @@ curl http://<公网IP>:8000/api/v1/health
 
 ---
 
+## Docker Hub 拉取超时（阿里云 ECS 常见）
+
+现象：`docker compose build` 卡在 `pulling python:3.12-slim` 并最终报 `TLS handshake timeout` / `context deadline exceeded`（连不上 `registry-1.docker.io`）。
+
+原因：阿里云 ECS 出站访问 Docker Hub 常被限速或不可达。
+
+解决：使用阿里云容器镜像服务（ACR）的 Docker Hub 镜像加速器。
+1. 登录阿里云控制台 → 【容器镜像服务 ACR】→ 左侧【镜像加速器】，复制你的专属加速地址（形如 `https://xxxx.mirror.aliyuncs.com`）。
+2. 部署时传入该地址：
+   `DOCKER_MIRROR=https://xxxx.mirror.aliyuncs.com bash deploy-aliyun.sh`
+3. 脚本会自动写入 `/etc/docker/daemon.json` 并重启 docker；之后镜像即可从加速器拉取。
+> 也可在服务器上手动 `sudo vim /etc/docker/daemon.json` 写入 `{"registry-mirrors":["https://xxxx.mirror.aliyuncs.com"]}` 后 `sudo systemctl restart docker`。
+
+---
+
 ## 常见问题
 
 ### Q1: `Failed to enable unit: Unit file docker.service does not exist`

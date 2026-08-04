@@ -2,6 +2,7 @@
 # 高尔夫挥杆分析后端 —— 阿里云 ECS (Alibaba Cloud Linux 3) 一键部署
 # 用法:  bash deploy-aliyun.sh
 # 前置:  本项目已放到 $GOLF_PROJECT_DIR (默认 /root/golf/GOLF)
+# 镜像加速器用 DOCKER_MIRROR 环境变量传入（阿里云 ACR 专属地址）
 set -euo pipefail
 
 PROJECT_DIR="${GOLF_PROJECT_DIR:-/root/golf/GOLF}"
@@ -24,6 +25,33 @@ if ! systemctl list-unit-files 2>/dev/null | grep -q '^docker.service'; then
   sudo dnf -y install docker-ce docker-ce-cli containerd.io docker-compose-plugin
   sudo systemctl enable --now docker
 fi
+
+echo ">>> 配置 Docker 镜像加速器（阿里云 ECS 直连 Docker Hub 易超时）..."
+configure_docker_mirror() {
+  # 若用户通过环境变量指定了加速器地址，直接写入 daemon.json
+  if [ -n "${DOCKER_MIRROR:-}" ]; then
+    sudo mkdir -p /etc/docker
+    sudo tee /etc/docker/daemon.json >/dev/null <<EOF
+{
+  "registry-mirrors": ["${DOCKER_MIRROR}"]
+}
+EOF
+    sudo systemctl restart docker
+    echo "已配置 registry-mirrors: ${DOCKER_MIRROR}"
+    return 0
+  fi
+  # 否则检测是否能直连 Docker Hub
+  if curl -fsS --connect-timeout 5 --max-time 8 https://registry-1.docker.io/v2/ >/dev/null 2>&1; then
+    echo "可直连 Docker Hub，无需镜像加速器。"
+    return 0
+  fi
+  # 既不能直连也没指定镜像：给出指引并退出
+  echo "✗ 无法直连 Docker Hub，且未设置 DOCKER_MIRROR。"
+  echo "  请到阿里云控制台【容器镜像服务 ACR】->【镜像加速器】获取专属加速地址，"
+  echo "  然后重新运行: DOCKER_MIRROR=https://<你的加速器>.mirror.aliyuncs.com bash deploy-aliyun.sh"
+  exit 1
+}
+configure_docker_mirror
 
 echo ">>> [2/5] 进入后端目录 $BACKEND_DIR"
 cd "$BACKEND_DIR"
