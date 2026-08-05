@@ -14,7 +14,7 @@ from pathlib import Path
 
 import pytest
 
-from app import config, pose_extractor, renderer, segmenter
+from app import config, frame_reader, pose_extractor, renderer, segmenter
 from app.schemas import PHASE_META, PHASE_ORDER, TaskStatus, phase_image_name
 
 from conftest import FPS, make_swing_frames
@@ -23,6 +23,12 @@ EXPECTED_IMAGES = [
     "01_address.jpg", "02_takeaway.jpg", "03_backswing.jpg", "04_top.jpg",
     "05_downswing.jpg", "06_impact.jpg", "07_follow_through.jpg", "08_finish.jpg",
 ]
+
+#: 机位过滤后 face-on 各阶段指标数（架构 §3.3 统计表）
+FACE_ON_COUNTS = {
+    "address": 3, "takeaway": 4, "backswing": 4, "top": 4,
+    "downswing": 4, "impact": 3, "follow_through": 4, "finish": 4,
+}
 
 
 @pytest.fixture()
@@ -84,9 +90,10 @@ class TestEndToEnd:
         assert result["task_id"] == task_id
         assert result["status"] == TaskStatus.SUCCESS.value
         assert set(result) == {
-            "task_id", "status", "video_meta", "global_metrics",
+            "task_id", "status", "camera_view", "video_meta", "global_metrics",
             "phases", "warnings", "disclaimer",
         }
+        assert result["camera_view"] == "face_on"
         assert result["disclaimer"] == config.DISCLAIMER
         assert isinstance(result["warnings"], list)
 
@@ -95,6 +102,7 @@ class TestEndToEnd:
         meta = result["video_meta"]
         assert meta["fps"] == pytest.approx(FPS, abs=0.1)
         assert meta["frame_count"] == 120
+        assert meta["total_frames"] == meta["frame_count"]
         assert (meta["width"], meta["height"]) == (480, 854)
         assert meta["low_fps"] is False
 
@@ -116,18 +124,75 @@ class TestEndToEnd:
         assert all(b > a for a, b in zip(stamps, stamps[1:])), stamps
         assert all(0 <= n <= 119 for n in nums)
 
-    def test_each_phase_has_four_metrics(self, finished):
+    def test_each_phase_has_filtered_metrics(self, finished):
+        """face-on 机位过滤后各阶段指标数（架构 §3.3 统计表），且带 description。"""
         _task_id, _status, result = finished
         for phase in result["phases"]:
             items = phase["metrics"]
-            assert len(items) == 4, phase["key"]
+            assert len(items) == FACE_ON_COUNTS[phase["key"]], phase["key"]
             for item in items:
                 assert set(item) == {
-                    "key", "name", "value", "unit", "ref_min", "ref_max", "status"
+                    "key", "name", "value", "unit", "ref_min", "ref_max", "status",
+                    "estimated", "source", "confidence", "description",
                 }
                 assert isinstance(item["value"], (int, float))
-                assert item["status"] in ("low", "normal", "high")
+                assert item["status"] in (
+                    "low", "normal", "high", "critical_low", "critical_high"
+                )
                 assert item["name"], "指标必须有中文名"
+                assert isinstance(item["description"], str)
+
+    def test_phases_have_risks_field(self, finished):
+        """v2 契约：``phases[].risks`` 恒为数组。"""
+        _task_id, _status, result = finished
+        for phase in result["phases"]:
+            assert isinstance(phase["risks"], list)
+
+    def test_risks_produced_on_synthetic_swing(self, finished):
+        """合成挥杆应触发 RISK-016（⑦ 开放角 28.1° < 30）。
+
+        这同时是 RISK-016 符号回归的端到端验证：值必须是**正的开放角**（28.1），
+        而不是负的带符号肩转（否则 `< 30` 恒真、100% 误报）。"""
+        _task_id, _status, result = finished
+        by_phase = {p["key"]: p for p in result["phases"]}
+        ft_rules = {r["rule_id"] for r in by_phase["follow_through"]["risks"]}
+        assert "RISK-016" in ft_rules, f"合成挥杆 FOLLOW_THROUGH 应触发 RISK-016, got {ft_rules}"
+        # 触发值必须是正的开放角（fn_key=shoulder_open 生效）
+        for r in by_phase["follow_through"]["risks"]:
+            if r["rule_id"] == "RISK-016":
+                assert r["value"] > 0, f"RISK-016 的取值应为正开放角，got {r['value']}"
+                assert 0 < r["value"] < 30, f"RISK-016 触发值应在 (0,30)，got {r['value']}"
+
+    def test_risk_item_schema(self, finished):
+        _task_id, _status, result = finished
+        risk = next(
+            (r for p in result["phases"] for r in p["risks"]), None
+        )
+        assert risk is not None, "合成挥杆应至少有一条风险"
+        assert set(risk) == {
+            "rule_id", "risk_name", "risk_level", "trigger_phase",
+            "metric_key", "metric_name", "value", "unit",
+            "ref_min", "ref_max", "trigger_description",
+            "suggestions", "manual_excerpt", "manual_page",
+        }
+        assert risk["trigger_description"], "风险文案必须非空"
+        assert risk["risk_level"] in ("high", "medium", "low")
+
+    def test_decode_opens_limited(self, api_client, synth_video, stub_extract):
+        """🔑 解码趟数回归：整条 pipeline 只允许 1 次共享 grab_frames 打开
+        （pose_extractor 自开 VideoCapture 不计入 frame_reader 统计）。"""
+        frame_reader.reset_stats()
+        with open(synth_video, "rb") as handle:
+            content = handle.read()
+        resp = api_client.post(
+            "/api/v1/tasks", files={"file": ("swing.mp4", content, "video/mp4")}
+        )
+        assert resp.status_code == 201, resp.text
+        task_id = resp.json()["data"]["task_id"]
+        status = _wait_terminal(api_client, task_id)
+        assert status["status"] == TaskStatus.SUCCESS.value, status
+        stats = frame_reader.stats()
+        assert stats["opens"] <= 2, f"解码趟数超标: {stats}"
 
     def test_global_metrics(self, finished):
         _task_id, _status, result = finished

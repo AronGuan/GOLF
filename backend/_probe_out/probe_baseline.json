@@ -1,0 +1,6133 @@
+[
+  {
+    "name": "正面1",
+    "path": "E:\\project\\golf\\.tools\\_probe\\samples\\正面1.mp4",
+    "view": "face-on",
+    "ok": true,
+    "stage_failed": null,
+    "error_code": null,
+    "error_detail": null,
+    "meta": {
+      "fps": 26.0,
+      "duration": 2.423,
+      "width": 720,
+      "height": 1280,
+      "frame_count": 63,
+      "sample_step": 1,
+      "low_fps": true
+    },
+    "extract": {
+      "sampled": 63,
+      "detected": 63,
+      "miss_ratio": 0.0,
+      "avg_core_vis": 0.9214
+    },
+    "signals": {
+      "n": 63,
+      "S": 0.08017,
+      "dt": 0.03846,
+      "fps_eff": 26.0,
+      "speed_max": 17.2941,
+      "speed_median": 3.335,
+      "wrist_travel": 0.17943,
+      "wrist_travel_in_S": 2.2382,
+      "guard_v_peak_min": 1.5,
+      "guard_min_travel_in_S": 0.6
+    },
+    "events": [
+      {
+        "index": 1,
+        "key": "address",
+        "name_cn": "准备",
+        "frame_index": 2,
+        "array_index": 2,
+        "timestamp": 0.077,
+        "estimated": false
+      },
+      {
+        "index": 2,
+        "key": "takeaway",
+        "name_cn": "起杆",
+        "frame_index": 16,
+        "array_index": 16,
+        "timestamp": 0.615,
+        "estimated": false
+      },
+      {
+        "index": 3,
+        "key": "backswing",
+        "name_cn": "上杆",
+        "frame_index": 22,
+        "array_index": 22,
+        "timestamp": 0.846,
+        "estimated": false
+      },
+      {
+        "index": 4,
+        "key": "top",
+        "name_cn": "顶点",
+        "frame_index": 28,
+        "array_index": 28,
+        "timestamp": 1.077,
+        "estimated": false
+      },
+      {
+        "index": 5,
+        "key": "downswing",
+        "name_cn": "下杆",
+        "frame_index": 32,
+        "array_index": 32,
+        "timestamp": 1.231,
+        "estimated": false
+      },
+      {
+        "index": 6,
+        "key": "impact",
+        "name_cn": "击球",
+        "frame_index": 36,
+        "array_index": 36,
+        "timestamp": 1.385,
+        "estimated": true
+      },
+      {
+        "index": 7,
+        "key": "follow_through",
+        "name_cn": "送杆",
+        "frame_index": 37,
+        "array_index": 37,
+        "timestamp": 1.423,
+        "estimated": false
+      },
+      {
+        "index": 8,
+        "key": "finish",
+        "name_cn": "收杆",
+        "frame_index": 62,
+        "array_index": 62,
+        "timestamp": 2.385,
+        "estimated": true
+      }
+    ],
+    "estimated_count": 2,
+    "segment_ok": true,
+    "scale": {
+      "S_world_m": 0.29602,
+      "S_px": 77.379,
+      "view_shoulder_over_height": 0.4652,
+      "view_ratio_dtl_threshold": 0.13
+    },
+    "phases": {
+      "address": {
+        "name_cn": "准备",
+        "metrics": [
+          {
+            "key": "spine_forward_tilt",
+            "name": "脊柱前倾角",
+            "value": 44.3,
+            "unit": "°",
+            "ref": [
+              30.0,
+              40.0
+            ],
+            "status": "high"
+          },
+          {
+            "key": "stance_width_ratio",
+            "name": "站姿宽度比",
+            "value": 1.3,
+            "unit": "",
+            "ref": [
+              1.0,
+              1.3
+            ],
+            "status": "normal"
+          },
+          {
+            "key": "shoulder_line_tilt",
+            "name": "肩线水平倾角",
+            "value": 6.2,
+            "unit": "°",
+            "ref": [
+              5.0,
+              12.0
+            ],
+            "status": "normal"
+          },
+          {
+            "key": "knee_flex",
+            "name": "膝部弯曲角",
+            "value": 164.5,
+            "unit": "°",
+            "ref": [
+              160.0,
+              172.0
+            ],
+            "status": "normal"
+          }
+        ]
+      },
+      "takeaway": {
+        "name_cn": "起杆",
+        "metrics": [
+          {
+            "key": "shoulder_turn",
+            "name": "肩部转动角",
+            "value": 34.6,
+            "unit": "°",
+            "ref": [
+              25.0,
+              35.0
+            ],
+            "status": "normal"
+          },
+          {
+            "key": "hip_turn",
+            "name": "髋部转动角",
+            "value": 5.7,
+            "unit": "°",
+            "ref": [
+              8.0,
+              18.0
+            ],
+            "status": "low"
+          },
+          {
+            "key": "head_drift_pct",
+            "name": "头部位移",
+            "value": 16.5,
+            "unit": "%",
+            "ref": [
+              0.0,
+              4.0
+            ],
+            "status": "high"
+          },
+          {
+            "key": "lead_arm_straight",
+            "name": "引导臂伸直度",
+            "value": 169.0,
+            "unit": "°",
+            "ref": [
+              165.0,
+              178.0
+            ],
+            "status": "normal"
+          }
+        ]
+      },
+      "backswing": {
+        "name_cn": "上杆",
+        "metrics": [
+          {
+            "key": "shoulder_turn",
+            "name": "肩部转动角",
+            "value": 56.5,
+            "unit": "°",
+            "ref": [
+              55.0,
+              72.0
+            ],
+            "status": "normal"
+          },
+          {
+            "key": "hip_turn",
+            "name": "髋部转动角",
+            "value": 8.6,
+            "unit": "°",
+            "ref": [
+              25.0,
+              38.0
+            ],
+            "status": "low"
+          },
+          {
+            "key": "trail_elbow_flex",
+            "name": "后臂弯曲角",
+            "value": 133.3,
+            "unit": "°",
+            "ref": [
+              95.0,
+              125.0
+            ],
+            "status": "high"
+          },
+          {
+            "key": "lead_arm_straight",
+            "name": "引导臂伸直度",
+            "value": 142.4,
+            "unit": "°",
+            "ref": [
+              155.0,
+              175.0
+            ],
+            "status": "low"
+          }
+        ]
+      },
+      "top": {
+        "name_cn": "顶点",
+        "metrics": [
+          {
+            "key": "shoulder_turn",
+            "name": "肩部转动角",
+            "value": 66.5,
+            "unit": "°",
+            "ref": [
+              70.0,
+              88.0
+            ],
+            "status": "low"
+          },
+          {
+            "key": "hip_turn",
+            "name": "髋部转动角",
+            "value": 16.7,
+            "unit": "°",
+            "ref": [
+              45.0,
+              60.0
+            ],
+            "status": "low"
+          },
+          {
+            "key": "x_factor",
+            "name": "X-Factor(肩髋分离)",
+            "value": 49.8,
+            "unit": "°",
+            "ref": [
+              20.0,
+              35.0
+            ],
+            "status": "high"
+          },
+          {
+            "key": "lead_arm_straight",
+            "name": "引导臂伸直度",
+            "value": 107.2,
+            "unit": "°",
+            "ref": [
+              150.0,
+              172.0
+            ],
+            "status": "low"
+          }
+        ]
+      },
+      "downswing": {
+        "name_cn": "下杆",
+        "metrics": [
+          {
+            "key": "hip_turn",
+            "name": "髋部转动角",
+            "value": 17.2,
+            "unit": "°",
+            "ref": [
+              10.0,
+              30.0
+            ],
+            "status": "normal"
+          },
+          {
+            "key": "shoulder_turn",
+            "name": "肩部转动角",
+            "value": 63.9,
+            "unit": "°",
+            "ref": [
+              45.0,
+              65.0
+            ],
+            "status": "normal"
+          },
+          {
+            "key": "x_factor_retention",
+            "name": "X-Factor 保持率",
+            "value": 93.8,
+            "unit": "%",
+            "ref": [
+              85.0,
+              130.0
+            ],
+            "status": "normal"
+          },
+          {
+            "key": "pelvis_shift_pct",
+            "name": "骨盆水平位移",
+            "value": 3.8,
+            "unit": "%",
+            "ref": [
+              4.0,
+              12.0
+            ],
+            "status": "low"
+          }
+        ]
+      },
+      "impact": {
+        "name_cn": "击球",
+        "metrics": [
+          {
+            "key": "hip_open",
+            "name": "髋部开放角",
+            "value": -5.5,
+            "unit": "°",
+            "ref": [
+              15.0,
+              30.0
+            ],
+            "status": "low"
+          },
+          {
+            "key": "shoulder_square",
+            "name": "肩部方正度",
+            "value": -9.6,
+            "unit": "°",
+            "ref": [
+              -5.0,
+              12.0
+            ],
+            "status": "low"
+          },
+          {
+            "key": "spine_tilt_delta",
+            "name": "起身量(脊柱倾角变化)",
+            "value": 11.2,
+            "unit": "°",
+            "ref": [
+              0.0,
+              8.0
+            ],
+            "status": "high"
+          },
+          {
+            "key": "pelvis_shift_pct",
+            "name": "骨盆水平位移",
+            "value": 14.1,
+            "unit": "%",
+            "ref": [
+              10.0,
+              20.0
+            ],
+            "status": "normal"
+          }
+        ]
+      },
+      "follow_through": {
+        "name_cn": "送杆",
+        "metrics": [
+          {
+            "key": "hip_open",
+            "name": "髋部开放角",
+            "value": 3.2,
+            "unit": "°",
+            "ref": [
+              40.0,
+              60.0
+            ],
+            "status": "low"
+          },
+          {
+            "key": "shoulder_open",
+            "name": "肩部转动角(开放)",
+            "value": 2.7,
+            "unit": "°",
+            "ref": [
+              35.0,
+              60.0
+            ],
+            "status": "low"
+          },
+          {
+            "key": "trail_arm_extend",
+            "name": "后臂伸展度",
+            "value": 159.6,
+            "unit": "°",
+            "ref": [
+              150.0,
+              172.0
+            ],
+            "status": "normal"
+          },
+          {
+            "key": "spine_lateral_tilt",
+            "name": "脊柱侧倾",
+            "value": 0.6,
+            "unit": "°",
+            "ref": [
+              10.0,
+              20.0
+            ],
+            "status": "low"
+          }
+        ]
+      },
+      "finish": {
+        "name_cn": "收杆",
+        "metrics": [
+          {
+            "key": "hip_to_target",
+            "name": "髋部朝向目标角",
+            "value": 86.6,
+            "unit": "°",
+            "ref": [
+              75.0,
+              95.0
+            ],
+            "status": "normal"
+          },
+          {
+            "key": "shoulder_open",
+            "name": "肩部转动角(总开放)",
+            "value": 126.2,
+            "unit": "°",
+            "ref": [
+              85.0,
+              110.0
+            ],
+            "status": "high"
+          },
+          {
+            "key": "pelvis_shift_pct",
+            "name": "骨盆水平位移",
+            "value": 47.7,
+            "unit": "%",
+            "ref": [
+              20.0,
+              35.0
+            ],
+            "status": "high"
+          },
+          {
+            "key": "balance_hold_sec",
+            "name": "收杆平衡保持时长",
+            "value": 0.0,
+            "unit": "s",
+            "ref": [
+              0.8,
+              3.0
+            ],
+            "status": "low"
+          }
+        ]
+      }
+    },
+    "global": {
+      "tempo_ratio": 3.2,
+      "swing_duration": 2.3,
+      "max_head_drift_pct": 99.8
+    },
+    "warnings": [],
+    "diag_raw_angles": {
+      "address": {
+        "shoulder_turn_signed": -0.0,
+        "hip_turn_signed": -0.0,
+        "x_factor_raw": 0.0,
+        "shoulder_rot_raw_no_sign": 0.0,
+        "hip_rot_raw_no_sign": 0.0,
+        "spine_forward_tilt": 44.3127,
+        "spine_lateral_tilt": -5.2322,
+        "shoulder_vec_world": [
+          0.2824,
+          -0.0306,
+          0.0833
+        ],
+        "hip_vec_world": [
+          0.2107,
+          0.0052,
+          0.0359
+        ]
+      },
+      "takeaway": {
+        "shoulder_turn_signed": 34.5549,
+        "hip_turn_signed": 5.7169,
+        "x_factor_raw": 28.8379,
+        "shoulder_rot_raw_no_sign": -34.5549,
+        "hip_rot_raw_no_sign": -5.7169,
+        "spine_forward_tilt": 31.2955,
+        "spine_lateral_tilt": -2.4333,
+        "shoulder_vec_world": [
+          0.2578,
+          0.0639,
+          -0.0843
+        ],
+        "hip_vec_world": [
+          0.2129,
+          0.0164,
+          0.0147
+        ]
+      },
+      "backswing": {
+        "shoulder_turn_signed": 56.5073,
+        "hip_turn_signed": 8.6015,
+        "x_factor_raw": 47.9058,
+        "shoulder_rot_raw_no_sign": -56.5073,
+        "hip_rot_raw_no_sign": -8.6015,
+        "spine_forward_tilt": 30.1667,
+        "spine_lateral_tilt": -1.561,
+        "shoulder_vec_world": [
+          0.2022,
+          0.0688,
+          -0.1701
+        ],
+        "hip_vec_world": [
+          0.2107,
+          0.0089,
+          0.0039
+        ]
+      },
+      "top": {
+        "shoulder_turn_signed": 66.4805,
+        "hip_turn_signed": 16.6754,
+        "x_factor_raw": 49.805,
+        "shoulder_rot_raw_no_sign": -66.4805,
+        "hip_rot_raw_no_sign": -16.6754,
+        "spine_forward_tilt": 5.8481,
+        "spine_lateral_tilt": 0.8062,
+        "shoulder_vec_world": [
+          0.1471,
+          0.0584,
+          -0.1756
+        ],
+        "hip_vec_world": [
+          0.2039,
+          0.013,
+          -0.0251
+        ]
+      },
+      "downswing": {
+        "shoulder_turn_signed": 63.8815,
+        "hip_turn_signed": 17.1786,
+        "x_factor_raw": 46.7029,
+        "shoulder_rot_raw_no_sign": -63.8815,
+        "hip_rot_raw_no_sign": -17.1786,
+        "spine_forward_tilt": 23.1091,
+        "spine_lateral_tilt": 1.1577,
+        "shoulder_vec_world": [
+          0.1643,
+          0.0179,
+          -0.179
+        ],
+        "hip_vec_world": [
+          0.203,
+          0.0101,
+          -0.0268
+        ]
+      },
+      "impact": {
+        "shoulder_turn_signed": 9.602,
+        "hip_turn_signed": 5.499,
+        "x_factor_raw": 4.103,
+        "shoulder_rot_raw_no_sign": -9.602,
+        "hip_rot_raw_no_sign": -5.499,
+        "spine_forward_tilt": 33.0988,
+        "spine_lateral_tilt": 0.1313,
+        "shoulder_vec_world": [
+          0.2746,
+          -0.0248,
+          0.0329
+        ],
+        "hip_vec_world": [
+          0.2138,
+          0.0108,
+          0.0156
+        ]
+      },
+      "follow_through": {
+        "shoulder_turn_signed": -2.7216,
+        "hip_turn_signed": -3.2269,
+        "x_factor_raw": 0.5053,
+        "shoulder_rot_raw_no_sign": 2.7216,
+        "hip_rot_raw_no_sign": 3.2269,
+        "spine_forward_tilt": 27.2687,
+        "spine_lateral_tilt": 0.6166,
+        "shoulder_vec_world": [
+          0.2726,
+          -0.0433,
+          0.0947
+        ],
+        "hip_vec_world": [
+          0.2082,
+          0.0112,
+          0.0477
+        ]
+      },
+      "finish": {
+        "shoulder_turn_signed": -126.1828,
+        "hip_turn_signed": -86.6449,
+        "x_factor_raw": -39.538,
+        "shoulder_rot_raw_no_sign": 126.1828,
+        "hip_rot_raw_no_sign": 86.6449,
+        "spine_forward_tilt": 4.8145,
+        "spine_lateral_tilt": -0.5302,
+        "shoulder_vec_world": [
+          -0.205,
+          -0.0103,
+          0.1566
+        ],
+        "hip_vec_world": [
+          -0.0159,
+          0.0156,
+          0.1441
+        ]
+      }
+    },
+    "rotation_sign": -1,
+    "target_dir_x": 1,
+    "elapsed_sec": 2.21
+  },
+  {
+    "name": "正面2",
+    "path": "E:\\project\\golf\\.tools\\_probe\\samples\\正面2.mp4",
+    "view": "face-on",
+    "ok": true,
+    "stage_failed": null,
+    "error_code": null,
+    "error_detail": null,
+    "meta": {
+      "fps": 30.0,
+      "duration": 12.967,
+      "width": 720,
+      "height": 1280,
+      "frame_count": 389,
+      "sample_step": 1,
+      "low_fps": false
+    },
+    "extract": {
+      "sampled": 389,
+      "detected": 389,
+      "miss_ratio": 0.0,
+      "avg_core_vis": 0.9187
+    },
+    "signals": {
+      "n": 389,
+      "S": 0.10026,
+      "dt": 0.03333,
+      "fps_eff": 30.0,
+      "speed_max": 13.8065,
+      "speed_median": 0.5762,
+      "wrist_travel": 0.19074,
+      "wrist_travel_in_S": 1.9024,
+      "guard_v_peak_min": 1.5,
+      "guard_min_travel_in_S": 0.6
+    },
+    "events": [
+      {
+        "index": 1,
+        "key": "address",
+        "name_cn": "准备",
+        "frame_index": 142,
+        "array_index": 142,
+        "timestamp": 4.733,
+        "estimated": false
+      },
+      {
+        "index": 2,
+        "key": "takeaway",
+        "name_cn": "起杆",
+        "frame_index": 186,
+        "array_index": 186,
+        "timestamp": 6.2,
+        "estimated": false
+      },
+      {
+        "index": 3,
+        "key": "backswing",
+        "name_cn": "上杆",
+        "frame_index": 224,
+        "array_index": 224,
+        "timestamp": 7.467,
+        "estimated": false
+      },
+      {
+        "index": 4,
+        "key": "top",
+        "name_cn": "顶点",
+        "frame_index": 251,
+        "array_index": 251,
+        "timestamp": 8.367,
+        "estimated": false
+      },
+      {
+        "index": 5,
+        "key": "downswing",
+        "name_cn": "下杆",
+        "frame_index": 269,
+        "array_index": 269,
+        "timestamp": 8.967,
+        "estimated": false
+      },
+      {
+        "index": 6,
+        "key": "impact",
+        "name_cn": "击球",
+        "frame_index": 287,
+        "array_index": 287,
+        "timestamp": 9.567,
+        "estimated": false
+      },
+      {
+        "index": 7,
+        "key": "follow_through",
+        "name_cn": "送杆",
+        "frame_index": 298,
+        "array_index": 298,
+        "timestamp": 9.933,
+        "estimated": false
+      },
+      {
+        "index": 8,
+        "key": "finish",
+        "name_cn": "收杆",
+        "frame_index": 373,
+        "array_index": 373,
+        "timestamp": 12.433,
+        "estimated": true
+      }
+    ],
+    "estimated_count": 1,
+    "segment_ok": true,
+    "scale": {
+      "S_world_m": 0.29022,
+      "S_px": 83.196,
+      "view_shoulder_over_height": 0.4838,
+      "view_ratio_dtl_threshold": 0.13
+    },
+    "phases": {
+      "address": {
+        "name_cn": "准备",
+        "metrics": [
+          {
+            "key": "spine_forward_tilt",
+            "name": "脊柱前倾角",
+            "value": 41.3,
+            "unit": "°",
+            "ref": [
+              30.0,
+              40.0
+            ],
+            "status": "high"
+          },
+          {
+            "key": "stance_width_ratio",
+            "name": "站姿宽度比",
+            "value": 1.2,
+            "unit": "",
+            "ref": [
+              1.0,
+              1.3
+            ],
+            "status": "normal"
+          },
+          {
+            "key": "shoulder_line_tilt",
+            "name": "肩线水平倾角",
+            "value": 3.1,
+            "unit": "°",
+            "ref": [
+              5.0,
+              12.0
+            ],
+            "status": "low"
+          },
+          {
+            "key": "knee_flex",
+            "name": "膝部弯曲角",
+            "value": 159.5,
+            "unit": "°",
+            "ref": [
+              160.0,
+              172.0
+            ],
+            "status": "low"
+          }
+        ]
+      },
+      "takeaway": {
+        "name_cn": "起杆",
+        "metrics": [
+          {
+            "key": "shoulder_turn",
+            "name": "肩部转动角",
+            "value": 28.8,
+            "unit": "°",
+            "ref": [
+              25.0,
+              35.0
+            ],
+            "status": "normal"
+          },
+          {
+            "key": "hip_turn",
+            "name": "髋部转动角",
+            "value": 10.3,
+            "unit": "°",
+            "ref": [
+              8.0,
+              18.0
+            ],
+            "status": "normal"
+          },
+          {
+            "key": "head_drift_pct",
+            "name": "头部位移",
+            "value": 16.5,
+            "unit": "%",
+            "ref": [
+              0.0,
+              4.0
+            ],
+            "status": "high"
+          },
+          {
+            "key": "lead_arm_straight",
+            "name": "引导臂伸直度",
+            "value": 162.4,
+            "unit": "°",
+            "ref": [
+              165.0,
+              178.0
+            ],
+            "status": "low"
+          }
+        ]
+      },
+      "backswing": {
+        "name_cn": "上杆",
+        "metrics": [
+          {
+            "key": "shoulder_turn",
+            "name": "肩部转动角",
+            "value": 51.7,
+            "unit": "°",
+            "ref": [
+              55.0,
+              72.0
+            ],
+            "status": "low"
+          },
+          {
+            "key": "hip_turn",
+            "name": "髋部转动角",
+            "value": 12.8,
+            "unit": "°",
+            "ref": [
+              25.0,
+              38.0
+            ],
+            "status": "low"
+          },
+          {
+            "key": "trail_elbow_flex",
+            "name": "后臂弯曲角",
+            "value": 135.7,
+            "unit": "°",
+            "ref": [
+              95.0,
+              125.0
+            ],
+            "status": "high"
+          },
+          {
+            "key": "lead_arm_straight",
+            "name": "引导臂伸直度",
+            "value": 141.1,
+            "unit": "°",
+            "ref": [
+              155.0,
+              175.0
+            ],
+            "status": "low"
+          }
+        ]
+      },
+      "top": {
+        "name_cn": "顶点",
+        "metrics": [
+          {
+            "key": "shoulder_turn",
+            "name": "肩部转动角",
+            "value": 43.5,
+            "unit": "°",
+            "ref": [
+              70.0,
+              88.0
+            ],
+            "status": "low"
+          },
+          {
+            "key": "hip_turn",
+            "name": "髋部转动角",
+            "value": 12.5,
+            "unit": "°",
+            "ref": [
+              45.0,
+              60.0
+            ],
+            "status": "low"
+          },
+          {
+            "key": "x_factor",
+            "name": "X-Factor(肩髋分离)",
+            "value": 31.1,
+            "unit": "°",
+            "ref": [
+              20.0,
+              35.0
+            ],
+            "status": "normal"
+          },
+          {
+            "key": "lead_arm_straight",
+            "name": "引导臂伸直度",
+            "value": 125.8,
+            "unit": "°",
+            "ref": [
+              150.0,
+              172.0
+            ],
+            "status": "low"
+          }
+        ]
+      },
+      "downswing": {
+        "name_cn": "下杆",
+        "metrics": [
+          {
+            "key": "hip_turn",
+            "name": "髋部转动角",
+            "value": 12.4,
+            "unit": "°",
+            "ref": [
+              10.0,
+              30.0
+            ],
+            "status": "normal"
+          },
+          {
+            "key": "shoulder_turn",
+            "name": "肩部转动角",
+            "value": 44.9,
+            "unit": "°",
+            "ref": [
+              45.0,
+              65.0
+            ],
+            "status": "low"
+          },
+          {
+            "key": "x_factor_retention",
+            "name": "X-Factor 保持率",
+            "value": 104.5,
+            "unit": "%",
+            "ref": [
+              85.0,
+              130.0
+            ],
+            "status": "normal"
+          },
+          {
+            "key": "pelvis_shift_pct",
+            "name": "骨盆水平位移",
+            "value": 19.2,
+            "unit": "%",
+            "ref": [
+              4.0,
+              12.0
+            ],
+            "status": "high"
+          }
+        ]
+      },
+      "impact": {
+        "name_cn": "击球",
+        "metrics": [
+          {
+            "key": "hip_open",
+            "name": "髋部开放角",
+            "value": -5.4,
+            "unit": "°",
+            "ref": [
+              15.0,
+              30.0
+            ],
+            "status": "low"
+          },
+          {
+            "key": "shoulder_square",
+            "name": "肩部方正度",
+            "value": -23.1,
+            "unit": "°",
+            "ref": [
+              -5.0,
+              12.0
+            ],
+            "status": "low"
+          },
+          {
+            "key": "spine_tilt_delta",
+            "name": "起身量(脊柱倾角变化)",
+            "value": 12.4,
+            "unit": "°",
+            "ref": [
+              0.0,
+              8.0
+            ],
+            "status": "high"
+          },
+          {
+            "key": "pelvis_shift_pct",
+            "name": "骨盆水平位移",
+            "value": 31.1,
+            "unit": "%",
+            "ref": [
+              10.0,
+              20.0
+            ],
+            "status": "high"
+          }
+        ]
+      },
+      "follow_through": {
+        "name_cn": "送杆",
+        "metrics": [
+          {
+            "key": "hip_open",
+            "name": "髋部开放角",
+            "value": 11.0,
+            "unit": "°",
+            "ref": [
+              40.0,
+              60.0
+            ],
+            "status": "low"
+          },
+          {
+            "key": "shoulder_open",
+            "name": "肩部转动角(开放)",
+            "value": 15.6,
+            "unit": "°",
+            "ref": [
+              35.0,
+              60.0
+            ],
+            "status": "low"
+          },
+          {
+            "key": "trail_arm_extend",
+            "name": "后臂伸展度",
+            "value": 142.3,
+            "unit": "°",
+            "ref": [
+              150.0,
+              172.0
+            ],
+            "status": "low"
+          },
+          {
+            "key": "spine_lateral_tilt",
+            "name": "脊柱侧倾",
+            "value": 5.5,
+            "unit": "°",
+            "ref": [
+              10.0,
+              20.0
+            ],
+            "status": "low"
+          }
+        ]
+      },
+      "finish": {
+        "name_cn": "收杆",
+        "metrics": [
+          {
+            "key": "hip_to_target",
+            "name": "髋部朝向目标角",
+            "value": 64.8,
+            "unit": "°",
+            "ref": [
+              75.0,
+              95.0
+            ],
+            "status": "low"
+          },
+          {
+            "key": "shoulder_open",
+            "name": "肩部转动角(总开放)",
+            "value": 94.3,
+            "unit": "°",
+            "ref": [
+              85.0,
+              110.0
+            ],
+            "status": "normal"
+          },
+          {
+            "key": "pelvis_shift_pct",
+            "name": "骨盆水平位移",
+            "value": 48.2,
+            "unit": "%",
+            "ref": [
+              20.0,
+              35.0
+            ],
+            "status": "high"
+          },
+          {
+            "key": "balance_hold_sec",
+            "name": "收杆平衡保持时长",
+            "value": 0.1,
+            "unit": "s",
+            "ref": [
+              0.8,
+              3.0
+            ],
+            "status": "low"
+          }
+        ]
+      }
+    },
+    "global": {
+      "tempo_ratio": 3.0,
+      "swing_duration": 7.7,
+      "max_head_drift_pct": 102.3
+    },
+    "warnings": [],
+    "diag_raw_angles": {
+      "address": {
+        "shoulder_turn_signed": -0.0,
+        "hip_turn_signed": -0.0,
+        "x_factor_raw": 0.0,
+        "shoulder_rot_raw_no_sign": 0.0,
+        "hip_rot_raw_no_sign": 0.0,
+        "spine_forward_tilt": 41.3028,
+        "spine_lateral_tilt": -4.6012,
+        "shoulder_vec_world": [
+          0.2827,
+          -0.0151,
+          0.0639
+        ],
+        "hip_vec_world": [
+          0.2115,
+          0.0106,
+          0.0466
+        ]
+      },
+      "takeaway": {
+        "shoulder_turn_signed": 28.8262,
+        "hip_turn_signed": 10.2613,
+        "x_factor_raw": 18.5649,
+        "shoulder_rot_raw_no_sign": -28.8262,
+        "hip_rot_raw_no_sign": -10.2613,
+        "spine_forward_tilt": 26.4586,
+        "spine_lateral_tilt": 0.6572,
+        "shoulder_vec_world": [
+          0.274,
+          0.0258,
+          -0.079
+        ],
+        "hip_vec_world": [
+          0.2165,
+          0.0111,
+          0.0081
+        ]
+      },
+      "backswing": {
+        "shoulder_turn_signed": 51.6824,
+        "hip_turn_signed": 12.7793,
+        "x_factor_raw": 38.9031,
+        "shoulder_rot_raw_no_sign": -51.6824,
+        "hip_rot_raw_no_sign": -12.7793,
+        "spine_forward_tilt": 32.7846,
+        "spine_lateral_tilt": 2.6252,
+        "shoulder_vec_world": [
+          0.2017,
+          0.0472,
+          -0.163
+        ],
+        "hip_vec_world": [
+          0.2036,
+          0.0046,
+          -0.0013
+        ]
+      },
+      "top": {
+        "shoulder_turn_signed": 43.5459,
+        "hip_turn_signed": 12.4633,
+        "x_factor_raw": 31.0826,
+        "shoulder_rot_raw_no_sign": -43.5459,
+        "hip_rot_raw_no_sign": -12.4633,
+        "spine_forward_tilt": 20.2135,
+        "spine_lateral_tilt": 4.5376,
+        "shoulder_vec_world": [
+          0.2214,
+          0.059,
+          -0.132
+        ],
+        "hip_vec_world": [
+          0.2118,
+          0.0049,
+          -0.0002
+        ]
+      },
+      "downswing": {
+        "shoulder_turn_signed": 44.9187,
+        "hip_turn_signed": 12.4294,
+        "x_factor_raw": 32.4894,
+        "shoulder_rot_raw_no_sign": -44.9187,
+        "hip_rot_raw_no_sign": -12.4294,
+        "spine_forward_tilt": 37.5267,
+        "spine_lateral_tilt": 9.733,
+        "shoulder_vec_world": [
+          0.2239,
+          0.036,
+          -0.1409
+        ],
+        "hip_vec_world": [
+          0.2129,
+          -0.0005,
+          -0.0001
+        ]
+      },
+      "impact": {
+        "shoulder_turn_signed": 23.0837,
+        "hip_turn_signed": 5.3773,
+        "x_factor_raw": 17.7063,
+        "shoulder_rot_raw_no_sign": -23.0837,
+        "hip_rot_raw_no_sign": -5.3773,
+        "spine_forward_tilt": 28.9252,
+        "spine_lateral_tilt": 9.081,
+        "shoulder_vec_world": [
+          0.2795,
+          -0.0256,
+          -0.051
+        ],
+        "hip_vec_world": [
+          0.2141,
+          0.0007,
+          0.0264
+        ]
+      },
+      "follow_through": {
+        "shoulder_turn_signed": -15.559,
+        "hip_turn_signed": -11.0255,
+        "x_factor_raw": -4.5335,
+        "shoulder_rot_raw_no_sign": 15.559,
+        "hip_rot_raw_no_sign": 11.0255,
+        "spine_forward_tilt": 30.2866,
+        "spine_lateral_tilt": 5.4868,
+        "shoulder_vec_world": [
+          0.2754,
+          -0.1216,
+          0.1483
+        ],
+        "hip_vec_world": [
+          0.2066,
+          -0.0047,
+          0.0896
+        ]
+      },
+      "finish": {
+        "shoulder_turn_signed": -94.3162,
+        "hip_turn_signed": -64.8102,
+        "x_factor_raw": -29.506,
+        "shoulder_rot_raw_no_sign": 94.3162,
+        "hip_rot_raw_no_sign": 64.8102,
+        "spine_forward_tilt": 0.5007,
+        "spine_lateral_tilt": 3.8882,
+        "shoulder_vec_world": [
+          -0.0958,
+          0.0171,
+          0.3121
+        ],
+        "hip_vec_world": [
+          0.0455,
+          0.0355,
+          0.2009
+        ]
+      }
+    },
+    "rotation_sign": -1,
+    "target_dir_x": 1,
+    "elapsed_sec": 7.91
+  },
+  {
+    "name": "正面3",
+    "path": "E:\\project\\golf\\.tools\\_probe\\samples\\正面3.mp4",
+    "view": "face-on",
+    "ok": true,
+    "stage_failed": null,
+    "error_code": null,
+    "error_detail": null,
+    "meta": {
+      "fps": 27.0,
+      "duration": 4.148,
+      "width": 720,
+      "height": 1280,
+      "frame_count": 112,
+      "sample_step": 1,
+      "low_fps": true
+    },
+    "extract": {
+      "sampled": 112,
+      "detected": 112,
+      "miss_ratio": 0.0,
+      "avg_core_vis": 0.9066
+    },
+    "signals": {
+      "n": 112,
+      "S": 0.10552,
+      "dt": 0.03704,
+      "fps_eff": 27.0,
+      "speed_max": 14.5041,
+      "speed_median": 0.615,
+      "wrist_travel": 0.20254,
+      "wrist_travel_in_S": 1.9195,
+      "guard_v_peak_min": 1.5,
+      "guard_min_travel_in_S": 0.6
+    },
+    "events": [
+      {
+        "index": 1,
+        "key": "address",
+        "name_cn": "准备",
+        "frame_index": 35,
+        "array_index": 35,
+        "timestamp": 1.296,
+        "estimated": false
+      },
+      {
+        "index": 2,
+        "key": "takeaway",
+        "name_cn": "起杆",
+        "frame_index": 49,
+        "array_index": 49,
+        "timestamp": 1.815,
+        "estimated": false
+      },
+      {
+        "index": 3,
+        "key": "backswing",
+        "name_cn": "上杆",
+        "frame_index": 57,
+        "array_index": 57,
+        "timestamp": 2.111,
+        "estimated": false
+      },
+      {
+        "index": 4,
+        "key": "top",
+        "name_cn": "顶点",
+        "frame_index": 62,
+        "array_index": 62,
+        "timestamp": 2.296,
+        "estimated": false
+      },
+      {
+        "index": 5,
+        "key": "downswing",
+        "name_cn": "下杆",
+        "frame_index": 65,
+        "array_index": 65,
+        "timestamp": 2.407,
+        "estimated": false
+      },
+      {
+        "index": 6,
+        "key": "impact",
+        "name_cn": "击球",
+        "frame_index": 70,
+        "array_index": 70,
+        "timestamp": 2.593,
+        "estimated": true
+      },
+      {
+        "index": 7,
+        "key": "follow_through",
+        "name_cn": "送杆",
+        "frame_index": 81,
+        "array_index": 81,
+        "timestamp": 3.0,
+        "estimated": true
+      },
+      {
+        "index": 8,
+        "key": "finish",
+        "name_cn": "收杆",
+        "frame_index": 102,
+        "array_index": 102,
+        "timestamp": 3.778,
+        "estimated": false
+      }
+    ],
+    "estimated_count": 2,
+    "segment_ok": true,
+    "scale": {
+      "S_world_m": 0.29187,
+      "S_px": 90.463,
+      "view_shoulder_over_height": 0.4411,
+      "view_ratio_dtl_threshold": 0.13
+    },
+    "phases": {
+      "address": {
+        "name_cn": "准备",
+        "metrics": [
+          {
+            "key": "spine_forward_tilt",
+            "name": "脊柱前倾角",
+            "value": 32.8,
+            "unit": "°",
+            "ref": [
+              30.0,
+              40.0
+            ],
+            "status": "normal"
+          },
+          {
+            "key": "stance_width_ratio",
+            "name": "站姿宽度比",
+            "value": 1.1,
+            "unit": "",
+            "ref": [
+              1.0,
+              1.3
+            ],
+            "status": "normal"
+          },
+          {
+            "key": "shoulder_line_tilt",
+            "name": "肩线水平倾角",
+            "value": 4.2,
+            "unit": "°",
+            "ref": [
+              5.0,
+              12.0
+            ],
+            "status": "low"
+          },
+          {
+            "key": "knee_flex",
+            "name": "膝部弯曲角",
+            "value": 166.3,
+            "unit": "°",
+            "ref": [
+              160.0,
+              172.0
+            ],
+            "status": "normal"
+          }
+        ]
+      },
+      "takeaway": {
+        "name_cn": "起杆",
+        "metrics": [
+          {
+            "key": "shoulder_turn",
+            "name": "肩部转动角",
+            "value": 21.6,
+            "unit": "°",
+            "ref": [
+              25.0,
+              35.0
+            ],
+            "status": "low"
+          },
+          {
+            "key": "hip_turn",
+            "name": "髋部转动角",
+            "value": 3.7,
+            "unit": "°",
+            "ref": [
+              8.0,
+              18.0
+            ],
+            "status": "low"
+          },
+          {
+            "key": "head_drift_pct",
+            "name": "头部位移",
+            "value": 6.0,
+            "unit": "%",
+            "ref": [
+              0.0,
+              4.0
+            ],
+            "status": "high"
+          },
+          {
+            "key": "lead_arm_straight",
+            "name": "引导臂伸直度",
+            "value": 164.3,
+            "unit": "°",
+            "ref": [
+              165.0,
+              178.0
+            ],
+            "status": "low"
+          }
+        ]
+      },
+      "backswing": {
+        "name_cn": "上杆",
+        "metrics": [
+          {
+            "key": "shoulder_turn",
+            "name": "肩部转动角",
+            "value": 40.7,
+            "unit": "°",
+            "ref": [
+              55.0,
+              72.0
+            ],
+            "status": "low"
+          },
+          {
+            "key": "hip_turn",
+            "name": "髋部转动角",
+            "value": 6.7,
+            "unit": "°",
+            "ref": [
+              25.0,
+              38.0
+            ],
+            "status": "low"
+          },
+          {
+            "key": "trail_elbow_flex",
+            "name": "后臂弯曲角",
+            "value": 131.7,
+            "unit": "°",
+            "ref": [
+              95.0,
+              125.0
+            ],
+            "status": "high"
+          },
+          {
+            "key": "lead_arm_straight",
+            "name": "引导臂伸直度",
+            "value": 137.9,
+            "unit": "°",
+            "ref": [
+              155.0,
+              175.0
+            ],
+            "status": "low"
+          }
+        ]
+      },
+      "top": {
+        "name_cn": "顶点",
+        "metrics": [
+          {
+            "key": "shoulder_turn",
+            "name": "肩部转动角",
+            "value": 24.0,
+            "unit": "°",
+            "ref": [
+              70.0,
+              88.0
+            ],
+            "status": "low"
+          },
+          {
+            "key": "hip_turn",
+            "name": "髋部转动角",
+            "value": 6.2,
+            "unit": "°",
+            "ref": [
+              45.0,
+              60.0
+            ],
+            "status": "low"
+          },
+          {
+            "key": "x_factor",
+            "name": "X-Factor(肩髋分离)",
+            "value": 17.8,
+            "unit": "°",
+            "ref": [
+              20.0,
+              35.0
+            ],
+            "status": "low"
+          },
+          {
+            "key": "lead_arm_straight",
+            "name": "引导臂伸直度",
+            "value": 133.1,
+            "unit": "°",
+            "ref": [
+              150.0,
+              172.0
+            ],
+            "status": "low"
+          }
+        ]
+      },
+      "downswing": {
+        "name_cn": "下杆",
+        "metrics": [
+          {
+            "key": "hip_turn",
+            "name": "髋部转动角",
+            "value": 6.9,
+            "unit": "°",
+            "ref": [
+              10.0,
+              30.0
+            ],
+            "status": "low"
+          },
+          {
+            "key": "shoulder_turn",
+            "name": "肩部转动角",
+            "value": 29.9,
+            "unit": "°",
+            "ref": [
+              45.0,
+              65.0
+            ],
+            "status": "low"
+          },
+          {
+            "key": "x_factor_retention",
+            "name": "X-Factor 保持率",
+            "value": 129.3,
+            "unit": "%",
+            "ref": [
+              85.0,
+              130.0
+            ],
+            "status": "normal"
+          },
+          {
+            "key": "pelvis_shift_pct",
+            "name": "骨盆水平位移",
+            "value": -2.8,
+            "unit": "%",
+            "ref": [
+              4.0,
+              12.0
+            ],
+            "status": "low"
+          }
+        ]
+      },
+      "impact": {
+        "name_cn": "击球",
+        "metrics": [
+          {
+            "key": "hip_open",
+            "name": "髋部开放角",
+            "value": 0.2,
+            "unit": "°",
+            "ref": [
+              15.0,
+              30.0
+            ],
+            "status": "low"
+          },
+          {
+            "key": "shoulder_square",
+            "name": "肩部方正度",
+            "value": -7.4,
+            "unit": "°",
+            "ref": [
+              -5.0,
+              12.0
+            ],
+            "status": "low"
+          },
+          {
+            "key": "spine_tilt_delta",
+            "name": "起身量(脊柱倾角变化)",
+            "value": 0.0,
+            "unit": "°",
+            "ref": [
+              0.0,
+              8.0
+            ],
+            "status": "normal"
+          },
+          {
+            "key": "pelvis_shift_pct",
+            "name": "骨盆水平位移",
+            "value": 11.7,
+            "unit": "%",
+            "ref": [
+              10.0,
+              20.0
+            ],
+            "status": "normal"
+          }
+        ]
+      },
+      "follow_through": {
+        "name_cn": "送杆",
+        "metrics": [
+          {
+            "key": "hip_open",
+            "name": "髋部开放角",
+            "value": 75.0,
+            "unit": "°",
+            "ref": [
+              40.0,
+              60.0
+            ],
+            "status": "high"
+          },
+          {
+            "key": "shoulder_open",
+            "name": "肩部转动角(开放)",
+            "value": 123.8,
+            "unit": "°",
+            "ref": [
+              35.0,
+              60.0
+            ],
+            "status": "high"
+          },
+          {
+            "key": "trail_arm_extend",
+            "name": "后臂伸展度",
+            "value": 133.2,
+            "unit": "°",
+            "ref": [
+              150.0,
+              172.0
+            ],
+            "status": "low"
+          },
+          {
+            "key": "spine_lateral_tilt",
+            "name": "脊柱侧倾",
+            "value": 2.5,
+            "unit": "°",
+            "ref": [
+              10.0,
+              20.0
+            ],
+            "status": "low"
+          }
+        ]
+      },
+      "finish": {
+        "name_cn": "收杆",
+        "metrics": [
+          {
+            "key": "hip_to_target",
+            "name": "髋部朝向目标角",
+            "value": 81.8,
+            "unit": "°",
+            "ref": [
+              75.0,
+              95.0
+            ],
+            "status": "normal"
+          },
+          {
+            "key": "shoulder_open",
+            "name": "肩部转动角(总开放)",
+            "value": 122.7,
+            "unit": "°",
+            "ref": [
+              85.0,
+              110.0
+            ],
+            "status": "high"
+          },
+          {
+            "key": "pelvis_shift_pct",
+            "name": "骨盆水平位移",
+            "value": 60.5,
+            "unit": "%",
+            "ref": [
+              20.0,
+              35.0
+            ],
+            "status": "high"
+          },
+          {
+            "key": "balance_hold_sec",
+            "name": "收杆平衡保持时长",
+            "value": 0.1,
+            "unit": "s",
+            "ref": [
+              0.8,
+              3.0
+            ],
+            "status": "low"
+          }
+        ]
+      }
+    },
+    "global": {
+      "tempo_ratio": 3.4,
+      "swing_duration": 2.5,
+      "max_head_drift_pct": 103.4
+    },
+    "warnings": [],
+    "diag_raw_angles": {
+      "address": {
+        "shoulder_turn_signed": -0.0,
+        "hip_turn_signed": -0.0,
+        "x_factor_raw": 0.0,
+        "shoulder_rot_raw_no_sign": 0.0,
+        "hip_rot_raw_no_sign": 0.0,
+        "spine_forward_tilt": 32.7554,
+        "spine_lateral_tilt": -4.0937,
+        "shoulder_vec_world": [
+          0.2908,
+          -0.0216,
+          0.0127
+        ],
+        "hip_vec_world": [
+          0.217,
+          0.0073,
+          0.0155
+        ]
+      },
+      "takeaway": {
+        "shoulder_turn_signed": 21.6098,
+        "hip_turn_signed": 3.7311,
+        "x_factor_raw": 17.8787,
+        "shoulder_rot_raw_no_sign": -21.6098,
+        "hip_rot_raw_no_sign": -3.7311,
+        "spine_forward_tilt": 27.1727,
+        "spine_lateral_tilt": 0.0758,
+        "shoulder_vec_world": [
+          0.2648,
+          0.004,
+          -0.0918
+        ],
+        "hip_vec_world": [
+          0.2177,
+          0.0069,
+          0.0014
+        ]
+      },
+      "backswing": {
+        "shoulder_turn_signed": 40.7008,
+        "hip_turn_signed": 6.6797,
+        "x_factor_raw": 34.0211,
+        "shoulder_rot_raw_no_sign": -40.7008,
+        "hip_rot_raw_no_sign": -6.6797,
+        "spine_forward_tilt": 21.5055,
+        "spine_lateral_tilt": 0.7548,
+        "shoulder_vec_world": [
+          0.216,
+          0.017,
+          -0.17
+        ],
+        "hip_vec_world": [
+          0.2104,
+          0.0015,
+          -0.0095
+        ]
+      },
+      "top": {
+        "shoulder_turn_signed": 24.016,
+        "hip_turn_signed": 6.242,
+        "x_factor_raw": 17.774,
+        "shoulder_rot_raw_no_sign": -24.016,
+        "hip_rot_raw_no_sign": -6.242,
+        "spine_forward_tilt": 6.486,
+        "spine_lateral_tilt": 1.5159,
+        "shoulder_vec_world": [
+          0.2269,
+          0.039,
+          -0.0895
+        ],
+        "hip_vec_world": [
+          0.2092,
+          0.0029,
+          -0.0079
+        ]
+      },
+      "downswing": {
+        "shoulder_turn_signed": 29.9195,
+        "hip_turn_signed": 6.9352,
+        "x_factor_raw": 22.9842,
+        "shoulder_rot_raw_no_sign": -29.9195,
+        "hip_rot_raw_no_sign": -6.9352,
+        "spine_forward_tilt": 4.6828,
+        "spine_lateral_tilt": 1.7811,
+        "shoulder_vec_world": [
+          0.2156,
+          0.0103,
+          -0.1119
+        ],
+        "hip_vec_world": [
+          0.2073,
+          0.0034,
+          -0.0103
+        ]
+      },
+      "impact": {
+        "shoulder_turn_signed": 7.4494,
+        "hip_turn_signed": -0.2069,
+        "x_factor_raw": 7.6563,
+        "shoulder_rot_raw_no_sign": -7.4494,
+        "hip_rot_raw_no_sign": 0.2069,
+        "spine_forward_tilt": 33.4927,
+        "spine_lateral_tilt": 3.1706,
+        "shoulder_vec_world": [
+          0.2895,
+          -0.0596,
+          -0.0251
+        ],
+        "hip_vec_world": [
+          0.2119,
+          0.0024,
+          0.0159
+        ]
+      },
+      "follow_through": {
+        "shoulder_turn_signed": -123.7874,
+        "hip_turn_signed": -74.9658,
+        "x_factor_raw": -48.8217,
+        "shoulder_rot_raw_no_sign": 123.7874,
+        "hip_rot_raw_no_sign": 74.9658,
+        "spine_forward_tilt": 1.9251,
+        "spine_lateral_tilt": 2.5473,
+        "shoulder_vec_world": [
+          -0.132,
+          -0.0083,
+          0.1798
+        ],
+        "hip_vec_world": [
+          0.0287,
+          0.0146,
+          0.1483
+        ]
+      },
+      "finish": {
+        "shoulder_turn_signed": -122.6766,
+        "hip_turn_signed": -81.7537,
+        "x_factor_raw": -40.9229,
+        "shoulder_rot_raw_no_sign": 122.6766,
+        "hip_rot_raw_no_sign": 81.7537,
+        "spine_forward_tilt": 0.6715,
+        "spine_lateral_tilt": 6.1361,
+        "shoulder_vec_world": [
+          -0.1654,
+          0.0316,
+          0.2347
+        ],
+        "hip_vec_world": [
+          0.012,
+          0.032,
+          0.1652
+        ]
+      }
+    },
+    "rotation_sign": -1,
+    "target_dir_x": 1,
+    "elapsed_sec": 2.54
+  },
+  {
+    "name": "DTL-087d40a0",
+    "path": "E:\\project\\golf\\.tools\\_probe\\samples\\087d40a0e808f2c319b8097d89599780.mp4",
+    "view": "dtl",
+    "ok": true,
+    "stage_failed": null,
+    "error_code": null,
+    "error_detail": null,
+    "meta": {
+      "fps": 30.0,
+      "duration": 2.733,
+      "width": 720,
+      "height": 1280,
+      "frame_count": 82,
+      "sample_step": 1,
+      "low_fps": false
+    },
+    "extract": {
+      "sampled": 82,
+      "detected": 82,
+      "miss_ratio": 0.0,
+      "avg_core_vis": 0.8574
+    },
+    "signals": {
+      "n": 82,
+      "S": 0.06676,
+      "dt": 0.03333,
+      "fps_eff": 30.0,
+      "speed_max": 12.8948,
+      "speed_median": 2.6511,
+      "wrist_travel": 0.14749,
+      "wrist_travel_in_S": 2.2091,
+      "guard_v_peak_min": 1.5,
+      "guard_min_travel_in_S": 0.6
+    },
+    "events": [
+      {
+        "index": 1,
+        "key": "address",
+        "name_cn": "准备",
+        "frame_index": 0,
+        "array_index": 0,
+        "timestamp": 0.0,
+        "estimated": true
+      },
+      {
+        "index": 2,
+        "key": "takeaway",
+        "name_cn": "起杆",
+        "frame_index": 1,
+        "array_index": 1,
+        "timestamp": 0.033,
+        "estimated": true
+      },
+      {
+        "index": 3,
+        "key": "backswing",
+        "name_cn": "上杆",
+        "frame_index": 2,
+        "array_index": 2,
+        "timestamp": 0.067,
+        "estimated": true
+      },
+      {
+        "index": 4,
+        "key": "top",
+        "name_cn": "顶点",
+        "frame_index": 4,
+        "array_index": 4,
+        "timestamp": 0.133,
+        "estimated": false
+      },
+      {
+        "index": 5,
+        "key": "downswing",
+        "name_cn": "下杆",
+        "frame_index": 6,
+        "array_index": 6,
+        "timestamp": 0.2,
+        "estimated": true
+      },
+      {
+        "index": 6,
+        "key": "impact",
+        "name_cn": "击球",
+        "frame_index": 7,
+        "array_index": 7,
+        "timestamp": 0.233,
+        "estimated": false
+      },
+      {
+        "index": 7,
+        "key": "follow_through",
+        "name_cn": "送杆",
+        "frame_index": 33,
+        "array_index": 33,
+        "timestamp": 1.1,
+        "estimated": true
+      },
+      {
+        "index": 8,
+        "key": "finish",
+        "name_cn": "收杆",
+        "frame_index": 81,
+        "array_index": 81,
+        "timestamp": 2.7,
+        "estimated": true
+      }
+    ],
+    "estimated_count": 6,
+    "segment_ok": true,
+    "scale": {
+      "S_world_m": 0.27773,
+      "S_px": 62.979,
+      "view_shoulder_over_height": 0.4202,
+      "view_ratio_dtl_threshold": 0.13
+    },
+    "phases": {
+      "address": {
+        "name_cn": "准备",
+        "metrics": [
+          {
+            "key": "spine_forward_tilt",
+            "name": "脊柱前倾角",
+            "value": 1.7,
+            "unit": "°",
+            "ref": [
+              30.0,
+              40.0
+            ],
+            "status": "low"
+          },
+          {
+            "key": "stance_width_ratio",
+            "name": "站姿宽度比",
+            "value": 0.4,
+            "unit": "",
+            "ref": [
+              1.0,
+              1.3
+            ],
+            "status": "low"
+          },
+          {
+            "key": "shoulder_line_tilt",
+            "name": "肩线水平倾角",
+            "value": -16.9,
+            "unit": "°",
+            "ref": [
+              5.0,
+              12.0
+            ],
+            "status": "low"
+          },
+          {
+            "key": "knee_flex",
+            "name": "膝部弯曲角",
+            "value": 163.1,
+            "unit": "°",
+            "ref": [
+              160.0,
+              172.0
+            ],
+            "status": "normal"
+          }
+        ]
+      },
+      "takeaway": {
+        "name_cn": "起杆",
+        "metrics": [
+          {
+            "key": "shoulder_turn",
+            "name": "肩部转动角",
+            "value": 1.3,
+            "unit": "°",
+            "ref": [
+              25.0,
+              35.0
+            ],
+            "status": "low"
+          },
+          {
+            "key": "hip_turn",
+            "name": "髋部转动角",
+            "value": 0.2,
+            "unit": "°",
+            "ref": [
+              8.0,
+              18.0
+            ],
+            "status": "low"
+          },
+          {
+            "key": "head_drift_pct",
+            "name": "头部位移",
+            "value": 2.0,
+            "unit": "%",
+            "ref": [
+              0.0,
+              4.0
+            ],
+            "status": "normal"
+          },
+          {
+            "key": "lead_arm_straight",
+            "name": "引导臂伸直度",
+            "value": 152.9,
+            "unit": "°",
+            "ref": [
+              165.0,
+              178.0
+            ],
+            "status": "low"
+          }
+        ]
+      },
+      "backswing": {
+        "name_cn": "上杆",
+        "metrics": [
+          {
+            "key": "shoulder_turn",
+            "name": "肩部转动角",
+            "value": 3.3,
+            "unit": "°",
+            "ref": [
+              55.0,
+              72.0
+            ],
+            "status": "low"
+          },
+          {
+            "key": "hip_turn",
+            "name": "髋部转动角",
+            "value": 0.5,
+            "unit": "°",
+            "ref": [
+              25.0,
+              38.0
+            ],
+            "status": "low"
+          },
+          {
+            "key": "trail_elbow_flex",
+            "name": "后臂弯曲角",
+            "value": 101.0,
+            "unit": "°",
+            "ref": [
+              95.0,
+              125.0
+            ],
+            "status": "normal"
+          },
+          {
+            "key": "lead_arm_straight",
+            "name": "引导臂伸直度",
+            "value": 153.0,
+            "unit": "°",
+            "ref": [
+              155.0,
+              175.0
+            ],
+            "status": "low"
+          }
+        ]
+      },
+      "top": {
+        "name_cn": "顶点",
+        "metrics": [
+          {
+            "key": "shoulder_turn",
+            "name": "肩部转动角",
+            "value": 5.1,
+            "unit": "°",
+            "ref": [
+              70.0,
+              88.0
+            ],
+            "status": "low"
+          },
+          {
+            "key": "hip_turn",
+            "name": "髋部转动角",
+            "value": 1.1,
+            "unit": "°",
+            "ref": [
+              45.0,
+              60.0
+            ],
+            "status": "low"
+          },
+          {
+            "key": "x_factor",
+            "name": "X-Factor(肩髋分离)",
+            "value": 4.0,
+            "unit": "°",
+            "ref": [
+              20.0,
+              35.0
+            ],
+            "status": "low"
+          },
+          {
+            "key": "lead_arm_straight",
+            "name": "引导臂伸直度",
+            "value": 153.6,
+            "unit": "°",
+            "ref": [
+              150.0,
+              172.0
+            ],
+            "status": "normal"
+          }
+        ]
+      },
+      "downswing": {
+        "name_cn": "下杆",
+        "metrics": [
+          {
+            "key": "hip_turn",
+            "name": "髋部转动角",
+            "value": -1.0,
+            "unit": "°",
+            "ref": [
+              10.0,
+              30.0
+            ],
+            "status": "low"
+          },
+          {
+            "key": "shoulder_turn",
+            "name": "肩部转动角",
+            "value": -3.6,
+            "unit": "°",
+            "ref": [
+              45.0,
+              65.0
+            ],
+            "status": "low"
+          },
+          {
+            "key": "x_factor_retention",
+            "name": "X-Factor 保持率",
+            "value": -65.7,
+            "unit": "%",
+            "ref": [
+              85.0,
+              130.0
+            ],
+            "status": "low"
+          },
+          {
+            "key": "pelvis_shift_pct",
+            "name": "骨盆水平位移",
+            "value": -0.4,
+            "unit": "%",
+            "ref": [
+              4.0,
+              12.0
+            ],
+            "status": "low"
+          }
+        ]
+      },
+      "impact": {
+        "name_cn": "击球",
+        "metrics": [
+          {
+            "key": "hip_open",
+            "name": "髋部开放角",
+            "value": 3.6,
+            "unit": "°",
+            "ref": [
+              15.0,
+              30.0
+            ],
+            "status": "low"
+          },
+          {
+            "key": "shoulder_square",
+            "name": "肩部方正度",
+            "value": 17.0,
+            "unit": "°",
+            "ref": [
+              -5.0,
+              12.0
+            ],
+            "status": "high"
+          },
+          {
+            "key": "spine_tilt_delta",
+            "name": "起身量(脊柱倾角变化)",
+            "value": 0.0,
+            "unit": "°",
+            "ref": [
+              0.0,
+              8.0
+            ],
+            "status": "normal"
+          },
+          {
+            "key": "pelvis_shift_pct",
+            "name": "骨盆水平位移",
+            "value": -0.5,
+            "unit": "%",
+            "ref": [
+              10.0,
+              20.0
+            ],
+            "status": "low"
+          }
+        ]
+      },
+      "follow_through": {
+        "name_cn": "送杆",
+        "metrics": [
+          {
+            "key": "hip_open",
+            "name": "髋部开放角",
+            "value": 152.7,
+            "unit": "°",
+            "ref": [
+              40.0,
+              60.0
+            ],
+            "status": "high"
+          },
+          {
+            "key": "shoulder_open",
+            "name": "肩部转动角(开放)",
+            "value": -153.7,
+            "unit": "°",
+            "ref": [
+              35.0,
+              60.0
+            ],
+            "status": "low"
+          },
+          {
+            "key": "trail_arm_extend",
+            "name": "后臂伸展度",
+            "value": 137.2,
+            "unit": "°",
+            "ref": [
+              150.0,
+              172.0
+            ],
+            "status": "low"
+          },
+          {
+            "key": "spine_lateral_tilt",
+            "name": "脊柱侧倾",
+            "value": 0.2,
+            "unit": "°",
+            "ref": [
+              10.0,
+              20.0
+            ],
+            "status": "low"
+          }
+        ]
+      },
+      "finish": {
+        "name_cn": "收杆",
+        "metrics": [
+          {
+            "key": "hip_to_target",
+            "name": "髋部朝向目标角",
+            "value": 48.9,
+            "unit": "°",
+            "ref": [
+              75.0,
+              95.0
+            ],
+            "status": "low"
+          },
+          {
+            "key": "shoulder_open",
+            "name": "肩部转动角(总开放)",
+            "value": 101.2,
+            "unit": "°",
+            "ref": [
+              85.0,
+              110.0
+            ],
+            "status": "normal"
+          },
+          {
+            "key": "pelvis_shift_pct",
+            "name": "骨盆水平位移",
+            "value": 141.9,
+            "unit": "%",
+            "ref": [
+              20.0,
+              35.0
+            ],
+            "status": "high"
+          },
+          {
+            "key": "balance_hold_sec",
+            "name": "收杆平衡保持时长",
+            "value": 0.0,
+            "unit": "s",
+            "ref": [
+              0.8,
+              3.0
+            ],
+            "status": "low"
+          }
+        ]
+      }
+    },
+    "global": {
+      "tempo_ratio": 1.3,
+      "swing_duration": 2.7,
+      "max_head_drift_pct": 193.3
+    },
+    "warnings": [],
+    "diag_raw_angles": {
+      "address": {
+        "shoulder_turn_signed": -0.0,
+        "hip_turn_signed": -0.0,
+        "x_factor_raw": 0.0,
+        "shoulder_rot_raw_no_sign": 0.0,
+        "hip_rot_raw_no_sign": 0.0,
+        "spine_forward_tilt": 1.7266,
+        "spine_lateral_tilt": -16.6795,
+        "shoulder_vec_world": [
+          0.2617,
+          0.0794,
+          -0.0482
+        ],
+        "hip_vec_world": [
+          0.1961,
+          0.0261,
+          0.1166
+        ]
+      },
+      "takeaway": {
+        "shoulder_turn_signed": 1.3455,
+        "hip_turn_signed": 0.1653,
+        "x_factor_raw": 1.1802,
+        "shoulder_rot_raw_no_sign": -1.3455,
+        "hip_rot_raw_no_sign": -0.1653,
+        "spine_forward_tilt": 2.0908,
+        "spine_lateral_tilt": -17.0627,
+        "shoulder_vec_world": [
+          0.2621,
+          0.0777,
+          -0.0547
+        ],
+        "hip_vec_world": [
+          0.1961,
+          0.0263,
+          0.1158
+        ]
+      },
+      "backswing": {
+        "shoulder_turn_signed": 3.2812,
+        "hip_turn_signed": 0.4884,
+        "x_factor_raw": 2.7928,
+        "shoulder_rot_raw_no_sign": -3.2812,
+        "hip_rot_raw_no_sign": -0.4884,
+        "spine_forward_tilt": 2.2366,
+        "spine_lateral_tilt": -17.4643,
+        "shoulder_vec_world": [
+          0.2628,
+          0.0744,
+          -0.0642
+        ],
+        "hip_vec_world": [
+          0.1961,
+          0.0264,
+          0.1144
+        ]
+      },
+      "top": {
+        "shoulder_turn_signed": 5.1004,
+        "hip_turn_signed": 1.0862,
+        "x_factor_raw": 4.0142,
+        "shoulder_rot_raw_no_sign": -5.1004,
+        "hip_rot_raw_no_sign": -1.0862,
+        "spine_forward_tilt": 2.1164,
+        "spine_lateral_tilt": -17.4328,
+        "shoulder_vec_world": [
+          0.2597,
+          0.0736,
+          -0.0722
+        ],
+        "hip_vec_world": [
+          0.196,
+          0.0265,
+          0.1116
+        ]
+      },
+      "downswing": {
+        "shoulder_turn_signed": -3.6236,
+        "hip_turn_signed": -0.9849,
+        "x_factor_raw": -2.6388,
+        "shoulder_rot_raw_no_sign": 3.6236,
+        "hip_rot_raw_no_sign": 0.9849,
+        "spine_forward_tilt": 0.8412,
+        "spine_lateral_tilt": -17.4298,
+        "shoulder_vec_world": [
+          0.2541,
+          0.0828,
+          -0.0304
+        ],
+        "hip_vec_world": [
+          0.1955,
+          0.0266,
+          0.1209
+        ]
+      },
+      "impact": {
+        "shoulder_turn_signed": -17.0463,
+        "hip_turn_signed": -3.6098,
+        "x_factor_raw": -13.4365,
+        "shoulder_rot_raw_no_sign": 17.0463,
+        "hip_rot_raw_no_sign": 3.6098,
+        "spine_forward_tilt": 4.0439,
+        "spine_lateral_tilt": -17.7467,
+        "shoulder_vec_world": [
+          0.2581,
+          0.0858,
+          0.0299
+        ],
+        "hip_vec_world": [
+          0.1953,
+          0.0267,
+          0.1335
+        ]
+      },
+      "follow_through": {
+        "shoulder_turn_signed": 153.675,
+        "hip_turn_signed": -152.7064,
+        "x_factor_raw": 306.3815,
+        "shoulder_rot_raw_no_sign": -153.675,
+        "hip_rot_raw_no_sign": 152.7064,
+        "spine_forward_tilt": 2.4738,
+        "spine_lateral_tilt": 0.1531,
+        "shoulder_vec_world": [
+          -0.2628,
+          0.0193,
+          -0.0748
+        ],
+        "hip_vec_world": [
+          -0.1526,
+          0.0071,
+          -0.0092
+        ]
+      },
+      "finish": {
+        "shoulder_turn_signed": -101.1629,
+        "hip_turn_signed": -48.9481,
+        "x_factor_raw": -52.2147,
+        "shoulder_rot_raw_no_sign": 101.1629,
+        "hip_rot_raw_no_sign": 48.9481,
+        "spine_forward_tilt": 12.438,
+        "spine_lateral_tilt": -20.0955,
+        "shoulder_vec_world": [
+          -0.0045,
+          -0.0082,
+          0.3563
+        ],
+        "hip_vec_world": [
+          0.0416,
+          -0.0011,
+          0.2287
+        ]
+      }
+    },
+    "rotation_sign": -1,
+    "target_dir_x": 1,
+    "elapsed_sec": 2.04
+  },
+  {
+    "name": "DTL-0bb16a97",
+    "path": "E:\\project\\golf\\.tools\\_probe\\samples\\0bb16a974ef55676cc1b938d8539edfd.mp4",
+    "view": "dtl",
+    "ok": false,
+    "stage_failed": "segment_swing",
+    "error_code": "NO_SWING",
+    "error_detail": "address->top too short: 1 < 4",
+    "meta": {
+      "fps": 30.0,
+      "duration": 7.0,
+      "width": 720,
+      "height": 1280,
+      "frame_count": 210,
+      "sample_step": 1,
+      "low_fps": false
+    },
+    "extract": {
+      "sampled": 210,
+      "detected": 210,
+      "miss_ratio": 0.0,
+      "avg_core_vis": 0.8007
+    },
+    "signals": {
+      "n": 210,
+      "S": 0.03034,
+      "dt": 0.03333,
+      "fps_eff": 30.0,
+      "speed_max": 16.245,
+      "speed_median": 0.7243,
+      "wrist_travel": 0.04781,
+      "wrist_travel_in_S": 1.5759,
+      "guard_v_peak_min": 1.5,
+      "guard_min_travel_in_S": 0.6
+    }
+  },
+  {
+    "name": "DTL-470057ac",
+    "path": "E:\\project\\golf\\.tools\\_probe\\samples\\470057ac3dac2025eb6b0dcd390b6957.mp4",
+    "view": "dtl",
+    "ok": true,
+    "stage_failed": null,
+    "error_code": null,
+    "error_detail": null,
+    "meta": {
+      "fps": 30.0,
+      "duration": 7.2,
+      "width": 720,
+      "height": 1280,
+      "frame_count": 216,
+      "sample_step": 1,
+      "low_fps": false
+    },
+    "extract": {
+      "sampled": 216,
+      "detected": 216,
+      "miss_ratio": 0.0,
+      "avg_core_vis": 0.8927
+    },
+    "signals": {
+      "n": 216,
+      "S": 0.0671,
+      "dt": 0.03333,
+      "fps_eff": 30.0,
+      "speed_max": 15.2264,
+      "speed_median": 1.4784,
+      "wrist_travel": 0.17759,
+      "wrist_travel_in_S": 2.6467,
+      "guard_v_peak_min": 1.5,
+      "guard_min_travel_in_S": 0.6
+    },
+    "events": [
+      {
+        "index": 1,
+        "key": "address",
+        "name_cn": "准备",
+        "frame_index": 51,
+        "array_index": 51,
+        "timestamp": 1.7,
+        "estimated": false
+      },
+      {
+        "index": 2,
+        "key": "takeaway",
+        "name_cn": "起杆",
+        "frame_index": 82,
+        "array_index": 82,
+        "timestamp": 2.733,
+        "estimated": false
+      },
+      {
+        "index": 3,
+        "key": "backswing",
+        "name_cn": "上杆",
+        "frame_index": 87,
+        "array_index": 87,
+        "timestamp": 2.9,
+        "estimated": false
+      },
+      {
+        "index": 4,
+        "key": "top",
+        "name_cn": "顶点",
+        "frame_index": 92,
+        "array_index": 92,
+        "timestamp": 3.067,
+        "estimated": false
+      },
+      {
+        "index": 5,
+        "key": "downswing",
+        "name_cn": "下杆",
+        "frame_index": 97,
+        "array_index": 97,
+        "timestamp": 3.233,
+        "estimated": false
+      },
+      {
+        "index": 6,
+        "key": "impact",
+        "name_cn": "击球",
+        "frame_index": 187,
+        "array_index": 187,
+        "timestamp": 6.233,
+        "estimated": false
+      },
+      {
+        "index": 7,
+        "key": "follow_through",
+        "name_cn": "送杆",
+        "frame_index": 197,
+        "array_index": 197,
+        "timestamp": 6.567,
+        "estimated": true
+      },
+      {
+        "index": 8,
+        "key": "finish",
+        "name_cn": "收杆",
+        "frame_index": 215,
+        "array_index": 215,
+        "timestamp": 7.167,
+        "estimated": true
+      }
+    ],
+    "estimated_count": 2,
+    "segment_ok": true,
+    "scale": {
+      "S_world_m": 0.34605,
+      "S_px": 78.857,
+      "view_shoulder_over_height": 0.1087,
+      "view_ratio_dtl_threshold": 0.13
+    },
+    "phases": {
+      "address": {
+        "name_cn": "准备",
+        "metrics": [
+          {
+            "key": "spine_forward_tilt",
+            "name": "脊柱前倾角",
+            "value": 22.5,
+            "unit": "°",
+            "ref": [
+              30.0,
+              40.0
+            ],
+            "status": "low"
+          },
+          {
+            "key": "stance_width_ratio",
+            "name": "站姿宽度比",
+            "value": 0.5,
+            "unit": "",
+            "ref": [
+              1.0,
+              1.3
+            ],
+            "status": "low"
+          },
+          {
+            "key": "shoulder_line_tilt",
+            "name": "肩线水平倾角",
+            "value": 42.6,
+            "unit": "°",
+            "ref": [
+              5.0,
+              12.0
+            ],
+            "status": "high"
+          },
+          {
+            "key": "knee_flex",
+            "name": "膝部弯曲角",
+            "value": 163.6,
+            "unit": "°",
+            "ref": [
+              160.0,
+              172.0
+            ],
+            "status": "normal"
+          }
+        ]
+      },
+      "takeaway": {
+        "name_cn": "起杆",
+        "metrics": [
+          {
+            "key": "shoulder_turn",
+            "name": "肩部转动角",
+            "value": 35.4,
+            "unit": "°",
+            "ref": [
+              25.0,
+              35.0
+            ],
+            "status": "high"
+          },
+          {
+            "key": "hip_turn",
+            "name": "髋部转动角",
+            "value": 17.6,
+            "unit": "°",
+            "ref": [
+              8.0,
+              18.0
+            ],
+            "status": "normal"
+          },
+          {
+            "key": "head_drift_pct",
+            "name": "头部位移",
+            "value": 11.9,
+            "unit": "%",
+            "ref": [
+              0.0,
+              4.0
+            ],
+            "status": "high"
+          },
+          {
+            "key": "lead_arm_straight",
+            "name": "引导臂伸直度",
+            "value": 144.0,
+            "unit": "°",
+            "ref": [
+              165.0,
+              178.0
+            ],
+            "status": "low"
+          }
+        ]
+      },
+      "backswing": {
+        "name_cn": "上杆",
+        "metrics": [
+          {
+            "key": "shoulder_turn",
+            "name": "肩部转动角",
+            "value": 71.2,
+            "unit": "°",
+            "ref": [
+              55.0,
+              72.0
+            ],
+            "status": "normal"
+          },
+          {
+            "key": "hip_turn",
+            "name": "髋部转动角",
+            "value": 22.7,
+            "unit": "°",
+            "ref": [
+              25.0,
+              38.0
+            ],
+            "status": "low"
+          },
+          {
+            "key": "trail_elbow_flex",
+            "name": "后臂弯曲角",
+            "value": 132.9,
+            "unit": "°",
+            "ref": [
+              95.0,
+              125.0
+            ],
+            "status": "high"
+          },
+          {
+            "key": "lead_arm_straight",
+            "name": "引导臂伸直度",
+            "value": 144.8,
+            "unit": "°",
+            "ref": [
+              155.0,
+              175.0
+            ],
+            "status": "low"
+          }
+        ]
+      },
+      "top": {
+        "name_cn": "顶点",
+        "metrics": [
+          {
+            "key": "shoulder_turn",
+            "name": "肩部转动角",
+            "value": 96.3,
+            "unit": "°",
+            "ref": [
+              70.0,
+              88.0
+            ],
+            "status": "high"
+          },
+          {
+            "key": "hip_turn",
+            "name": "髋部转动角",
+            "value": 27.7,
+            "unit": "°",
+            "ref": [
+              45.0,
+              60.0
+            ],
+            "status": "low"
+          },
+          {
+            "key": "x_factor",
+            "name": "X-Factor(肩髋分离)",
+            "value": 68.6,
+            "unit": "°",
+            "ref": [
+              20.0,
+              35.0
+            ],
+            "status": "high"
+          },
+          {
+            "key": "lead_arm_straight",
+            "name": "引导臂伸直度",
+            "value": 148.6,
+            "unit": "°",
+            "ref": [
+              150.0,
+              172.0
+            ],
+            "status": "low"
+          }
+        ]
+      },
+      "downswing": {
+        "name_cn": "下杆",
+        "metrics": [
+          {
+            "key": "hip_turn",
+            "name": "髋部转动角",
+            "value": 20.8,
+            "unit": "°",
+            "ref": [
+              10.0,
+              30.0
+            ],
+            "status": "normal"
+          },
+          {
+            "key": "shoulder_turn",
+            "name": "肩部转动角",
+            "value": 54.3,
+            "unit": "°",
+            "ref": [
+              45.0,
+              65.0
+            ],
+            "status": "normal"
+          },
+          {
+            "key": "x_factor_retention",
+            "name": "X-Factor 保持率",
+            "value": 48.8,
+            "unit": "%",
+            "ref": [
+              85.0,
+              130.0
+            ],
+            "status": "low"
+          },
+          {
+            "key": "pelvis_shift_pct",
+            "name": "骨盆水平位移",
+            "value": 6.6,
+            "unit": "%",
+            "ref": [
+              4.0,
+              12.0
+            ],
+            "status": "normal"
+          }
+        ]
+      },
+      "impact": {
+        "name_cn": "击球",
+        "metrics": [
+          {
+            "key": "hip_open",
+            "name": "髋部开放角",
+            "value": 126.9,
+            "unit": "°",
+            "ref": [
+              15.0,
+              30.0
+            ],
+            "status": "high"
+          },
+          {
+            "key": "shoulder_square",
+            "name": "肩部方正度",
+            "value": 102.3,
+            "unit": "°",
+            "ref": [
+              -5.0,
+              12.0
+            ],
+            "status": "high"
+          },
+          {
+            "key": "spine_tilt_delta",
+            "name": "起身量(脊柱倾角变化)",
+            "value": 17.7,
+            "unit": "°",
+            "ref": [
+              0.0,
+              8.0
+            ],
+            "status": "high"
+          },
+          {
+            "key": "pelvis_shift_pct",
+            "name": "骨盆水平位移",
+            "value": 50.6,
+            "unit": "%",
+            "ref": [
+              10.0,
+              20.0
+            ],
+            "status": "high"
+          }
+        ]
+      },
+      "follow_through": {
+        "name_cn": "送杆",
+        "metrics": [
+          {
+            "key": "hip_open",
+            "name": "髋部开放角",
+            "value": 124.8,
+            "unit": "°",
+            "ref": [
+              40.0,
+              60.0
+            ],
+            "status": "high"
+          },
+          {
+            "key": "shoulder_open",
+            "name": "肩部转动角(开放)",
+            "value": 98.7,
+            "unit": "°",
+            "ref": [
+              35.0,
+              60.0
+            ],
+            "status": "high"
+          },
+          {
+            "key": "trail_arm_extend",
+            "name": "后臂伸展度",
+            "value": 158.6,
+            "unit": "°",
+            "ref": [
+              150.0,
+              172.0
+            ],
+            "status": "normal"
+          },
+          {
+            "key": "spine_lateral_tilt",
+            "name": "脊柱侧倾",
+            "value": -2.2,
+            "unit": "°",
+            "ref": [
+              10.0,
+              20.0
+            ],
+            "status": "low"
+          }
+        ]
+      },
+      "finish": {
+        "name_cn": "收杆",
+        "metrics": [
+          {
+            "key": "hip_to_target",
+            "name": "髋部朝向目标角",
+            "value": 104.9,
+            "unit": "°",
+            "ref": [
+              75.0,
+              95.0
+            ],
+            "status": "high"
+          },
+          {
+            "key": "shoulder_open",
+            "name": "肩部转动角(总开放)",
+            "value": 96.3,
+            "unit": "°",
+            "ref": [
+              85.0,
+              110.0
+            ],
+            "status": "normal"
+          },
+          {
+            "key": "pelvis_shift_pct",
+            "name": "骨盆水平位移",
+            "value": 57.1,
+            "unit": "%",
+            "ref": [
+              20.0,
+              35.0
+            ],
+            "status": "high"
+          },
+          {
+            "key": "balance_hold_sec",
+            "name": "收杆平衡保持时长",
+            "value": 0.0,
+            "unit": "s",
+            "ref": [
+              0.8,
+              3.0
+            ],
+            "status": "low"
+          }
+        ]
+      }
+    },
+    "global": {
+      "tempo_ratio": 0.4,
+      "swing_duration": 5.5,
+      "max_head_drift_pct": 73.4
+    },
+    "warnings": [],
+    "diag_raw_angles": {
+      "address": {
+        "shoulder_turn_signed": -0.0,
+        "hip_turn_signed": -0.0,
+        "x_factor_raw": 0.0,
+        "shoulder_rot_raw_no_sign": 0.0,
+        "hip_rot_raw_no_sign": 0.0,
+        "spine_forward_tilt": 22.4633,
+        "spine_lateral_tilt": -33.3491,
+        "shoulder_vec_world": [
+          0.0657,
+          -0.0604,
+          0.3343
+        ],
+        "hip_vec_world": [
+          0.1118,
+          -0.0146,
+          0.2093
+        ]
+      },
+      "takeaway": {
+        "shoulder_turn_signed": 35.3652,
+        "hip_turn_signed": 17.6433,
+        "x_factor_raw": 17.7219,
+        "shoulder_rot_raw_no_sign": -35.3652,
+        "hip_rot_raw_no_sign": -17.6433,
+        "spine_forward_tilt": 7.9805,
+        "spine_lateral_tilt": -30.4199,
+        "shoulder_vec_world": [
+          0.2285,
+          0.0878,
+          0.217
+        ],
+        "hip_vec_world": [
+          0.1826,
+          0.0294,
+          0.1779
+        ]
+      },
+      "backswing": {
+        "shoulder_turn_signed": 71.2056,
+        "hip_turn_signed": 22.7313,
+        "x_factor_raw": 48.4744,
+        "shoulder_rot_raw_no_sign": -71.2056,
+        "hip_rot_raw_no_sign": -22.7313,
+        "spine_forward_tilt": 1.8148,
+        "spine_lateral_tilt": -28.2028,
+        "shoulder_vec_world": [
+          0.2239,
+          0.1261,
+          0.0302
+        ],
+        "hip_vec_world": [
+          0.1904,
+          0.0367,
+          0.155
+        ]
+      },
+      "top": {
+        "shoulder_turn_signed": 96.2951,
+        "hip_turn_signed": 27.6687,
+        "x_factor_raw": 68.6264,
+        "shoulder_rot_raw_no_sign": -96.2951,
+        "hip_rot_raw_no_sign": -27.6687,
+        "spine_forward_tilt": 1.0691,
+        "spine_lateral_tilt": -28.0673,
+        "shoulder_vec_world": [
+          0.2332,
+          0.1426,
+          -0.0731
+        ],
+        "hip_vec_world": [
+          0.1938,
+          0.0385,
+          0.1318
+        ]
+      },
+      "downswing": {
+        "shoulder_turn_signed": 54.3173,
+        "hip_turn_signed": 20.7975,
+        "x_factor_raw": 33.5199,
+        "shoulder_rot_raw_no_sign": -54.3173,
+        "hip_rot_raw_no_sign": -20.7975,
+        "spine_forward_tilt": 1.7745,
+        "spine_lateral_tilt": -27.1981,
+        "shoulder_vec_world": [
+          0.2006,
+          0.0925,
+          0.0917
+        ],
+        "hip_vec_world": [
+          0.1789,
+          0.0372,
+          0.1561
+        ]
+      },
+      "impact": {
+        "shoulder_turn_signed": -102.3437,
+        "hip_turn_signed": -126.9235,
+        "x_factor_raw": 24.5798,
+        "shoulder_rot_raw_no_sign": 102.3437,
+        "hip_rot_raw_no_sign": 126.9235,
+        "spine_forward_tilt": 4.7689,
+        "spine_lateral_tilt": -5.0265,
+        "shoulder_vec_world": [
+          -0.3312,
+          -0.0531,
+          -0.0071
+        ],
+        "hip_vec_world": [
+          -0.1724,
+          -0.0033,
+          -0.0267
+        ]
+      },
+      "follow_through": {
+        "shoulder_turn_signed": -98.6593,
+        "hip_turn_signed": -124.7731,
+        "x_factor_raw": 26.1138,
+        "shoulder_rot_raw_no_sign": 98.6593,
+        "hip_rot_raw_no_sign": 124.7731,
+        "spine_forward_tilt": 0.0752,
+        "spine_lateral_tilt": -2.1577,
+        "shoulder_vec_world": [
+          -0.3248,
+          -0.0329,
+          0.0139
+        ],
+        "hip_vec_world": [
+          -0.1428,
+          -0.0066,
+          -0.0167
+        ]
+      },
+      "finish": {
+        "shoulder_turn_signed": -96.2926,
+        "hip_turn_signed": -104.8939,
+        "x_factor_raw": 8.6013,
+        "shoulder_rot_raw_no_sign": 96.2926,
+        "hip_rot_raw_no_sign": 104.8939,
+        "spine_forward_tilt": 1.1747,
+        "spine_lateral_tilt": 3.8477,
+        "shoulder_vec_world": [
+          -0.3197,
+          0.0051,
+          0.027
+        ],
+        "hip_vec_world": [
+          -0.1529,
+          0.0094,
+          0.0359
+        ]
+      }
+    },
+    "rotation_sign": -1,
+    "target_dir_x": 1,
+    "elapsed_sec": 4.41
+  },
+  {
+    "name": "DTL-4e8d0d7e",
+    "path": "E:\\project\\golf\\.tools\\_probe\\samples\\4e8d0d7e517a67a2a7698fd1536289eb.mp4",
+    "view": "dtl",
+    "ok": false,
+    "stage_failed": "extract",
+    "error_code": "LOW_QUALITY",
+    "error_detail": "miss_ratio=0.133",
+    "meta": {
+      "fps": 30.0,
+      "duration": 12.067,
+      "width": 720,
+      "height": 1280,
+      "frame_count": 362,
+      "sample_step": 1,
+      "low_fps": false
+    }
+  },
+  {
+    "name": "DTL-707fb04a",
+    "path": "E:\\project\\golf\\.tools\\_probe\\samples\\707fb04a3dbd91db19b97e0ca4aee959.mp4",
+    "view": "dtl",
+    "ok": true,
+    "stage_failed": null,
+    "error_code": null,
+    "error_detail": null,
+    "meta": {
+      "fps": 30.0,
+      "duration": 4.4,
+      "width": 720,
+      "height": 1280,
+      "frame_count": 132,
+      "sample_step": 1,
+      "low_fps": false
+    },
+    "extract": {
+      "sampled": 132,
+      "detected": 132,
+      "miss_ratio": 0.0,
+      "avg_core_vis": 0.7746
+    },
+    "signals": {
+      "n": 132,
+      "S": 0.1008,
+      "dt": 0.03333,
+      "fps_eff": 30.0,
+      "speed_max": 9.9866,
+      "speed_median": 0.6106,
+      "wrist_travel": 0.12201,
+      "wrist_travel_in_S": 1.2105,
+      "guard_v_peak_min": 1.5,
+      "guard_min_travel_in_S": 0.6
+    },
+    "events": [
+      {
+        "index": 1,
+        "key": "address",
+        "name_cn": "准备",
+        "frame_index": 0,
+        "array_index": 0,
+        "timestamp": 0.0,
+        "estimated": true
+      },
+      {
+        "index": 2,
+        "key": "takeaway",
+        "name_cn": "起杆",
+        "frame_index": 4,
+        "array_index": 4,
+        "timestamp": 0.133,
+        "estimated": true
+      },
+      {
+        "index": 3,
+        "key": "backswing",
+        "name_cn": "上杆",
+        "frame_index": 5,
+        "array_index": 5,
+        "timestamp": 0.167,
+        "estimated": true
+      },
+      {
+        "index": 4,
+        "key": "top",
+        "name_cn": "顶点",
+        "frame_index": 10,
+        "array_index": 10,
+        "timestamp": 0.333,
+        "estimated": false
+      },
+      {
+        "index": 5,
+        "key": "downswing",
+        "name_cn": "下杆",
+        "frame_index": 11,
+        "array_index": 11,
+        "timestamp": 0.367,
+        "estimated": true
+      },
+      {
+        "index": 6,
+        "key": "impact",
+        "name_cn": "击球",
+        "frame_index": 13,
+        "array_index": 13,
+        "timestamp": 0.433,
+        "estimated": false
+      },
+      {
+        "index": 7,
+        "key": "follow_through",
+        "name_cn": "送杆",
+        "frame_index": 26,
+        "array_index": 26,
+        "timestamp": 0.867,
+        "estimated": true
+      },
+      {
+        "index": 8,
+        "key": "finish",
+        "name_cn": "收杆",
+        "frame_index": 51,
+        "array_index": 51,
+        "timestamp": 1.7,
+        "estimated": false
+      }
+    ],
+    "estimated_count": 5,
+    "segment_ok": true,
+    "scale": {
+      "S_world_m": 0.30431,
+      "S_px": 81.645,
+      "view_shoulder_over_height": 0.4226,
+      "view_ratio_dtl_threshold": 0.13
+    },
+    "phases": {
+      "address": {
+        "name_cn": "准备",
+        "metrics": [
+          {
+            "key": "spine_forward_tilt",
+            "name": "脊柱前倾角",
+            "value": 6.1,
+            "unit": "°",
+            "ref": [
+              30.0,
+              40.0
+            ],
+            "status": "low"
+          },
+          {
+            "key": "stance_width_ratio",
+            "name": "站姿宽度比",
+            "value": 0.4,
+            "unit": "",
+            "ref": [
+              1.0,
+              1.3
+            ],
+            "status": "low"
+          },
+          {
+            "key": "shoulder_line_tilt",
+            "name": "肩线水平倾角",
+            "value": -29.8,
+            "unit": "°",
+            "ref": [
+              5.0,
+              12.0
+            ],
+            "status": "low"
+          },
+          {
+            "key": "knee_flex",
+            "name": "膝部弯曲角",
+            "value": 162.8,
+            "unit": "°",
+            "ref": [
+              160.0,
+              172.0
+            ],
+            "status": "normal"
+          }
+        ]
+      },
+      "takeaway": {
+        "name_cn": "起杆",
+        "metrics": [
+          {
+            "key": "shoulder_turn",
+            "name": "肩部转动角",
+            "value": -13.0,
+            "unit": "°",
+            "ref": [
+              25.0,
+              35.0
+            ],
+            "status": "low"
+          },
+          {
+            "key": "hip_turn",
+            "name": "髋部转动角",
+            "value": -11.1,
+            "unit": "°",
+            "ref": [
+              8.0,
+              18.0
+            ],
+            "status": "low"
+          },
+          {
+            "key": "head_drift_pct",
+            "name": "头部位移",
+            "value": 22.8,
+            "unit": "%",
+            "ref": [
+              0.0,
+              4.0
+            ],
+            "status": "high"
+          },
+          {
+            "key": "lead_arm_straight",
+            "name": "引导臂伸直度",
+            "value": 107.5,
+            "unit": "°",
+            "ref": [
+              165.0,
+              178.0
+            ],
+            "status": "low"
+          }
+        ]
+      },
+      "backswing": {
+        "name_cn": "上杆",
+        "metrics": [
+          {
+            "key": "shoulder_turn",
+            "name": "肩部转动角",
+            "value": -18.8,
+            "unit": "°",
+            "ref": [
+              55.0,
+              72.0
+            ],
+            "status": "low"
+          },
+          {
+            "key": "hip_turn",
+            "name": "髋部转动角",
+            "value": -14.9,
+            "unit": "°",
+            "ref": [
+              25.0,
+              38.0
+            ],
+            "status": "low"
+          },
+          {
+            "key": "trail_elbow_flex",
+            "name": "后臂弯曲角",
+            "value": 93.7,
+            "unit": "°",
+            "ref": [
+              95.0,
+              125.0
+            ],
+            "status": "low"
+          },
+          {
+            "key": "lead_arm_straight",
+            "name": "引导臂伸直度",
+            "value": 112.9,
+            "unit": "°",
+            "ref": [
+              155.0,
+              175.0
+            ],
+            "status": "low"
+          }
+        ]
+      },
+      "top": {
+        "name_cn": "顶点",
+        "metrics": [
+          {
+            "key": "shoulder_turn",
+            "name": "肩部转动角",
+            "value": -75.6,
+            "unit": "°",
+            "ref": [
+              70.0,
+              88.0
+            ],
+            "status": "low"
+          },
+          {
+            "key": "hip_turn",
+            "name": "髋部转动角",
+            "value": -34.6,
+            "unit": "°",
+            "ref": [
+              45.0,
+              60.0
+            ],
+            "status": "low"
+          },
+          {
+            "key": "x_factor",
+            "name": "X-Factor(肩髋分离)",
+            "value": -41.0,
+            "unit": "°",
+            "ref": [
+              20.0,
+              35.0
+            ],
+            "status": "low"
+          },
+          {
+            "key": "lead_arm_straight",
+            "name": "引导臂伸直度",
+            "value": 136.3,
+            "unit": "°",
+            "ref": [
+              150.0,
+              172.0
+            ],
+            "status": "low"
+          }
+        ]
+      },
+      "downswing": {
+        "name_cn": "下杆",
+        "metrics": [
+          {
+            "key": "hip_turn",
+            "name": "髋部转动角",
+            "value": -42.3,
+            "unit": "°",
+            "ref": [
+              10.0,
+              30.0
+            ],
+            "status": "low"
+          },
+          {
+            "key": "shoulder_turn",
+            "name": "肩部转动角",
+            "value": -86.1,
+            "unit": "°",
+            "ref": [
+              45.0,
+              65.0
+            ],
+            "status": "low"
+          },
+          {
+            "key": "x_factor_retention",
+            "name": "X-Factor 保持率",
+            "value": 106.9,
+            "unit": "%",
+            "ref": [
+              85.0,
+              130.0
+            ],
+            "status": "normal"
+          },
+          {
+            "key": "pelvis_shift_pct",
+            "name": "骨盆水平位移",
+            "value": 6.4,
+            "unit": "%",
+            "ref": [
+              4.0,
+              12.0
+            ],
+            "status": "normal"
+          }
+        ]
+      },
+      "impact": {
+        "name_cn": "击球",
+        "metrics": [
+          {
+            "key": "hip_open",
+            "name": "髋部开放角",
+            "value": 37.7,
+            "unit": "°",
+            "ref": [
+              15.0,
+              30.0
+            ],
+            "status": "high"
+          },
+          {
+            "key": "shoulder_square",
+            "name": "肩部方正度",
+            "value": 74.9,
+            "unit": "°",
+            "ref": [
+              -5.0,
+              12.0
+            ],
+            "status": "high"
+          },
+          {
+            "key": "spine_tilt_delta",
+            "name": "起身量(脊柱倾角变化)",
+            "value": 0.0,
+            "unit": "°",
+            "ref": [
+              0.0,
+              8.0
+            ],
+            "status": "normal"
+          },
+          {
+            "key": "pelvis_shift_pct",
+            "name": "骨盆水平位移",
+            "value": 12.0,
+            "unit": "%",
+            "ref": [
+              10.0,
+              20.0
+            ],
+            "status": "normal"
+          }
+        ]
+      },
+      "follow_through": {
+        "name_cn": "送杆",
+        "metrics": [
+          {
+            "key": "hip_open",
+            "name": "髋部开放角",
+            "value": 103.7,
+            "unit": "°",
+            "ref": [
+              40.0,
+              60.0
+            ],
+            "status": "high"
+          },
+          {
+            "key": "shoulder_open",
+            "name": "肩部转动角(开放)",
+            "value": 168.5,
+            "unit": "°",
+            "ref": [
+              35.0,
+              60.0
+            ],
+            "status": "high"
+          },
+          {
+            "key": "trail_arm_extend",
+            "name": "后臂伸展度",
+            "value": 158.1,
+            "unit": "°",
+            "ref": [
+              150.0,
+              172.0
+            ],
+            "status": "normal"
+          },
+          {
+            "key": "spine_lateral_tilt",
+            "name": "脊柱侧倾",
+            "value": 1.4,
+            "unit": "°",
+            "ref": [
+              10.0,
+              20.0
+            ],
+            "status": "low"
+          }
+        ]
+      },
+      "finish": {
+        "name_cn": "收杆",
+        "metrics": [
+          {
+            "key": "hip_to_target",
+            "name": "髋部朝向目标角",
+            "value": 109.2,
+            "unit": "°",
+            "ref": [
+              75.0,
+              95.0
+            ],
+            "status": "high"
+          },
+          {
+            "key": "shoulder_open",
+            "name": "肩部转动角(总开放)",
+            "value": 170.5,
+            "unit": "°",
+            "ref": [
+              85.0,
+              110.0
+            ],
+            "status": "high"
+          },
+          {
+            "key": "pelvis_shift_pct",
+            "name": "骨盆水平位移",
+            "value": -19.3,
+            "unit": "%",
+            "ref": [
+              20.0,
+              35.0
+            ],
+            "status": "low"
+          },
+          {
+            "key": "balance_hold_sec",
+            "name": "收杆平衡保持时长",
+            "value": 0.2,
+            "unit": "s",
+            "ref": [
+              0.8,
+              3.0
+            ],
+            "status": "low"
+          }
+        ]
+      }
+    },
+    "global": {
+      "tempo_ratio": 3.3,
+      "swing_duration": 1.7,
+      "max_head_drift_pct": 89.5
+    },
+    "warnings": [],
+    "diag_raw_angles": {
+      "address": {
+        "shoulder_turn_signed": -0.0,
+        "hip_turn_signed": -0.0,
+        "x_factor_raw": 0.0,
+        "shoulder_rot_raw_no_sign": 0.0,
+        "hip_rot_raw_no_sign": 0.0,
+        "spine_forward_tilt": 6.0626,
+        "spine_lateral_tilt": -29.0937,
+        "shoulder_vec_world": [
+          0.2636,
+          0.1511,
+          -0.016
+        ],
+        "hip_vec_world": [
+          0.2126,
+          0.0587,
+          0.1027
+        ]
+      },
+      "takeaway": {
+        "shoulder_turn_signed": -13.0356,
+        "hip_turn_signed": -11.1284,
+        "x_factor_raw": -1.9072,
+        "shoulder_rot_raw_no_sign": 13.0356,
+        "hip_rot_raw_no_sign": 11.1284,
+        "spine_forward_tilt": 1.1194,
+        "spine_lateral_tilt": -27.6262,
+        "shoulder_vec_world": [
+          0.2223,
+          0.14,
+          0.0374
+        ],
+        "hip_vec_world": [
+          0.1939,
+          0.0458,
+          0.1456
+        ]
+      },
+      "backswing": {
+        "shoulder_turn_signed": -18.8374,
+        "hip_turn_signed": -14.8586,
+        "x_factor_raw": -3.9788,
+        "shoulder_rot_raw_no_sign": 18.8374,
+        "hip_rot_raw_no_sign": 14.8586,
+        "spine_forward_tilt": 0.3992,
+        "spine_lateral_tilt": -27.4931,
+        "shoulder_vec_world": [
+          0.2054,
+          0.1298,
+          0.0564
+        ],
+        "hip_vec_world": [
+          0.1839,
+          0.041,
+          0.1578
+        ]
+      },
+      "top": {
+        "shoulder_turn_signed": -75.6217,
+        "hip_turn_signed": -34.6417,
+        "x_factor_raw": -40.9801,
+        "shoulder_rot_raw_no_sign": 75.6217,
+        "hip_rot_raw_no_sign": 34.6417,
+        "spine_forward_tilt": 16.1611,
+        "spine_lateral_tilt": -24.4791,
+        "shoulder_vec_world": [
+          0.0994,
+          -0.0434,
+          0.3084
+        ],
+        "hip_vec_world": [
+          0.112,
+          -0.0018,
+          0.1972
+        ]
+      },
+      "downswing": {
+        "shoulder_turn_signed": -86.0974,
+        "hip_turn_signed": -42.2695,
+        "x_factor_raw": -43.8279,
+        "shoulder_rot_raw_no_sign": 86.0974,
+        "hip_rot_raw_no_sign": 42.2695,
+        "spine_forward_tilt": 14.6888,
+        "spine_lateral_tilt": -23.4849,
+        "shoulder_vec_world": [
+          0.0387,
+          -0.0599,
+          0.2991
+        ],
+        "hip_vec_world": [
+          0.0823,
+          -0.0128,
+          0.2041
+        ]
+      },
+      "impact": {
+        "shoulder_turn_signed": -74.876,
+        "hip_turn_signed": -37.7436,
+        "x_factor_raw": -37.1324,
+        "shoulder_rot_raw_no_sign": 74.876,
+        "hip_rot_raw_no_sign": 37.7436,
+        "spine_forward_tilt": 16.4748,
+        "spine_lateral_tilt": -18.7801,
+        "shoulder_vec_world": [
+          0.0749,
+          -0.0263,
+          0.2225
+        ],
+        "hip_vec_world": [
+          0.0943,
+          -0.0149,
+          0.1893
+        ]
+      },
+      "follow_through": {
+        "shoulder_turn_signed": -168.487,
+        "hip_turn_signed": -103.7432,
+        "x_factor_raw": -64.7438,
+        "shoulder_rot_raw_no_sign": 168.487,
+        "hip_rot_raw_no_sign": 103.7432,
+        "spine_forward_tilt": 6.7007,
+        "spine_lateral_tilt": 1.3719,
+        "shoulder_vec_world": [
+          -0.234,
+          -0.0311,
+          0.0627
+        ],
+        "hip_vec_world": [
+          -0.0919,
+          -0.0281,
+          0.1114
+        ]
+      },
+      "finish": {
+        "shoulder_turn_signed": -170.5078,
+        "hip_turn_signed": -109.2398,
+        "x_factor_raw": -61.2681,
+        "shoulder_rot_raw_no_sign": 170.5078,
+        "hip_rot_raw_no_sign": 109.2398,
+        "spine_forward_tilt": 0.323,
+        "spine_lateral_tilt": -7.6071,
+        "shoulder_vec_world": [
+          -0.3017,
+          -0.0663,
+          0.0695
+        ],
+        "hip_vec_world": [
+          -0.1176,
+          -0.0331,
+          0.1176
+        ]
+      }
+    },
+    "rotation_sign": -1,
+    "target_dir_x": 1,
+    "elapsed_sec": 2.89
+  },
+  {
+    "name": "DTL-c6f67f38",
+    "path": "E:\\project\\golf\\.tools\\_probe\\samples\\c6f67f38e5d293a5ce1458e5ff5a6f1b.mp4",
+    "view": "dtl",
+    "ok": true,
+    "stage_failed": null,
+    "error_code": null,
+    "error_detail": null,
+    "meta": {
+      "fps": 30.0,
+      "duration": 10.4,
+      "width": 720,
+      "height": 1280,
+      "frame_count": 312,
+      "sample_step": 1,
+      "low_fps": false
+    },
+    "extract": {
+      "sampled": 312,
+      "detected": 312,
+      "miss_ratio": 0.0,
+      "avg_core_vis": 0.8134
+    },
+    "signals": {
+      "n": 312,
+      "S": 0.06241,
+      "dt": 0.03333,
+      "fps_eff": 30.0,
+      "speed_max": 23.9198,
+      "speed_median": 0.7625,
+      "wrist_travel": 0.23623,
+      "wrist_travel_in_S": 3.7849,
+      "guard_v_peak_min": 1.5,
+      "guard_min_travel_in_S": 0.6
+    },
+    "events": [
+      {
+        "index": 1,
+        "key": "address",
+        "name_cn": "准备",
+        "frame_index": 120,
+        "array_index": 120,
+        "timestamp": 4.0,
+        "estimated": false
+      },
+      {
+        "index": 2,
+        "key": "takeaway",
+        "name_cn": "起杆",
+        "frame_index": 156,
+        "array_index": 156,
+        "timestamp": 5.2,
+        "estimated": false
+      },
+      {
+        "index": 3,
+        "key": "backswing",
+        "name_cn": "上杆",
+        "frame_index": 163,
+        "array_index": 163,
+        "timestamp": 5.433,
+        "estimated": false
+      },
+      {
+        "index": 4,
+        "key": "top",
+        "name_cn": "顶点",
+        "frame_index": 168,
+        "array_index": 168,
+        "timestamp": 5.6,
+        "estimated": false
+      },
+      {
+        "index": 5,
+        "key": "downswing",
+        "name_cn": "下杆",
+        "frame_index": 176,
+        "array_index": 176,
+        "timestamp": 5.867,
+        "estimated": false
+      },
+      {
+        "index": 6,
+        "key": "impact",
+        "name_cn": "击球",
+        "frame_index": 177,
+        "array_index": 177,
+        "timestamp": 5.9,
+        "estimated": true
+      },
+      {
+        "index": 7,
+        "key": "follow_through",
+        "name_cn": "送杆",
+        "frame_index": 223,
+        "array_index": 223,
+        "timestamp": 7.433,
+        "estimated": true
+      },
+      {
+        "index": 8,
+        "key": "finish",
+        "name_cn": "收杆",
+        "frame_index": 311,
+        "array_index": 311,
+        "timestamp": 10.367,
+        "estimated": true
+      }
+    ],
+    "estimated_count": 3,
+    "segment_ok": true,
+    "scale": {
+      "S_world_m": 0.3406,
+      "S_px": 103.633,
+      "view_shoulder_over_height": 0.1423,
+      "view_ratio_dtl_threshold": 0.13
+    },
+    "phases": {
+      "address": {
+        "name_cn": "准备",
+        "metrics": [
+          {
+            "key": "spine_forward_tilt",
+            "name": "脊柱前倾角",
+            "value": 24.5,
+            "unit": "°",
+            "ref": [
+              30.0,
+              40.0
+            ],
+            "status": "low"
+          },
+          {
+            "key": "stance_width_ratio",
+            "name": "站姿宽度比",
+            "value": 0.2,
+            "unit": "",
+            "ref": [
+              1.0,
+              1.3
+            ],
+            "status": "low"
+          },
+          {
+            "key": "shoulder_line_tilt",
+            "name": "肩线水平倾角",
+            "value": 72.9,
+            "unit": "°",
+            "ref": [
+              5.0,
+              12.0
+            ],
+            "status": "high"
+          },
+          {
+            "key": "knee_flex",
+            "name": "膝部弯曲角",
+            "value": 167.6,
+            "unit": "°",
+            "ref": [
+              160.0,
+              172.0
+            ],
+            "status": "normal"
+          }
+        ]
+      },
+      "takeaway": {
+        "name_cn": "起杆",
+        "metrics": [
+          {
+            "key": "shoulder_turn",
+            "name": "肩部转动角",
+            "value": 40.7,
+            "unit": "°",
+            "ref": [
+              25.0,
+              35.0
+            ],
+            "status": "high"
+          },
+          {
+            "key": "hip_turn",
+            "name": "髋部转动角",
+            "value": 24.9,
+            "unit": "°",
+            "ref": [
+              8.0,
+              18.0
+            ],
+            "status": "high"
+          },
+          {
+            "key": "head_drift_pct",
+            "name": "头部位移",
+            "value": 12.5,
+            "unit": "%",
+            "ref": [
+              0.0,
+              4.0
+            ],
+            "status": "high"
+          },
+          {
+            "key": "lead_arm_straight",
+            "name": "引导臂伸直度",
+            "value": 126.3,
+            "unit": "°",
+            "ref": [
+              165.0,
+              178.0
+            ],
+            "status": "low"
+          }
+        ]
+      },
+      "backswing": {
+        "name_cn": "上杆",
+        "metrics": [
+          {
+            "key": "shoulder_turn",
+            "name": "肩部转动角",
+            "value": 59.9,
+            "unit": "°",
+            "ref": [
+              55.0,
+              72.0
+            ],
+            "status": "normal"
+          },
+          {
+            "key": "hip_turn",
+            "name": "髋部转动角",
+            "value": 32.0,
+            "unit": "°",
+            "ref": [
+              25.0,
+              38.0
+            ],
+            "status": "normal"
+          },
+          {
+            "key": "trail_elbow_flex",
+            "name": "后臂弯曲角",
+            "value": 70.8,
+            "unit": "°",
+            "ref": [
+              95.0,
+              125.0
+            ],
+            "status": "low"
+          },
+          {
+            "key": "lead_arm_straight",
+            "name": "引导臂伸直度",
+            "value": 100.3,
+            "unit": "°",
+            "ref": [
+              155.0,
+              175.0
+            ],
+            "status": "low"
+          }
+        ]
+      },
+      "top": {
+        "name_cn": "顶点",
+        "metrics": [
+          {
+            "key": "shoulder_turn",
+            "name": "肩部转动角",
+            "value": 76.9,
+            "unit": "°",
+            "ref": [
+              70.0,
+              88.0
+            ],
+            "status": "normal"
+          },
+          {
+            "key": "hip_turn",
+            "name": "髋部转动角",
+            "value": 39.5,
+            "unit": "°",
+            "ref": [
+              45.0,
+              60.0
+            ],
+            "status": "low"
+          },
+          {
+            "key": "x_factor",
+            "name": "X-Factor(肩髋分离)",
+            "value": 37.5,
+            "unit": "°",
+            "ref": [
+              20.0,
+              35.0
+            ],
+            "status": "high"
+          },
+          {
+            "key": "lead_arm_straight",
+            "name": "引导臂伸直度",
+            "value": 160.6,
+            "unit": "°",
+            "ref": [
+              150.0,
+              172.0
+            ],
+            "status": "normal"
+          }
+        ]
+      },
+      "downswing": {
+        "name_cn": "下杆",
+        "metrics": [
+          {
+            "key": "hip_turn",
+            "name": "髋部转动角",
+            "value": 28.9,
+            "unit": "°",
+            "ref": [
+              10.0,
+              30.0
+            ],
+            "status": "normal"
+          },
+          {
+            "key": "shoulder_turn",
+            "name": "肩部转动角",
+            "value": 51.3,
+            "unit": "°",
+            "ref": [
+              45.0,
+              65.0
+            ],
+            "status": "normal"
+          },
+          {
+            "key": "x_factor_retention",
+            "name": "X-Factor 保持率",
+            "value": 59.8,
+            "unit": "%",
+            "ref": [
+              85.0,
+              130.0
+            ],
+            "status": "low"
+          },
+          {
+            "key": "pelvis_shift_pct",
+            "name": "骨盆水平位移",
+            "value": 12.4,
+            "unit": "%",
+            "ref": [
+              4.0,
+              12.0
+            ],
+            "status": "high"
+          }
+        ]
+      },
+      "impact": {
+        "name_cn": "击球",
+        "metrics": [
+          {
+            "key": "hip_open",
+            "name": "髋部开放角",
+            "value": -22.0,
+            "unit": "°",
+            "ref": [
+              15.0,
+              30.0
+            ],
+            "status": "low"
+          },
+          {
+            "key": "shoulder_square",
+            "name": "肩部方正度",
+            "value": -31.8,
+            "unit": "°",
+            "ref": [
+              -5.0,
+              12.0
+            ],
+            "status": "low"
+          },
+          {
+            "key": "spine_tilt_delta",
+            "name": "起身量(脊柱倾角变化)",
+            "value": 14.6,
+            "unit": "°",
+            "ref": [
+              0.0,
+              8.0
+            ],
+            "status": "high"
+          },
+          {
+            "key": "pelvis_shift_pct",
+            "name": "骨盆水平位移",
+            "value": 11.7,
+            "unit": "%",
+            "ref": [
+              10.0,
+              20.0
+            ],
+            "status": "normal"
+          }
+        ]
+      },
+      "follow_through": {
+        "name_cn": "送杆",
+        "metrics": [
+          {
+            "key": "hip_open",
+            "name": "髋部开放角",
+            "value": 77.4,
+            "unit": "°",
+            "ref": [
+              40.0,
+              60.0
+            ],
+            "status": "high"
+          },
+          {
+            "key": "shoulder_open",
+            "name": "肩部转动角(开放)",
+            "value": 90.9,
+            "unit": "°",
+            "ref": [
+              35.0,
+              60.0
+            ],
+            "status": "high"
+          },
+          {
+            "key": "trail_arm_extend",
+            "name": "后臂伸展度",
+            "value": 118.8,
+            "unit": "°",
+            "ref": [
+              150.0,
+              172.0
+            ],
+            "status": "low"
+          },
+          {
+            "key": "spine_lateral_tilt",
+            "name": "脊柱侧倾",
+            "value": -2.9,
+            "unit": "°",
+            "ref": [
+              10.0,
+              20.0
+            ],
+            "status": "low"
+          }
+        ]
+      },
+      "finish": {
+        "name_cn": "收杆",
+        "metrics": [
+          {
+            "key": "hip_to_target",
+            "name": "髋部朝向目标角",
+            "value": 33.8,
+            "unit": "°",
+            "ref": [
+              75.0,
+              95.0
+            ],
+            "status": "low"
+          },
+          {
+            "key": "shoulder_open",
+            "name": "肩部转动角(总开放)",
+            "value": 40.6,
+            "unit": "°",
+            "ref": [
+              85.0,
+              110.0
+            ],
+            "status": "low"
+          },
+          {
+            "key": "pelvis_shift_pct",
+            "name": "骨盆水平位移",
+            "value": 47.8,
+            "unit": "%",
+            "ref": [
+              20.0,
+              35.0
+            ],
+            "status": "high"
+          },
+          {
+            "key": "balance_hold_sec",
+            "name": "收杆平衡保持时长",
+            "value": 0.0,
+            "unit": "s",
+            "ref": [
+              0.8,
+              3.0
+            ],
+            "status": "low"
+          }
+        ]
+      }
+    },
+    "global": {
+      "tempo_ratio": 5.3,
+      "swing_duration": 6.4,
+      "max_head_drift_pct": 137.1
+    },
+    "warnings": [
+      "视频在收杆后过早结束，平衡保持时长可能被低估"
+    ],
+    "diag_raw_angles": {
+      "address": {
+        "shoulder_turn_signed": -0.0,
+        "hip_turn_signed": -0.0,
+        "x_factor_raw": 0.0,
+        "shoulder_rot_raw_no_sign": 0.0,
+        "hip_rot_raw_no_sign": 0.0,
+        "spine_forward_tilt": 24.5385,
+        "spine_lateral_tilt": -25.1166,
+        "shoulder_vec_world": [
+          0.0371,
+          -0.121,
+          0.3162
+        ],
+        "hip_vec_world": [
+          0.073,
+          -0.0549,
+          0.2148
+        ]
+      },
+      "takeaway": {
+        "shoulder_turn_signed": 40.7112,
+        "hip_turn_signed": 24.8582,
+        "x_factor_raw": 15.8531,
+        "shoulder_rot_raw_no_sign": -40.7112,
+        "hip_rot_raw_no_sign": -24.8582,
+        "spine_forward_tilt": 12.6045,
+        "spine_lateral_tilt": -21.3098,
+        "shoulder_vec_world": [
+          0.2429,
+          0.0614,
+          0.2233
+        ],
+        "hip_vec_world": [
+          0.1664,
+          0.0163,
+          0.1745
+        ]
+      },
+      "backswing": {
+        "shoulder_turn_signed": 59.8535,
+        "hip_turn_signed": 32.0251,
+        "x_factor_raw": 27.8284,
+        "shoulder_rot_raw_no_sign": -59.8535,
+        "hip_rot_raw_no_sign": -32.0251,
+        "spine_forward_tilt": 5.8105,
+        "spine_lateral_tilt": -20.0597,
+        "shoulder_vec_world": [
+          0.2695,
+          0.1279,
+          0.1169
+        ],
+        "hip_vec_world": [
+          0.1901,
+          0.0244,
+          0.155
+        ]
+      },
+      "top": {
+        "shoulder_turn_signed": 76.9237,
+        "hip_turn_signed": 39.4614,
+        "x_factor_raw": 37.4623,
+        "shoulder_rot_raw_no_sign": -76.9237,
+        "hip_rot_raw_no_sign": -39.4614,
+        "spine_forward_tilt": 6.1508,
+        "spine_lateral_tilt": -17.8865,
+        "shoulder_vec_world": [
+          0.2806,
+          0.0782,
+          0.0314
+        ],
+        "hip_vec_world": [
+          0.2037,
+          0.0182,
+          0.1261
+        ]
+      },
+      "downswing": {
+        "shoulder_turn_signed": 51.3271,
+        "hip_turn_signed": 28.9432,
+        "x_factor_raw": 22.3839,
+        "shoulder_rot_raw_no_sign": -51.3271,
+        "hip_rot_raw_no_sign": -28.9432,
+        "spine_forward_tilt": 6.3456,
+        "spine_lateral_tilt": -15.9034,
+        "shoulder_vec_world": [
+          0.2289,
+          0.0424,
+          0.1429
+        ],
+        "hip_vec_world": [
+          0.1674,
+          0.0135,
+          0.1522
+        ]
+      },
+      "impact": {
+        "shoulder_turn_signed": 31.7856,
+        "hip_turn_signed": 22.0168,
+        "x_factor_raw": 9.7688,
+        "shoulder_rot_raw_no_sign": -31.7856,
+        "hip_rot_raw_no_sign": -22.0168,
+        "spine_forward_tilt": 9.9129,
+        "spine_lateral_tilt": -17.4594,
+        "shoulder_vec_world": [
+          0.1966,
+          0.0094,
+          0.2473
+        ],
+        "hip_vec_world": [
+          0.1482,
+          0.007,
+          0.1717
+        ]
+      },
+      "follow_through": {
+        "shoulder_turn_signed": -90.949,
+        "hip_turn_signed": -77.4308,
+        "x_factor_raw": -13.5182,
+        "shoulder_rot_raw_no_sign": 90.949,
+        "hip_rot_raw_no_sign": 77.4308,
+        "spine_forward_tilt": 12.1104,
+        "spine_lateral_tilt": -2.9336,
+        "shoulder_vec_world": [
+          -0.3012,
+          -0.0218,
+          0.0303
+        ],
+        "hip_vec_world": [
+          -0.1134,
+          -0.0251,
+          0.0691
+        ]
+      },
+      "finish": {
+        "shoulder_turn_signed": -40.5635,
+        "hip_turn_signed": -33.792,
+        "x_factor_raw": -6.7716,
+        "shoulder_rot_raw_no_sign": 40.5635,
+        "hip_rot_raw_no_sign": 33.792,
+        "spine_forward_tilt": 8.3062,
+        "spine_lateral_tilt": -0.8664,
+        "shoulder_vec_world": [
+          -0.1779,
+          -0.0402,
+          0.2651
+        ],
+        "hip_vec_world": [
+          -0.0521,
+          -0.0266,
+          0.1944
+        ]
+      }
+    },
+    "rotation_sign": -1,
+    "target_dir_x": 1,
+    "elapsed_sec": 6.35
+  },
+  {
+    "name": "VID-1446d1b9",
+    "path": "E:\\project\\golf\\video\\1446d1b95c4329272f1818d6990f3c4f.mp4",
+    "view": "dtl",
+    "ok": true,
+    "stage_failed": null,
+    "error_code": null,
+    "error_detail": null,
+    "meta": {
+      "fps": 30.0,
+      "duration": 7.933,
+      "width": 1280,
+      "height": 720,
+      "frame_count": 238,
+      "sample_step": 1,
+      "low_fps": false
+    },
+    "extract": {
+      "sampled": 238,
+      "detected": 238,
+      "miss_ratio": 0.0,
+      "avg_core_vis": 0.7828
+    },
+    "signals": {
+      "n": 238,
+      "S": 0.06074,
+      "dt": 0.03333,
+      "fps_eff": 30.0,
+      "speed_max": 19.3124,
+      "speed_median": 0.823,
+      "wrist_travel": 0.19021,
+      "wrist_travel_in_S": 3.1316,
+      "guard_v_peak_min": 1.5,
+      "guard_min_travel_in_S": 0.6
+    },
+    "events": [
+      {
+        "index": 1,
+        "key": "address",
+        "name_cn": "准备",
+        "frame_index": 0,
+        "array_index": 0,
+        "timestamp": 0.0,
+        "estimated": true
+      },
+      {
+        "index": 2,
+        "key": "takeaway",
+        "name_cn": "起杆",
+        "frame_index": 8,
+        "array_index": 8,
+        "timestamp": 0.267,
+        "estimated": false
+      },
+      {
+        "index": 3,
+        "key": "backswing",
+        "name_cn": "上杆",
+        "frame_index": 17,
+        "array_index": 17,
+        "timestamp": 0.567,
+        "estimated": false
+      },
+      {
+        "index": 4,
+        "key": "top",
+        "name_cn": "顶点",
+        "frame_index": 24,
+        "array_index": 24,
+        "timestamp": 0.8,
+        "estimated": false
+      },
+      {
+        "index": 5,
+        "key": "downswing",
+        "name_cn": "下杆",
+        "frame_index": 28,
+        "array_index": 28,
+        "timestamp": 0.933,
+        "estimated": true
+      },
+      {
+        "index": 6,
+        "key": "impact",
+        "name_cn": "击球",
+        "frame_index": 31,
+        "array_index": 31,
+        "timestamp": 1.033,
+        "estimated": true
+      },
+      {
+        "index": 7,
+        "key": "follow_through",
+        "name_cn": "送杆",
+        "frame_index": 70,
+        "array_index": 70,
+        "timestamp": 2.333,
+        "estimated": true
+      },
+      {
+        "index": 8,
+        "key": "finish",
+        "name_cn": "收杆",
+        "frame_index": 141,
+        "array_index": 141,
+        "timestamp": 4.7,
+        "estimated": false
+      }
+    ],
+    "estimated_count": 4,
+    "segment_ok": true,
+    "scale": {
+      "S_world_m": 0.35657,
+      "S_px": 78.871,
+      "view_shoulder_over_height": 0.0169,
+      "view_ratio_dtl_threshold": 0.13
+    },
+    "phases": {
+      "address": {
+        "name_cn": "准备",
+        "metrics": [
+          {
+            "key": "spine_forward_tilt",
+            "name": "脊柱前倾角",
+            "value": 18.9,
+            "unit": "°",
+            "ref": [
+              30.0,
+              40.0
+            ],
+            "status": "low"
+          },
+          {
+            "key": "stance_width_ratio",
+            "name": "站姿宽度比",
+            "value": 0.7,
+            "unit": "",
+            "ref": [
+              1.0,
+              1.3
+            ],
+            "status": "low"
+          },
+          {
+            "key": "shoulder_line_tilt",
+            "name": "肩线水平倾角",
+            "value": 34.7,
+            "unit": "°",
+            "ref": [
+              5.0,
+              12.0
+            ],
+            "status": "high"
+          },
+          {
+            "key": "knee_flex",
+            "name": "膝部弯曲角",
+            "value": 147.7,
+            "unit": "°",
+            "ref": [
+              160.0,
+              172.0
+            ],
+            "status": "low"
+          }
+        ]
+      },
+      "takeaway": {
+        "name_cn": "起杆",
+        "metrics": [
+          {
+            "key": "shoulder_turn",
+            "name": "肩部转动角",
+            "value": 23.1,
+            "unit": "°",
+            "ref": [
+              25.0,
+              35.0
+            ],
+            "status": "low"
+          },
+          {
+            "key": "hip_turn",
+            "name": "髋部转动角",
+            "value": 14.4,
+            "unit": "°",
+            "ref": [
+              8.0,
+              18.0
+            ],
+            "status": "normal"
+          },
+          {
+            "key": "head_drift_pct",
+            "name": "头部位移",
+            "value": 10.0,
+            "unit": "%",
+            "ref": [
+              0.0,
+              4.0
+            ],
+            "status": "high"
+          },
+          {
+            "key": "lead_arm_straight",
+            "name": "引导臂伸直度",
+            "value": 136.6,
+            "unit": "°",
+            "ref": [
+              165.0,
+              178.0
+            ],
+            "status": "low"
+          }
+        ]
+      },
+      "backswing": {
+        "name_cn": "上杆",
+        "metrics": [
+          {
+            "key": "shoulder_turn",
+            "name": "肩部转动角",
+            "value": 77.2,
+            "unit": "°",
+            "ref": [
+              55.0,
+              72.0
+            ],
+            "status": "high"
+          },
+          {
+            "key": "hip_turn",
+            "name": "髋部转动角",
+            "value": 26.9,
+            "unit": "°",
+            "ref": [
+              25.0,
+              38.0
+            ],
+            "status": "normal"
+          },
+          {
+            "key": "trail_elbow_flex",
+            "name": "后臂弯曲角",
+            "value": 120.1,
+            "unit": "°",
+            "ref": [
+              95.0,
+              125.0
+            ],
+            "status": "normal"
+          },
+          {
+            "key": "lead_arm_straight",
+            "name": "引导臂伸直度",
+            "value": 151.4,
+            "unit": "°",
+            "ref": [
+              155.0,
+              175.0
+            ],
+            "status": "low"
+          }
+        ]
+      },
+      "top": {
+        "name_cn": "顶点",
+        "metrics": [
+          {
+            "key": "shoulder_turn",
+            "name": "肩部转动角",
+            "value": 82.3,
+            "unit": "°",
+            "ref": [
+              70.0,
+              88.0
+            ],
+            "status": "normal"
+          },
+          {
+            "key": "hip_turn",
+            "name": "髋部转动角",
+            "value": 32.7,
+            "unit": "°",
+            "ref": [
+              45.0,
+              60.0
+            ],
+            "status": "low"
+          },
+          {
+            "key": "x_factor",
+            "name": "X-Factor(肩髋分离)",
+            "value": 49.6,
+            "unit": "°",
+            "ref": [
+              20.0,
+              35.0
+            ],
+            "status": "high"
+          },
+          {
+            "key": "lead_arm_straight",
+            "name": "引导臂伸直度",
+            "value": 140.5,
+            "unit": "°",
+            "ref": [
+              150.0,
+              172.0
+            ],
+            "status": "low"
+          }
+        ]
+      },
+      "downswing": {
+        "name_cn": "下杆",
+        "metrics": [
+          {
+            "key": "hip_turn",
+            "name": "髋部转动角",
+            "value": 30.5,
+            "unit": "°",
+            "ref": [
+              10.0,
+              30.0
+            ],
+            "status": "high"
+          },
+          {
+            "key": "shoulder_turn",
+            "name": "肩部转动角",
+            "value": 74.6,
+            "unit": "°",
+            "ref": [
+              45.0,
+              65.0
+            ],
+            "status": "high"
+          },
+          {
+            "key": "x_factor_retention",
+            "name": "X-Factor 保持率",
+            "value": 89.2,
+            "unit": "%",
+            "ref": [
+              85.0,
+              130.0
+            ],
+            "status": "normal"
+          },
+          {
+            "key": "pelvis_shift_pct",
+            "name": "骨盆水平位移",
+            "value": 8.4,
+            "unit": "%",
+            "ref": [
+              4.0,
+              12.0
+            ],
+            "status": "normal"
+          }
+        ]
+      },
+      "impact": {
+        "name_cn": "击球",
+        "metrics": [
+          {
+            "key": "hip_open",
+            "name": "髋部开放角",
+            "value": -25.9,
+            "unit": "°",
+            "ref": [
+              15.0,
+              30.0
+            ],
+            "status": "low"
+          },
+          {
+            "key": "shoulder_square",
+            "name": "肩部方正度",
+            "value": -54.8,
+            "unit": "°",
+            "ref": [
+              -5.0,
+              12.0
+            ],
+            "status": "low"
+          },
+          {
+            "key": "spine_tilt_delta",
+            "name": "起身量(脊柱倾角变化)",
+            "value": 13.9,
+            "unit": "°",
+            "ref": [
+              0.0,
+              8.0
+            ],
+            "status": "high"
+          },
+          {
+            "key": "pelvis_shift_pct",
+            "name": "骨盆水平位移",
+            "value": 12.9,
+            "unit": "%",
+            "ref": [
+              10.0,
+              20.0
+            ],
+            "status": "normal"
+          }
+        ]
+      },
+      "follow_through": {
+        "name_cn": "送杆",
+        "metrics": [
+          {
+            "key": "hip_open",
+            "name": "髋部开放角",
+            "value": 53.6,
+            "unit": "°",
+            "ref": [
+              40.0,
+              60.0
+            ],
+            "status": "normal"
+          },
+          {
+            "key": "shoulder_open",
+            "name": "肩部转动角(开放)",
+            "value": 84.7,
+            "unit": "°",
+            "ref": [
+              35.0,
+              60.0
+            ],
+            "status": "high"
+          },
+          {
+            "key": "trail_arm_extend",
+            "name": "后臂伸展度",
+            "value": 107.1,
+            "unit": "°",
+            "ref": [
+              150.0,
+              172.0
+            ],
+            "status": "low"
+          },
+          {
+            "key": "spine_lateral_tilt",
+            "name": "脊柱侧倾",
+            "value": 3.7,
+            "unit": "°",
+            "ref": [
+              10.0,
+              20.0
+            ],
+            "status": "low"
+          }
+        ]
+      },
+      "finish": {
+        "name_cn": "收杆",
+        "metrics": [
+          {
+            "key": "hip_to_target",
+            "name": "髋部朝向目标角",
+            "value": 62.5,
+            "unit": "°",
+            "ref": [
+              75.0,
+              95.0
+            ],
+            "status": "low"
+          },
+          {
+            "key": "shoulder_open",
+            "name": "肩部转动角(总开放)",
+            "value": 71.9,
+            "unit": "°",
+            "ref": [
+              85.0,
+              110.0
+            ],
+            "status": "low"
+          },
+          {
+            "key": "pelvis_shift_pct",
+            "name": "骨盆水平位移",
+            "value": -111.3,
+            "unit": "%",
+            "ref": [
+              20.0,
+              35.0
+            ],
+            "status": "low"
+          },
+          {
+            "key": "balance_hold_sec",
+            "name": "收杆平衡保持时长",
+            "value": 0.1,
+            "unit": "s",
+            "ref": [
+              0.8,
+              3.0
+            ],
+            "status": "low"
+          }
+        ]
+      }
+    },
+    "global": {
+      "tempo_ratio": 3.4,
+      "swing_duration": 4.7,
+      "max_head_drift_pct": 244.2
+    },
+    "warnings": [],
+    "diag_raw_angles": {
+      "address": {
+        "shoulder_turn_signed": -0.0,
+        "hip_turn_signed": -0.0,
+        "x_factor_raw": 0.0,
+        "shoulder_rot_raw_no_sign": 0.0,
+        "hip_rot_raw_no_sign": 0.0,
+        "spine_forward_tilt": 18.9245,
+        "spine_lateral_tilt": -35.227,
+        "shoulder_vec_world": [
+          0.0662,
+          -0.0459,
+          0.3474
+        ],
+        "hip_vec_world": [
+          0.1113,
+          -0.0039,
+          0.2071
+        ]
+      },
+      "takeaway": {
+        "shoulder_turn_signed": 23.0753,
+        "hip_turn_signed": 14.3859,
+        "x_factor_raw": 8.6894,
+        "shoulder_rot_raw_no_sign": -23.0753,
+        "hip_rot_raw_no_sign": -14.3859,
+        "spine_forward_tilt": 24.7073,
+        "spine_lateral_tilt": -28.2032,
+        "shoulder_vec_world": [
+          0.19,
+          -0.0099,
+          0.2831
+        ],
+        "hip_vec_world": [
+          0.1631,
+          0.0022,
+          0.1771
+        ]
+      },
+      "backswing": {
+        "shoulder_turn_signed": 77.1541,
+        "hip_turn_signed": 26.9133,
+        "x_factor_raw": 50.2408,
+        "shoulder_rot_raw_no_sign": -77.1541,
+        "hip_rot_raw_no_sign": -26.9133,
+        "spine_forward_tilt": 3.5268,
+        "spine_lateral_tilt": -20.4587,
+        "shoulder_vec_world": [
+          0.2249,
+          0.1031,
+          0.0081
+        ],
+        "hip_vec_world": [
+          0.1919,
+          0.0329,
+          0.1335
+        ]
+      },
+      "top": {
+        "shoulder_turn_signed": 82.2816,
+        "hip_turn_signed": 32.7187,
+        "x_factor_raw": 49.563,
+        "shoulder_rot_raw_no_sign": -82.2816,
+        "hip_rot_raw_no_sign": -32.7187,
+        "spine_forward_tilt": 2.9355,
+        "spine_lateral_tilt": -20.1833,
+        "shoulder_vec_world": [
+          0.2441,
+          0.0888,
+          -0.0131
+        ],
+        "hip_vec_world": [
+          0.1952,
+          0.0361,
+          0.1083
+        ]
+      },
+      "downswing": {
+        "shoulder_turn_signed": 74.6496,
+        "hip_turn_signed": 30.4501,
+        "x_factor_raw": 44.1995,
+        "shoulder_rot_raw_no_sign": -74.6496,
+        "hip_rot_raw_no_sign": -30.4501,
+        "spine_forward_tilt": 0.6857,
+        "spine_lateral_tilt": -18.6523,
+        "shoulder_vec_world": [
+          0.2401,
+          0.0804,
+          0.0192
+        ],
+        "hip_vec_world": [
+          0.1936,
+          0.0347,
+          0.1177
+        ]
+      },
+      "impact": {
+        "shoulder_turn_signed": 54.807,
+        "hip_turn_signed": 25.894,
+        "x_factor_raw": 28.913,
+        "shoulder_rot_raw_no_sign": -54.807,
+        "hip_rot_raw_no_sign": -25.894,
+        "spine_forward_tilt": 4.9923,
+        "spine_lateral_tilt": -16.2207,
+        "shoulder_vec_world": [
+          0.2429,
+          0.0484,
+          0.1102
+        ],
+        "hip_vec_world": [
+          0.1906,
+          0.0287,
+          0.1377
+        ]
+      },
+      "follow_through": {
+        "shoulder_turn_signed": -84.6617,
+        "hip_turn_signed": -53.5913,
+        "x_factor_raw": -31.0704,
+        "shoulder_rot_raw_no_sign": 84.6617,
+        "hip_rot_raw_no_sign": 53.5913,
+        "spine_forward_tilt": 4.4051,
+        "spine_lateral_tilt": 3.6869,
+        "shoulder_vec_world": [
+          -0.2715,
+          0.0225,
+          0.0785
+        ],
+        "hip_vec_world": [
+          -0.0581,
+          0.0067,
+          0.1228
+        ]
+      },
+      "finish": {
+        "shoulder_turn_signed": -71.9373,
+        "hip_turn_signed": -62.5434,
+        "x_factor_raw": -9.3939,
+        "shoulder_rot_raw_no_sign": 71.9373,
+        "hip_rot_raw_no_sign": 62.5434,
+        "spine_forward_tilt": 1.0334,
+        "spine_lateral_tilt": 4.528,
+        "shoulder_vec_world": [
+          -0.2938,
+          0.0387,
+          0.1618
+        ],
+        "hip_vec_world": [
+          -0.1059,
+          0.0228,
+          0.1554
+        ]
+      }
+    },
+    "rotation_sign": -1,
+    "target_dir_x": 1,
+    "elapsed_sec": 4.96
+  },
+  {
+    "name": "VID-a4fba3d2",
+    "path": "E:\\project\\golf\\video\\a4fba3d24cf9beb59f9d3b06be26daab.mp4",
+    "view": "dtl",
+    "ok": true,
+    "stage_failed": null,
+    "error_code": null,
+    "error_detail": null,
+    "meta": {
+      "fps": 30.0,
+      "duration": 11.267,
+      "width": 720,
+      "height": 1280,
+      "frame_count": 338,
+      "sample_step": 1,
+      "low_fps": false
+    },
+    "extract": {
+      "sampled": 338,
+      "detected": 338,
+      "miss_ratio": 0.0,
+      "avg_core_vis": 0.8723
+    },
+    "signals": {
+      "n": 338,
+      "S": 0.06196,
+      "dt": 0.03333,
+      "fps_eff": 30.0,
+      "speed_max": 14.9302,
+      "speed_median": 0.3628,
+      "wrist_travel": 0.10334,
+      "wrist_travel_in_S": 1.6678,
+      "guard_v_peak_min": 1.5,
+      "guard_min_travel_in_S": 0.6
+    },
+    "events": [
+      {
+        "index": 1,
+        "key": "address",
+        "name_cn": "准备",
+        "frame_index": 129,
+        "array_index": 129,
+        "timestamp": 4.3,
+        "estimated": false
+      },
+      {
+        "index": 2,
+        "key": "takeaway",
+        "name_cn": "起杆",
+        "frame_index": 143,
+        "array_index": 143,
+        "timestamp": 4.767,
+        "estimated": false
+      },
+      {
+        "index": 3,
+        "key": "backswing",
+        "name_cn": "上杆",
+        "frame_index": 150,
+        "array_index": 150,
+        "timestamp": 5.0,
+        "estimated": false
+      },
+      {
+        "index": 4,
+        "key": "top",
+        "name_cn": "顶点",
+        "frame_index": 157,
+        "array_index": 157,
+        "timestamp": 5.233,
+        "estimated": false
+      },
+      {
+        "index": 5,
+        "key": "downswing",
+        "name_cn": "下杆",
+        "frame_index": 162,
+        "array_index": 162,
+        "timestamp": 5.4,
+        "estimated": false
+      },
+      {
+        "index": 6,
+        "key": "impact",
+        "name_cn": "击球",
+        "frame_index": 163,
+        "array_index": 163,
+        "timestamp": 5.433,
+        "estimated": true
+      },
+      {
+        "index": 7,
+        "key": "follow_through",
+        "name_cn": "送杆",
+        "frame_index": 170,
+        "array_index": 170,
+        "timestamp": 5.667,
+        "estimated": true
+      },
+      {
+        "index": 8,
+        "key": "finish",
+        "name_cn": "收杆",
+        "frame_index": 183,
+        "array_index": 183,
+        "timestamp": 6.1,
+        "estimated": false
+      }
+    ],
+    "estimated_count": 2,
+    "segment_ok": true,
+    "scale": {
+      "S_world_m": 0.3457,
+      "S_px": 58.049,
+      "view_shoulder_over_height": 0.1575,
+      "view_ratio_dtl_threshold": 0.13
+    },
+    "phases": {
+      "address": {
+        "name_cn": "准备",
+        "metrics": [
+          {
+            "key": "spine_forward_tilt",
+            "name": "脊柱前倾角",
+            "value": 12.8,
+            "unit": "°",
+            "ref": [
+              30.0,
+              40.0
+            ],
+            "status": "low"
+          },
+          {
+            "key": "stance_width_ratio",
+            "name": "站姿宽度比",
+            "value": 0.8,
+            "unit": "",
+            "ref": [
+              1.0,
+              1.3
+            ],
+            "status": "low"
+          },
+          {
+            "key": "shoulder_line_tilt",
+            "name": "肩线水平倾角",
+            "value": 0.6,
+            "unit": "°",
+            "ref": [
+              5.0,
+              12.0
+            ],
+            "status": "low"
+          },
+          {
+            "key": "knee_flex",
+            "name": "膝部弯曲角",
+            "value": 167.1,
+            "unit": "°",
+            "ref": [
+              160.0,
+              172.0
+            ],
+            "status": "normal"
+          }
+        ]
+      },
+      "takeaway": {
+        "name_cn": "起杆",
+        "metrics": [
+          {
+            "key": "shoulder_turn",
+            "name": "肩部转动角",
+            "value": 28.7,
+            "unit": "°",
+            "ref": [
+              25.0,
+              35.0
+            ],
+            "status": "normal"
+          },
+          {
+            "key": "hip_turn",
+            "name": "髋部转动角",
+            "value": 15.2,
+            "unit": "°",
+            "ref": [
+              8.0,
+              18.0
+            ],
+            "status": "normal"
+          },
+          {
+            "key": "head_drift_pct",
+            "name": "头部位移",
+            "value": 9.5,
+            "unit": "%",
+            "ref": [
+              0.0,
+              4.0
+            ],
+            "status": "high"
+          },
+          {
+            "key": "lead_arm_straight",
+            "name": "引导臂伸直度",
+            "value": 149.3,
+            "unit": "°",
+            "ref": [
+              165.0,
+              178.0
+            ],
+            "status": "low"
+          }
+        ]
+      },
+      "backswing": {
+        "name_cn": "上杆",
+        "metrics": [
+          {
+            "key": "shoulder_turn",
+            "name": "肩部转动角",
+            "value": 50.7,
+            "unit": "°",
+            "ref": [
+              55.0,
+              72.0
+            ],
+            "status": "low"
+          },
+          {
+            "key": "hip_turn",
+            "name": "髋部转动角",
+            "value": 20.9,
+            "unit": "°",
+            "ref": [
+              25.0,
+              38.0
+            ],
+            "status": "low"
+          },
+          {
+            "key": "trail_elbow_flex",
+            "name": "后臂弯曲角",
+            "value": 124.7,
+            "unit": "°",
+            "ref": [
+              95.0,
+              125.0
+            ],
+            "status": "normal"
+          },
+          {
+            "key": "lead_arm_straight",
+            "name": "引导臂伸直度",
+            "value": 155.6,
+            "unit": "°",
+            "ref": [
+              155.0,
+              175.0
+            ],
+            "status": "normal"
+          }
+        ]
+      },
+      "top": {
+        "name_cn": "顶点",
+        "metrics": [
+          {
+            "key": "shoulder_turn",
+            "name": "肩部转动角",
+            "value": 64.2,
+            "unit": "°",
+            "ref": [
+              70.0,
+              88.0
+            ],
+            "status": "low"
+          },
+          {
+            "key": "hip_turn",
+            "name": "髋部转动角",
+            "value": 16.8,
+            "unit": "°",
+            "ref": [
+              45.0,
+              60.0
+            ],
+            "status": "low"
+          },
+          {
+            "key": "x_factor",
+            "name": "X-Factor(肩髋分离)",
+            "value": 47.4,
+            "unit": "°",
+            "ref": [
+              20.0,
+              35.0
+            ],
+            "status": "high"
+          },
+          {
+            "key": "lead_arm_straight",
+            "name": "引导臂伸直度",
+            "value": 162.9,
+            "unit": "°",
+            "ref": [
+              150.0,
+              172.0
+            ],
+            "status": "normal"
+          }
+        ]
+      },
+      "downswing": {
+        "name_cn": "下杆",
+        "metrics": [
+          {
+            "key": "hip_turn",
+            "name": "髋部转动角",
+            "value": 18.0,
+            "unit": "°",
+            "ref": [
+              10.0,
+              30.0
+            ],
+            "status": "normal"
+          },
+          {
+            "key": "shoulder_turn",
+            "name": "肩部转动角",
+            "value": 53.2,
+            "unit": "°",
+            "ref": [
+              45.0,
+              65.0
+            ],
+            "status": "normal"
+          },
+          {
+            "key": "x_factor_retention",
+            "name": "X-Factor 保持率",
+            "value": 74.2,
+            "unit": "%",
+            "ref": [
+              85.0,
+              130.0
+            ],
+            "status": "low"
+          },
+          {
+            "key": "pelvis_shift_pct",
+            "name": "骨盆水平位移",
+            "value": 0.9,
+            "unit": "%",
+            "ref": [
+              4.0,
+              12.0
+            ],
+            "status": "low"
+          }
+        ]
+      },
+      "impact": {
+        "name_cn": "击球",
+        "metrics": [
+          {
+            "key": "hip_open",
+            "name": "髋部开放角",
+            "value": -17.5,
+            "unit": "°",
+            "ref": [
+              15.0,
+              30.0
+            ],
+            "status": "low"
+          },
+          {
+            "key": "shoulder_square",
+            "name": "肩部方正度",
+            "value": -41.1,
+            "unit": "°",
+            "ref": [
+              -5.0,
+              12.0
+            ],
+            "status": "low"
+          },
+          {
+            "key": "spine_tilt_delta",
+            "name": "起身量(脊柱倾角变化)",
+            "value": 12.4,
+            "unit": "°",
+            "ref": [
+              0.0,
+              8.0
+            ],
+            "status": "high"
+          },
+          {
+            "key": "pelvis_shift_pct",
+            "name": "骨盆水平位移",
+            "value": 4.6,
+            "unit": "%",
+            "ref": [
+              10.0,
+              20.0
+            ],
+            "status": "low"
+          }
+        ]
+      },
+      "follow_through": {
+        "name_cn": "送杆",
+        "metrics": [
+          {
+            "key": "hip_open",
+            "name": "髋部开放角",
+            "value": 33.0,
+            "unit": "°",
+            "ref": [
+              40.0,
+              60.0
+            ],
+            "status": "low"
+          },
+          {
+            "key": "shoulder_open",
+            "name": "肩部转动角(开放)",
+            "value": 53.1,
+            "unit": "°",
+            "ref": [
+              35.0,
+              60.0
+            ],
+            "status": "normal"
+          },
+          {
+            "key": "trail_arm_extend",
+            "name": "后臂伸展度",
+            "value": 122.1,
+            "unit": "°",
+            "ref": [
+              150.0,
+              172.0
+            ],
+            "status": "low"
+          },
+          {
+            "key": "spine_lateral_tilt",
+            "name": "脊柱侧倾",
+            "value": -16.8,
+            "unit": "°",
+            "ref": [
+              10.0,
+              20.0
+            ],
+            "status": "low"
+          }
+        ]
+      },
+      "finish": {
+        "name_cn": "收杆",
+        "metrics": [
+          {
+            "key": "hip_to_target",
+            "name": "髋部朝向目标角",
+            "value": 119.0,
+            "unit": "°",
+            "ref": [
+              75.0,
+              95.0
+            ],
+            "status": "high"
+          },
+          {
+            "key": "shoulder_open",
+            "name": "肩部转动角(总开放)",
+            "value": 102.4,
+            "unit": "°",
+            "ref": [
+              85.0,
+              110.0
+            ],
+            "status": "normal"
+          },
+          {
+            "key": "pelvis_shift_pct",
+            "name": "骨盆水平位移",
+            "value": 63.3,
+            "unit": "%",
+            "ref": [
+              20.0,
+              35.0
+            ],
+            "status": "high"
+          },
+          {
+            "key": "balance_hold_sec",
+            "name": "收杆平衡保持时长",
+            "value": 0.1,
+            "unit": "s",
+            "ref": [
+              0.8,
+              3.0
+            ],
+            "status": "low"
+          }
+        ]
+      }
+    },
+    "global": {
+      "tempo_ratio": 4.7,
+      "swing_duration": 1.8,
+      "max_head_drift_pct": 42.7
+    },
+    "warnings": [],
+    "diag_raw_angles": {
+      "address": {
+        "shoulder_turn_signed": -0.0,
+        "hip_turn_signed": -0.0,
+        "x_factor_raw": 0.0,
+        "shoulder_rot_raw_no_sign": 0.0,
+        "hip_rot_raw_no_sign": 0.0,
+        "spine_forward_tilt": 12.7523,
+        "spine_lateral_tilt": -27.5479,
+        "shoulder_vec_world": [
+          0.1052,
+          -0.0012,
+          0.3293
+        ],
+        "hip_vec_world": [
+          0.126,
+          0.0044,
+          0.206
+        ]
+      },
+      "takeaway": {
+        "shoulder_turn_signed": 28.7264,
+        "hip_turn_signed": 15.1897,
+        "x_factor_raw": 13.5367,
+        "shoulder_rot_raw_no_sign": -28.7264,
+        "hip_rot_raw_no_sign": -15.1897,
+        "spine_forward_tilt": 3.7688,
+        "spine_lateral_tilt": -27.8078,
+        "shoulder_vec_world": [
+          0.233,
+          0.1141,
+          0.2216
+        ],
+        "hip_vec_world": [
+          0.181,
+          0.0418,
+          0.1709
+        ]
+      },
+      "backswing": {
+        "shoulder_turn_signed": 50.7432,
+        "hip_turn_signed": 20.913,
+        "x_factor_raw": 29.8302,
+        "shoulder_rot_raw_no_sign": -50.7432,
+        "hip_rot_raw_no_sign": -20.913,
+        "spine_forward_tilt": 1.4574,
+        "spine_lateral_tilt": -27.1061,
+        "shoulder_vec_world": [
+          0.2192,
+          0.145,
+          0.0865
+        ],
+        "hip_vec_world": [
+          0.1867,
+          0.0403,
+          0.1439
+        ]
+      },
+      "top": {
+        "shoulder_turn_signed": 64.2005,
+        "hip_turn_signed": 16.8127,
+        "x_factor_raw": 47.3878,
+        "shoulder_rot_raw_no_sign": -64.2005,
+        "hip_rot_raw_no_sign": -16.8127,
+        "spine_forward_tilt": 13.8405,
+        "spine_lateral_tilt": -28.8652,
+        "shoulder_vec_world": [
+          0.1883,
+          0.1455,
+          0.0268
+        ],
+        "hip_vec_world": [
+          0.1719,
+          0.04,
+          0.1534
+        ]
+      },
+      "downswing": {
+        "shoulder_turn_signed": 53.2036,
+        "hip_turn_signed": 18.0187,
+        "x_factor_raw": 35.1849,
+        "shoulder_rot_raw_no_sign": -53.2036,
+        "hip_rot_raw_no_sign": -18.0187,
+        "spine_forward_tilt": 2.6067,
+        "spine_lateral_tilt": -28.1785,
+        "shoulder_vec_world": [
+          0.2095,
+          0.1338,
+          0.0725
+        ],
+        "hip_vec_world": [
+          0.1794,
+          0.04,
+          0.1534
+        ]
+      },
+      "impact": {
+        "shoulder_turn_signed": 41.128,
+        "hip_turn_signed": 17.513,
+        "x_factor_raw": 23.615,
+        "shoulder_rot_raw_no_sign": -41.128,
+        "hip_rot_raw_no_sign": -17.513,
+        "spine_forward_tilt": 0.3795,
+        "spine_lateral_tilt": -27.6768,
+        "shoulder_vec_world": [
+          0.2185,
+          0.1193,
+          0.1321
+        ],
+        "hip_vec_world": [
+          0.1778,
+          0.0401,
+          0.1547
+        ]
+      },
+      "follow_through": {
+        "shoulder_turn_signed": -53.1499,
+        "hip_turn_signed": -32.9777,
+        "x_factor_raw": -20.1722,
+        "shoulder_rot_raw_no_sign": 53.1499,
+        "hip_rot_raw_no_sign": 32.9777,
+        "spine_forward_tilt": 5.0146,
+        "spine_lateral_tilt": -16.7575,
+        "shoulder_vec_world": [
+          -0.1673,
+          -0.124,
+          0.235
+        ],
+        "hip_vec_world": [
+          -0.0049,
+          -0.0131,
+          0.1832
+        ]
+      },
+      "finish": {
+        "shoulder_turn_signed": -102.396,
+        "hip_turn_signed": -118.9897,
+        "x_factor_raw": 16.5937,
+        "shoulder_rot_raw_no_sign": 102.396,
+        "hip_rot_raw_no_sign": 118.9897,
+        "spine_forward_tilt": 11.8675,
+        "spine_lateral_tilt": -11.3678,
+        "shoulder_vec_world": [
+          -0.2335,
+          -0.0402,
+          0.0217
+        ],
+        "hip_vec_world": [
+          -0.1145,
+          -0.0282,
+          0.0049
+        ]
+      }
+    },
+    "rotation_sign": -1,
+    "target_dir_x": 1,
+    "elapsed_sec": 6.63
+  }
+]

@@ -405,3 +405,227 @@
   font-size: 26rpx;
   color: var(--text-dim, #6b7686);
 }
+
+/* ================= v2 新增 ================= */
+
+/* ---------------- 顶部机位标签 ---------------- */
+.topbar {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  padding: 8rpx 4rpx 4rpx;
+}
+.topbar__view {
+  font-size: 26rpx;
+  font-weight: 600;
+  color: var(--accent, #3ddc97);
+}
+.topbar__sub {
+  font-size: 20rpx;
+  color: var(--text-dim, #6b7686);
+}
+
+/* ---------------- 五态 critical 配色（v2） ---------------- */
+.chip--critical_low,
+.chip--critical_high {
+  color: #ffffff;
+  background: #ef4444;
+}
+.status--critical_low,
+.status--critical_high {
+  color: #ef4444;
+}
+.status-bg--critical_low,
+.status-bg--critical_high {
+  background: #ef4444;
+}
+
+/* ---------------- 指标卡术语解释行（v2） ---------------- */
+.mcard__desc {
+  margin-top: 12rpx;
+  padding-top: 12rpx;
+  border-top: 1rpx dashed rgba(255, 255, 255, 0.08);
+  font-size: 22rpx;
+  line-height: 32rpx;
+  color: var(--text-dim, #6b7686);
+}
+
+/* ---------------- 指标空状态（用户决策 2） ---------------- */
+.empty-metric {
+  padding: 56rpx 20rpx;
+  border-radius: 14rpx;
+  background: var(--card, #18222c);
+  text-align: center;
+}
+.empty-metric__icon {
+  font-size: 56rpx;
+}
+.empty-metric__text {
+  margin-top: 12rpx;
+  font-size: 26rpx;
+  color: var(--text, #eaf0f6);
+}
+.empty-metric__sub {
+  margin-top: 6rpx;
+  font-size: 22rpx;
+  color: var(--text-dim, #6b7686);
+}
+
+/* ---------------- 风险区（v2 区域4） ---------------- */
+.risk-ok {
+  display: flex;
+  align-items: center;
+  padding: 28rpx 24rpx;
+  border-radius: 14rpx;
+  background: var(--card, #18222c);
+  border: 1rpx solid rgba(61, 220, 151, 0.3);
+}
+.risk-ok__icon {
+  font-size: 34rpx;
+  margin-right: 14rpx;
+}
+.risk-ok__text {
+  font-size: 26rpx;
+  color: var(--accent, #3ddc97);
+}
+
+.rcard {
+  padding: 22rpx;
+  margin-bottom: 16rpx;
+  border-radius: 14rpx;
+  background: var(--card, #18222c);
+  border-left: 8rpx solid transparent;
+}
+.rcard--high {
+  border-left-color: #ef4444;
+}
+.rcard--medium {
+  border-left-color: #f59e0b;
+}
+.rcard--low {
+  border-left-color: #3b82f6;
+}
+.rcard__head {
+  display: flex;
+  align-items: center;
+}
+.rcard__dot {
+  width: 16rpx;
+  height: 16rpx;
+  border-radius: 50%;
+  margin-right: 12rpx;
+}
+.rcard--high .rcard__dot { background: #ef4444; }
+.rcard--medium .rcard__dot { background: #f59e0b; }
+.rcard--low .rcard__dot { background: #3b82f6; }
+.rcard__name {
+  flex: 1;
+  font-size: 28rpx;
+  font-weight: 600;
+}
+.rcard__level {
+  padding: 2rpx 14rpx;
+  border-radius: 999rpx;
+  font-size: 20rpx;
+  font-weight: 600;
+}
+.rcard--high .rcard__level { color: #ef4444; background: rgba(239, 68, 68, 0.14); }
+.rcard--medium .rcard__level { color: #f59e0b; background: rgba(245, 158, 11, 0.14); }
+.rcard--low .rcard__level { color: #3b82f6; background: rgba(59, 130, 246, 0.14); }
+.rcard__reason {
+  margin-top: 12rpx;
+  font-size: 24rpx;
+  line-height: 36rpx;
+  color: var(--text, #eaf0f6);
+}
+.rcard__suggest {
+  margin-top: 12rpx;
+  padding: 14rpx 16rpx;
+  border-radius: 10rpx;
+  background: rgba(255, 255, 255, 0.04);
+}
+.rcard__suggest-title {
+  font-size: 22rpx;
+  color: var(--text-dim, #6b7686);
+}
+.rcard__suggest-item {
+  font-size: 22rpx;
+  line-height: 32rpx;
+  color: var(--text, #eaf0f6);
+}
+.rcard__manual {
+  margin-top: 14rpx;
+  font-size: 24rpx;
+  color: #48a7f5;
+}
+
+/* ---------------- 手册原文半屏弹窗 ---------------- */
+.mask {
+  position: fixed;
+  inset: 0;
+  z-index: 999;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: flex-end;
+}
+.manual {
+  width: 100%;
+  max-height: 70vh;
+  display: flex;
+  flex-direction: column;
+  background: #18222c;
+  border-radius: 24rpx 24rpx 0 0;
+  padding: 28rpx 28rpx 40rpx;
+  box-sizing: border-box;
+}
+.manual__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.manual__title {
+  font-size: 30rpx;
+  font-weight: 600;
+}
+.manual__close {
+  font-size: 30rpx;
+  color: var(--text-dim, #6b7686);
+  padding: 8rpx 12rpx;
+}
+.manual__page {
+  margin-top: 10rpx;
+  font-size: 22rpx;
+  color: #48a7f5;
+}
+.manual__body {
+  margin-top: 18rpx;
+  max-height: 40vh;
+}
+.manual__text {
+  font-size: 26rpx;
+  line-height: 40rpx;
+  color: var(--text, #eaf0f6);
+}
+.manual__foot {
+  margin-top: 24rpx;
+  height: 80rpx;
+  line-height: 80rpx;
+  text-align: center;
+  border-radius: 40rpx;
+  color: #0f1720;
+  font-weight: 600;
+  background: var(--accent, #3ddc97);
+}
+
+/* ---------------- [查看完整报告] 占位（P1） ---------------- */
+.report-btn {
+  margin: 24rpx 24rpx 0;
+  height: 80rpx;
+  line-height: 80rpx;
+  text-align: center;
+  border-radius: 40rpx;
+  font-size: 26rpx;
+  color: var(--text-dim, #6b7686);
+  background: #18222c;
+  border: 1rpx dashed #2a323e;
+}

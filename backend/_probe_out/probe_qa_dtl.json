@@ -1,0 +1,1459 @@
+[
+  {
+    "name": "DTL-0bb16a97",
+    "path": "E:\\project\\golf\\.tools\\_probe\\samples\\0bb16a974ef55676cc1b938d8539edfd.mp4",
+    "chosen_view": "down_the_line",
+    "ok": true,
+    "stage_failed": null,
+    "error_code": null,
+    "error_detail": null,
+    "meta": {
+      "fps": 30.0,
+      "duration": 7.0,
+      "width": 720,
+      "height": 1280,
+      "frame_count": 210,
+      "sample_step": 1,
+      "low_fps": false
+    },
+    "extract": {
+      "sampled": 210,
+      "detected": 210,
+      "miss_ratio": 0.0
+    },
+    "events": [
+      {
+        "index": 1,
+        "key": "address",
+        "frame_index": 168,
+        "timestamp": 5.6,
+        "estimated": false
+      },
+      {
+        "index": 2,
+        "key": "takeaway",
+        "frame_index": 176,
+        "timestamp": 5.867,
+        "estimated": false
+      },
+      {
+        "index": 3,
+        "key": "backswing",
+        "frame_index": 178,
+        "timestamp": 5.933,
+        "estimated": true
+      },
+      {
+        "index": 4,
+        "key": "top",
+        "frame_index": 183,
+        "timestamp": 6.1,
+        "estimated": false
+      },
+      {
+        "index": 5,
+        "key": "downswing",
+        "frame_index": 184,
+        "timestamp": 6.133,
+        "estimated": true
+      },
+      {
+        "index": 6,
+        "key": "impact",
+        "frame_index": 189,
+        "timestamp": 6.3,
+        "estimated": false
+      },
+      {
+        "index": 7,
+        "key": "follow_through",
+        "frame_index": 200,
+        "timestamp": 6.667,
+        "estimated": false
+      },
+      {
+        "index": 8,
+        "key": "finish",
+        "frame_index": 209,
+        "timestamp": 6.967,
+        "estimated": true
+      }
+    ],
+    "view": {
+      "chosen": "down_the_line",
+      "resolved": "down_the_line",
+      "detected_ratio": 0.0951,
+      "ratio_dtl_threshold": 0.13,
+      "warning": null
+    },
+    "club": {
+      "enabled": true,
+      "available": true,
+      "overall_confidence": 0.3899,
+      "club_len_px": 214.4437,
+      "anchors": 12,
+      "decoded": 18,
+      "decode_opens": 1
+    },
+    "scale": {
+      "S_world_m": 0.3376,
+      "S_px": 34.5535,
+      "body_h_px": 363.4638,
+      "scale_px": 94.5006,
+      "SHOULDER_TO_HEIGHT_RATIO": 0.26
+    },
+    "phases": {
+      "address": {
+        "name_cn": "准备",
+        "metrics": [
+          {
+            "key": "knee_flexion",
+            "name": "膝部弯曲角",
+            "value": 165.8,
+            "unit": "°",
+            "ref": [
+              160.0,
+              172.0
+            ],
+            "status": "normal",
+            "source": "measured",
+            "estimated": false,
+            "confidence": 1.0,
+            "description": "膝盖弯曲角度，180°为完全伸直"
+          },
+          {
+            "key": "spine_tilt_fwd",
+            "name": "脊柱前倾角",
+            "value": 25.0,
+            "unit": "°",
+            "ref": [
+              30.0,
+              40.0
+            ],
+            "status": "low",
+            "source": "measured",
+            "estimated": false,
+            "confidence": 1.0,
+            "description": "脊柱相对垂直线的向前倾斜角度"
+          }
+        ]
+      },
+      "takeaway": {
+        "name_cn": "起杆",
+        "metrics": [
+          {
+            "key": "head_drift",
+            "name": "头部位移",
+            "value": 3.0,
+            "unit": "%",
+            "ref": [
+              0.0,
+              4.0
+            ],
+            "status": "normal",
+            "source": "measured",
+            "estimated": false,
+            "confidence": 1.0,
+            "description": "头部相对起始位置的晃动幅度（以肩宽百分比表示）"
+          },
+          {
+            "key": "lead_arm_straightness",
+            "name": "引导臂伸直度",
+            "value": 147.6,
+            "unit": "°",
+            "ref": [
+              165.0,
+              178.0
+            ],
+            "status": "critical_low",
+            "source": "measured",
+            "estimated": false,
+            "confidence": 1.0,
+            "description": "左臂伸直程度，180°为完全伸直，越接近越好"
+          }
+        ]
+      },
+      "backswing": {
+        "name_cn": "上杆",
+        "metrics": [
+          {
+            "key": "trail_arm_flexion",
+            "name": "后臂弯曲角",
+            "value": 141.5,
+            "unit": "°",
+            "ref": [
+              95.0,
+              125.0
+            ],
+            "status": "high",
+            "source": "measured",
+            "estimated": false,
+            "confidence": 1.0,
+            "description": "右肘弯曲角度，正常折叠利于力量传导"
+          },
+          {
+            "key": "lead_arm_straightness",
+            "name": "引导臂伸直度",
+            "value": 142.5,
+            "unit": "°",
+            "ref": [
+              155.0,
+              175.0
+            ],
+            "status": "low",
+            "source": "measured",
+            "estimated": false,
+            "confidence": 1.0,
+            "description": "左臂伸直程度，180°为完全伸直，越接近越好"
+          }
+        ]
+      },
+      "top": {
+        "name_cn": "顶点",
+        "metrics": [
+          {
+            "key": "lead_arm_straightness",
+            "name": "引导臂伸直度",
+            "value": 137.8,
+            "unit": "°",
+            "ref": [
+              150.0,
+              172.0
+            ],
+            "status": "low",
+            "source": "measured",
+            "estimated": false,
+            "confidence": 1.0,
+            "description": "左臂伸直程度，180°为完全伸直，越接近越好"
+          }
+        ]
+      },
+      "downswing": {
+        "name_cn": "下杆",
+        "metrics": [
+          {
+            "key": "shaft_plane_dev",
+            "name": "杆面平面偏差",
+            "value": 3.1,
+            "unit": "°",
+            "ref": [
+              -10.0,
+              15.0
+            ],
+            "status": "normal",
+            "source": "proxy",
+            "estimated": true,
+            "confidence": 0.38988044997069793,
+            "description": ""
+          }
+        ]
+      },
+      "impact": {
+        "name_cn": "击球",
+        "metrics": [
+          {
+            "key": "spine_tilt_change",
+            "name": "脊柱前倾变化量(起身量)",
+            "value": 18.3,
+            "unit": "°",
+            "ref": [
+              0.0,
+              8.0
+            ],
+            "status": "critical_high",
+            "source": "measured",
+            "estimated": false,
+            "confidence": 1.0,
+            "description": "击球时相比准备时站直了多少，数值越接近0越好"
+          }
+        ]
+      },
+      "follow_through": {
+        "name_cn": "送杆",
+        "metrics": [
+          {
+            "key": "trail_arm_flexion",
+            "name": "后臂伸展度",
+            "value": 133.4,
+            "unit": "°",
+            "ref": [
+              150.0,
+              172.0
+            ],
+            "status": "low",
+            "source": "measured",
+            "estimated": false,
+            "confidence": 1.0,
+            "description": "右肘弯曲角度，正常折叠利于力量传导"
+          }
+        ]
+      },
+      "finish": {
+        "name_cn": "收杆",
+        "metrics": [
+          {
+            "key": "balance_hold",
+            "name": "收杆平衡保持时长",
+            "value": 0.0,
+            "unit": "s",
+            "ref": [
+              0.8,
+              3.0
+            ],
+            "status": "low",
+            "source": "measured",
+            "estimated": false,
+            "confidence": 1.0,
+            "description": "收杆后站稳的时间，越长代表平衡性越好"
+          }
+        ]
+      }
+    },
+    "risks": {
+      "address": [],
+      "takeaway": [],
+      "backswing": [],
+      "top": [
+        {
+          "rule_id": "RISK-006",
+          "risk_name": "鸡翅风险(肘部)",
+          "risk_level": "high",
+          "metric_key": "lead_arm_straightness",
+          "value": 137.8,
+          "trigger_description": "你的顶点阶段引导臂伸直度为 137.8°，低于参考范围(150°~172°)。左臂过度弯曲（\"鸡翅\"）会导致挥杆力量泄漏，同时增加肘部和腕部的损伤风险。",
+          "manual_page": "8"
+        }
+      ],
+      "downswing": [],
+      "impact": [
+        {
+          "rule_id": "RISK-014",
+          "risk_name": "过早起身(Early Extension)风险",
+          "risk_level": "high",
+          "metric_key": "spine_tilt_change",
+          "value": 18.3,
+          "trigger_description": "你的脊柱前倾变化量为 18.3°，远高于参考范围(<8°)。这表明你在击球时'起身'(Early Extension)明显，是打薄、打厚、剃头球的主要原因之一。",
+          "manual_page": "11"
+        }
+      ],
+      "follow_through": [],
+      "finish": [
+        {
+          "rule_id": "RISK-017",
+          "risk_name": "收杆不稳定风险",
+          "risk_level": "low",
+          "metric_key": "balance_hold",
+          "value": 0.0,
+          "trigger_description": "你的收杆平衡保持时间为 0.00s，低于参考范围(≥0.8s)。收杆不稳说明挥杆过程中重心转移存在缺陷。",
+          "manual_page": "10"
+        }
+      ]
+    },
+    "risk_count": 3,
+    "warnings": [
+      "顶点关键点可见度不足，挥杆平面角无法计算，已跳过该指标",
+      "挥杆平面角 计算异常，已跳过该指标",
+      "球杆识别置信度偏低，挥杆平面为估算值，仅供参考"
+    ],
+    "key_metrics": {
+      "top_swing_plane": null,
+      "impact_spine_tilt_change": 18.3,
+      "downswing_shaft_plane_dev": {
+        "value": 3.1,
+        "source": "proxy",
+        "ref": [
+          -10.0,
+          15.0
+        ]
+      },
+      "follow_through_shoulder_turn": null,
+      "risks_016": []
+    },
+    "elapsed_sec": 5.9
+  },
+  {
+    "name": "DTL-470057ac",
+    "path": "E:\\project\\golf\\.tools\\_probe\\samples\\470057ac3dac2025eb6b0dcd390b6957.mp4",
+    "chosen_view": "down_the_line",
+    "ok": true,
+    "stage_failed": null,
+    "error_code": null,
+    "error_detail": null,
+    "meta": {
+      "fps": 30.0,
+      "duration": 7.2,
+      "width": 720,
+      "height": 1280,
+      "frame_count": 216,
+      "sample_step": 1,
+      "low_fps": false
+    },
+    "extract": {
+      "sampled": 216,
+      "detected": 216,
+      "miss_ratio": 0.0
+    },
+    "events": [
+      {
+        "index": 1,
+        "key": "address",
+        "frame_index": 73,
+        "timestamp": 2.433,
+        "estimated": false
+      },
+      {
+        "index": 2,
+        "key": "takeaway",
+        "frame_index": 82,
+        "timestamp": 2.733,
+        "estimated": false
+      },
+      {
+        "index": 3,
+        "key": "backswing",
+        "frame_index": 87,
+        "timestamp": 2.9,
+        "estimated": false
+      },
+      {
+        "index": 4,
+        "key": "top",
+        "frame_index": 92,
+        "timestamp": 3.067,
+        "estimated": false
+      },
+      {
+        "index": 5,
+        "key": "downswing",
+        "frame_index": 97,
+        "timestamp": 3.233,
+        "estimated": false
+      },
+      {
+        "index": 6,
+        "key": "impact",
+        "frame_index": 98,
+        "timestamp": 3.267,
+        "estimated": true
+      },
+      {
+        "index": 7,
+        "key": "follow_through",
+        "frame_index": 112,
+        "timestamp": 3.733,
+        "estimated": true
+      },
+      {
+        "index": 8,
+        "key": "finish",
+        "frame_index": 137,
+        "timestamp": 4.567,
+        "estimated": true
+      }
+    ],
+    "view": {
+      "chosen": "down_the_line",
+      "resolved": "down_the_line",
+      "detected_ratio": 0.07,
+      "ratio_dtl_threshold": 0.13,
+      "warning": null
+    },
+    "club": {
+      "enabled": true,
+      "available": true,
+      "overall_confidence": 0.2598,
+      "club_len_px": 152.3832,
+      "anchors": 12,
+      "decoded": 18,
+      "decode_opens": 1
+    },
+    "scale": {
+      "S_world_m": 0.3508,
+      "S_px": 78.8565,
+      "body_h_px": 258.2766,
+      "scale_px": 67.1519,
+      "SHOULDER_TO_HEIGHT_RATIO": 0.26
+    },
+    "phases": {
+      "address": {
+        "name_cn": "准备",
+        "metrics": [
+          {
+            "key": "knee_flexion",
+            "name": "膝部弯曲角",
+            "value": 160.8,
+            "unit": "°",
+            "ref": [
+              160.0,
+              172.0
+            ],
+            "status": "normal",
+            "source": "measured",
+            "estimated": false,
+            "confidence": 1.0,
+            "description": "膝盖弯曲角度，180°为完全伸直"
+          },
+          {
+            "key": "spine_tilt_fwd",
+            "name": "脊柱前倾角",
+            "value": 33.0,
+            "unit": "°",
+            "ref": [
+              30.0,
+              40.0
+            ],
+            "status": "normal",
+            "source": "measured",
+            "estimated": false,
+            "confidence": 1.0,
+            "description": "脊柱相对垂直线的向前倾斜角度"
+          }
+        ]
+      },
+      "takeaway": {
+        "name_cn": "起杆",
+        "metrics": [
+          {
+            "key": "head_drift",
+            "name": "头部位移",
+            "value": 14.6,
+            "unit": "%",
+            "ref": [
+              0.0,
+              4.0
+            ],
+            "status": "critical_high",
+            "source": "measured",
+            "estimated": false,
+            "confidence": 1.0,
+            "description": "头部相对起始位置的晃动幅度（以肩宽百分比表示）"
+          },
+          {
+            "key": "lead_arm_straightness",
+            "name": "引导臂伸直度",
+            "value": 144.0,
+            "unit": "°",
+            "ref": [
+              165.0,
+              178.0
+            ],
+            "status": "critical_low",
+            "source": "measured",
+            "estimated": false,
+            "confidence": 1.0,
+            "description": "左臂伸直程度，180°为完全伸直，越接近越好"
+          }
+        ]
+      },
+      "backswing": {
+        "name_cn": "上杆",
+        "metrics": [
+          {
+            "key": "trail_arm_flexion",
+            "name": "后臂弯曲角",
+            "value": 132.9,
+            "unit": "°",
+            "ref": [
+              95.0,
+              125.0
+            ],
+            "status": "high",
+            "source": "measured",
+            "estimated": false,
+            "confidence": 1.0,
+            "description": "右肘弯曲角度，正常折叠利于力量传导"
+          },
+          {
+            "key": "lead_arm_straightness",
+            "name": "引导臂伸直度",
+            "value": 144.8,
+            "unit": "°",
+            "ref": [
+              155.0,
+              175.0
+            ],
+            "status": "low",
+            "source": "measured",
+            "estimated": false,
+            "confidence": 1.0,
+            "description": "左臂伸直程度，180°为完全伸直，越接近越好"
+          }
+        ]
+      },
+      "top": {
+        "name_cn": "顶点",
+        "metrics": [
+          {
+            "key": "lead_arm_straightness",
+            "name": "引导臂伸直度",
+            "value": 148.6,
+            "unit": "°",
+            "ref": [
+              150.0,
+              172.0
+            ],
+            "status": "low",
+            "source": "measured",
+            "estimated": false,
+            "confidence": 1.0,
+            "description": "左臂伸直程度，180°为完全伸直，越接近越好"
+          },
+          {
+            "key": "swing_plane",
+            "name": "挥杆平面角",
+            "value": 29.8,
+            "unit": "°",
+            "ref": [
+              55.0,
+              65.0
+            ],
+            "status": "critical_low",
+            "source": "measured",
+            "estimated": false,
+            "confidence": 1.0,
+            "description": "顶点时手臂与水平面的夹角"
+          }
+        ]
+      },
+      "downswing": {
+        "name_cn": "下杆",
+        "metrics": [
+          {
+            "key": "shaft_plane_dev",
+            "name": "杆面平面偏差",
+            "value": 28.6,
+            "unit": "°",
+            "ref": [
+              -10.0,
+              15.0
+            ],
+            "status": "high",
+            "source": "proxy",
+            "estimated": true,
+            "confidence": 0.2597786643709696,
+            "description": ""
+          }
+        ]
+      },
+      "impact": {
+        "name_cn": "击球",
+        "metrics": [
+          {
+            "key": "spine_tilt_change",
+            "name": "脊柱前倾变化量(起身量)",
+            "value": 3.7,
+            "unit": "°",
+            "ref": [
+              0.0,
+              8.0
+            ],
+            "status": "normal",
+            "source": "measured",
+            "estimated": false,
+            "confidence": 1.0,
+            "description": "击球时相比准备时站直了多少，数值越接近0越好"
+          }
+        ]
+      },
+      "follow_through": {
+        "name_cn": "送杆",
+        "metrics": [
+          {
+            "key": "trail_arm_flexion",
+            "name": "后臂伸展度",
+            "value": 155.9,
+            "unit": "°",
+            "ref": [
+              150.0,
+              172.0
+            ],
+            "status": "normal",
+            "source": "measured",
+            "estimated": false,
+            "confidence": 1.0,
+            "description": "右肘弯曲角度，正常折叠利于力量传导"
+          }
+        ]
+      },
+      "finish": {
+        "name_cn": "收杆",
+        "metrics": [
+          {
+            "key": "balance_hold",
+            "name": "收杆平衡保持时长",
+            "value": 0.0,
+            "unit": "s",
+            "ref": [
+              0.8,
+              3.0
+            ],
+            "status": "low",
+            "source": "measured",
+            "estimated": false,
+            "confidence": 1.0,
+            "description": "收杆后站稳的时间，越长代表平衡性越好"
+          }
+        ]
+      }
+    },
+    "risks": {
+      "address": [],
+      "takeaway": [],
+      "backswing": [],
+      "top": [],
+      "downswing": [],
+      "impact": [],
+      "follow_through": [],
+      "finish": [
+        {
+          "rule_id": "RISK-017",
+          "risk_name": "收杆不稳定风险",
+          "risk_level": "low",
+          "metric_key": "balance_hold",
+          "value": 0.0,
+          "trigger_description": "你的收杆平衡保持时间为 0.00s，低于参考范围(≥0.8s)。收杆不稳说明挥杆过程中重心转移存在缺陷。",
+          "manual_page": "10"
+        }
+      ]
+    },
+    "risk_count": 1,
+    "warnings": [
+      "球杆识别置信度偏低，挥杆平面为估算值，仅供参考"
+    ],
+    "key_metrics": {
+      "top_swing_plane": 29.8,
+      "impact_spine_tilt_change": 3.7,
+      "downswing_shaft_plane_dev": {
+        "value": 28.6,
+        "source": "proxy",
+        "ref": [
+          -10.0,
+          15.0
+        ]
+      },
+      "follow_through_shoulder_turn": null,
+      "risks_016": []
+    },
+    "elapsed_sec": 5.19
+  },
+  {
+    "name": "DTL-4e8d0d7e",
+    "path": "E:\\project\\golf\\.tools\\_probe\\samples\\4e8d0d7e517a67a2a7698fd1536289eb.mp4",
+    "chosen_view": "down_the_line",
+    "ok": true,
+    "stage_failed": null,
+    "error_code": null,
+    "error_detail": null,
+    "meta": {
+      "fps": 30.0,
+      "duration": 12.067,
+      "width": 720,
+      "height": 1280,
+      "frame_count": 362,
+      "sample_step": 1,
+      "low_fps": false
+    },
+    "extract": {
+      "sampled": 362,
+      "detected": 314,
+      "miss_ratio": 0.1326
+    },
+    "events": [
+      {
+        "index": 1,
+        "key": "address",
+        "frame_index": 198,
+        "timestamp": 6.6,
+        "estimated": false
+      },
+      {
+        "index": 2,
+        "key": "takeaway",
+        "frame_index": 213,
+        "timestamp": 7.1,
+        "estimated": false
+      },
+      {
+        "index": 3,
+        "key": "backswing",
+        "frame_index": 219,
+        "timestamp": 7.3,
+        "estimated": false
+      },
+      {
+        "index": 4,
+        "key": "top",
+        "frame_index": 228,
+        "timestamp": 7.6,
+        "estimated": false
+      },
+      {
+        "index": 5,
+        "key": "downswing",
+        "frame_index": 234,
+        "timestamp": 7.8,
+        "estimated": false
+      },
+      {
+        "index": 6,
+        "key": "impact",
+        "frame_index": 235,
+        "timestamp": 7.833,
+        "estimated": true
+      },
+      {
+        "index": 7,
+        "key": "follow_through",
+        "frame_index": 263,
+        "timestamp": 8.767,
+        "estimated": true
+      },
+      {
+        "index": 8,
+        "key": "finish",
+        "frame_index": 316,
+        "timestamp": 10.533,
+        "estimated": false
+      }
+    ],
+    "view": {
+      "chosen": "down_the_line",
+      "resolved": "down_the_line",
+      "detected_ratio": 0.1101,
+      "ratio_dtl_threshold": 0.13,
+      "warning": null
+    },
+    "club": {
+      "enabled": true,
+      "available": true,
+      "overall_confidence": 0.206,
+      "club_len_px": 194.6366,
+      "anchors": 13,
+      "decoded": 19,
+      "decode_opens": 1
+    },
+    "scale": {
+      "S_world_m": 0.3377,
+      "S_px": 91.478,
+      "body_h_px": 329.8926,
+      "scale_px": 85.7721,
+      "SHOULDER_TO_HEIGHT_RATIO": 0.26
+    },
+    "phases": {
+      "address": {
+        "name_cn": "准备",
+        "metrics": [
+          {
+            "key": "knee_flexion",
+            "name": "膝部弯曲角",
+            "value": 161.1,
+            "unit": "°",
+            "ref": [
+              160.0,
+              172.0
+            ],
+            "status": "normal",
+            "source": "measured",
+            "estimated": false,
+            "confidence": 1.0,
+            "description": "膝盖弯曲角度，180°为完全伸直"
+          },
+          {
+            "key": "spine_tilt_fwd",
+            "name": "脊柱前倾角",
+            "value": 32.9,
+            "unit": "°",
+            "ref": [
+              30.0,
+              40.0
+            ],
+            "status": "normal",
+            "source": "measured",
+            "estimated": false,
+            "confidence": 1.0,
+            "description": "脊柱相对垂直线的向前倾斜角度"
+          }
+        ]
+      },
+      "takeaway": {
+        "name_cn": "起杆",
+        "metrics": [
+          {
+            "key": "head_drift",
+            "name": "头部位移",
+            "value": 14.5,
+            "unit": "%",
+            "ref": [
+              0.0,
+              4.0
+            ],
+            "status": "critical_high",
+            "source": "measured",
+            "estimated": false,
+            "confidence": 1.0,
+            "description": "头部相对起始位置的晃动幅度（以肩宽百分比表示）"
+          },
+          {
+            "key": "lead_arm_straightness",
+            "name": "引导臂伸直度",
+            "value": 140.3,
+            "unit": "°",
+            "ref": [
+              165.0,
+              178.0
+            ],
+            "status": "critical_low",
+            "source": "measured",
+            "estimated": false,
+            "confidence": 1.0,
+            "description": "左臂伸直程度，180°为完全伸直，越接近越好"
+          }
+        ]
+      },
+      "backswing": {
+        "name_cn": "上杆",
+        "metrics": [
+          {
+            "key": "trail_arm_flexion",
+            "name": "后臂弯曲角",
+            "value": 121.8,
+            "unit": "°",
+            "ref": [
+              95.0,
+              125.0
+            ],
+            "status": "normal",
+            "source": "measured",
+            "estimated": false,
+            "confidence": 1.0,
+            "description": "右肘弯曲角度，正常折叠利于力量传导"
+          },
+          {
+            "key": "lead_arm_straightness",
+            "name": "引导臂伸直度",
+            "value": 145.2,
+            "unit": "°",
+            "ref": [
+              155.0,
+              175.0
+            ],
+            "status": "low",
+            "source": "measured",
+            "estimated": false,
+            "confidence": 1.0,
+            "description": "左臂伸直程度，180°为完全伸直，越接近越好"
+          }
+        ]
+      },
+      "top": {
+        "name_cn": "顶点",
+        "metrics": [
+          {
+            "key": "lead_arm_straightness",
+            "name": "引导臂伸直度",
+            "value": 137.4,
+            "unit": "°",
+            "ref": [
+              150.0,
+              172.0
+            ],
+            "status": "low",
+            "source": "measured",
+            "estimated": false,
+            "confidence": 1.0,
+            "description": "左臂伸直程度，180°为完全伸直，越接近越好"
+          },
+          {
+            "key": "swing_plane",
+            "name": "挥杆平面角",
+            "value": 51.6,
+            "unit": "°",
+            "ref": [
+              55.0,
+              65.0
+            ],
+            "status": "low",
+            "source": "measured",
+            "estimated": false,
+            "confidence": 1.0,
+            "description": "顶点时手臂与水平面的夹角"
+          }
+        ]
+      },
+      "downswing": {
+        "name_cn": "下杆",
+        "metrics": []
+      },
+      "impact": {
+        "name_cn": "击球",
+        "metrics": [
+          {
+            "key": "spine_tilt_change",
+            "name": "脊柱前倾变化量(起身量)",
+            "value": 13.2,
+            "unit": "°",
+            "ref": [
+              0.0,
+              8.0
+            ],
+            "status": "high",
+            "source": "measured",
+            "estimated": false,
+            "confidence": 1.0,
+            "description": "击球时相比准备时站直了多少，数值越接近0越好"
+          }
+        ]
+      },
+      "follow_through": {
+        "name_cn": "送杆",
+        "metrics": [
+          {
+            "key": "trail_arm_flexion",
+            "name": "后臂伸展度",
+            "value": 146.8,
+            "unit": "°",
+            "ref": [
+              150.0,
+              172.0
+            ],
+            "status": "low",
+            "source": "measured",
+            "estimated": false,
+            "confidence": 1.0,
+            "description": "右肘弯曲角度，正常折叠利于力量传导"
+          }
+        ]
+      },
+      "finish": {
+        "name_cn": "收杆",
+        "metrics": [
+          {
+            "key": "balance_hold",
+            "name": "收杆平衡保持时长",
+            "value": 1.5,
+            "unit": "s",
+            "ref": [
+              0.8,
+              3.0
+            ],
+            "status": "normal",
+            "source": "measured",
+            "estimated": false,
+            "confidence": 1.0,
+            "description": "收杆后站稳的时间，越长代表平衡性越好"
+          }
+        ]
+      }
+    },
+    "risks": {
+      "address": [],
+      "takeaway": [],
+      "backswing": [],
+      "top": [
+        {
+          "rule_id": "RISK-006",
+          "risk_name": "鸡翅风险(肘部)",
+          "risk_level": "high",
+          "metric_key": "lead_arm_straightness",
+          "value": 137.4,
+          "trigger_description": "你的顶点阶段引导臂伸直度为 137.4°，低于参考范围(150°~172°)。左臂过度弯曲（\"鸡翅\"）会导致挥杆力量泄漏，同时增加肘部和腕部的损伤风险。",
+          "manual_page": "8"
+        }
+      ],
+      "downswing": [],
+      "impact": [
+        {
+          "rule_id": "RISK-014",
+          "risk_name": "过早起身(Early Extension)风险",
+          "risk_level": "high",
+          "metric_key": "spine_tilt_change",
+          "value": 13.2,
+          "trigger_description": "你的脊柱前倾变化量为 13.2°，远高于参考范围(<8°)。这表明你在击球时'起身'(Early Extension)明显，是打薄、打厚、剃头球的主要原因之一。",
+          "manual_page": "11"
+        }
+      ],
+      "follow_through": [],
+      "finish": []
+    },
+    "risk_count": 2,
+    "warnings": [
+      "球杆识别不清，本次未给出挥杆平面数据，建议在光线充足、背景简洁的环境下重拍侧面机位",
+      "杆面平面偏差 计算异常，已跳过该指标",
+      "视频在收杆后过早结束，平衡保持时长可能被低估"
+    ],
+    "key_metrics": {
+      "top_swing_plane": 51.6,
+      "impact_spine_tilt_change": 13.2,
+      "downswing_shaft_plane_dev": null,
+      "follow_through_shoulder_turn": null,
+      "risks_016": []
+    },
+    "elapsed_sec": 7.91
+  },
+  {
+    "name": "DTL-c6f67f38",
+    "path": "E:\\project\\golf\\.tools\\_probe\\samples\\c6f67f38e5d293a5ce1458e5ff5a6f1b.mp4",
+    "chosen_view": "down_the_line",
+    "ok": true,
+    "stage_failed": null,
+    "error_code": null,
+    "error_detail": null,
+    "meta": {
+      "fps": 30.0,
+      "duration": 10.4,
+      "width": 720,
+      "height": 1280,
+      "frame_count": 312,
+      "sample_step": 1,
+      "low_fps": false
+    },
+    "extract": {
+      "sampled": 312,
+      "detected": 312,
+      "miss_ratio": 0.0
+    },
+    "events": [
+      {
+        "index": 1,
+        "key": "address",
+        "frame_index": 139,
+        "timestamp": 4.633,
+        "estimated": false
+      },
+      {
+        "index": 2,
+        "key": "takeaway",
+        "frame_index": 156,
+        "timestamp": 5.2,
+        "estimated": false
+      },
+      {
+        "index": 3,
+        "key": "backswing",
+        "frame_index": 163,
+        "timestamp": 5.433,
+        "estimated": false
+      },
+      {
+        "index": 4,
+        "key": "top",
+        "frame_index": 169,
+        "timestamp": 5.633,
+        "estimated": false
+      },
+      {
+        "index": 5,
+        "key": "downswing",
+        "frame_index": 176,
+        "timestamp": 5.867,
+        "estimated": false
+      },
+      {
+        "index": 6,
+        "key": "impact",
+        "frame_index": 177,
+        "timestamp": 5.9,
+        "estimated": true
+      },
+      {
+        "index": 7,
+        "key": "follow_through",
+        "frame_index": 222,
+        "timestamp": 7.4,
+        "estimated": true
+      },
+      {
+        "index": 8,
+        "key": "finish",
+        "frame_index": 308,
+        "timestamp": 10.267,
+        "estimated": false
+      }
+    ],
+    "view": {
+      "chosen": "down_the_line",
+      "resolved": "down_the_line",
+      "detected_ratio": 0.1265,
+      "ratio_dtl_threshold": 0.13,
+      "warning": null
+    },
+    "club": {
+      "enabled": true,
+      "available": true,
+      "overall_confidence": 0.4618,
+      "club_len_px": 212.6957,
+      "anchors": 14,
+      "decoded": 20,
+      "decode_opens": 1
+    },
+    "scale": {
+      "S_world_m": 0.3351,
+      "S_px": 103.633,
+      "body_h_px": 360.5013,
+      "scale_px": 93.7303,
+      "SHOULDER_TO_HEIGHT_RATIO": 0.26
+    },
+    "phases": {
+      "address": {
+        "name_cn": "准备",
+        "metrics": [
+          {
+            "key": "knee_flexion",
+            "name": "膝部弯曲角",
+            "value": 168.6,
+            "unit": "°",
+            "ref": [
+              160.0,
+              172.0
+            ],
+            "status": "normal",
+            "source": "measured",
+            "estimated": false,
+            "confidence": 1.0,
+            "description": "膝盖弯曲角度，180°为完全伸直"
+          },
+          {
+            "key": "spine_tilt_fwd",
+            "name": "脊柱前倾角",
+            "value": 24.0,
+            "unit": "°",
+            "ref": [
+              30.0,
+              40.0
+            ],
+            "status": "low",
+            "source": "measured",
+            "estimated": false,
+            "confidence": 1.0,
+            "description": "脊柱相对垂直线的向前倾斜角度"
+          }
+        ]
+      },
+      "takeaway": {
+        "name_cn": "起杆",
+        "metrics": [
+          {
+            "key": "head_drift",
+            "name": "头部位移",
+            "value": 8.8,
+            "unit": "%",
+            "ref": [
+              0.0,
+              4.0
+            ],
+            "status": "critical_high",
+            "source": "measured",
+            "estimated": false,
+            "confidence": 1.0,
+            "description": "头部相对起始位置的晃动幅度（以肩宽百分比表示）"
+          },
+          {
+            "key": "lead_arm_straightness",
+            "name": "引导臂伸直度",
+            "value": 126.3,
+            "unit": "°",
+            "ref": [
+              165.0,
+              178.0
+            ],
+            "status": "critical_low",
+            "source": "measured",
+            "estimated": false,
+            "confidence": 1.0,
+            "description": "左臂伸直程度，180°为完全伸直，越接近越好"
+          }
+        ]
+      },
+      "backswing": {
+        "name_cn": "上杆",
+        "metrics": [
+          {
+            "key": "trail_arm_flexion",
+            "name": "后臂弯曲角",
+            "value": 70.8,
+            "unit": "°",
+            "ref": [
+              95.0,
+              125.0
+            ],
+            "status": "low",
+            "source": "measured",
+            "estimated": false,
+            "confidence": 1.0,
+            "description": "右肘弯曲角度，正常折叠利于力量传导"
+          },
+          {
+            "key": "lead_arm_straightness",
+            "name": "引导臂伸直度",
+            "value": 100.3,
+            "unit": "°",
+            "ref": [
+              155.0,
+              175.0
+            ],
+            "status": "critical_low",
+            "source": "measured",
+            "estimated": false,
+            "confidence": 1.0,
+            "description": "左臂伸直程度，180°为完全伸直，越接近越好"
+          }
+        ]
+      },
+      "top": {
+        "name_cn": "顶点",
+        "metrics": [
+          {
+            "key": "lead_arm_straightness",
+            "name": "引导臂伸直度",
+            "value": 158.4,
+            "unit": "°",
+            "ref": [
+              150.0,
+              172.0
+            ],
+            "status": "normal",
+            "source": "measured",
+            "estimated": false,
+            "confidence": 1.0,
+            "description": "左臂伸直程度，180°为完全伸直，越接近越好"
+          },
+          {
+            "key": "swing_plane",
+            "name": "挥杆平面角",
+            "value": 64.9,
+            "unit": "°",
+            "ref": [
+              55.0,
+              65.0
+            ],
+            "status": "normal",
+            "source": "measured",
+            "estimated": false,
+            "confidence": 1.0,
+            "description": "顶点时手臂与水平面的夹角"
+          }
+        ]
+      },
+      "downswing": {
+        "name_cn": "下杆",
+        "metrics": [
+          {
+            "key": "shaft_plane_dev",
+            "name": "杆面平面偏差",
+            "value": 10.0,
+            "unit": "°",
+            "ref": [
+              -10.0,
+              15.0
+            ],
+            "status": "normal",
+            "source": "proxy",
+            "estimated": true,
+            "confidence": 0.4617604722791069,
+            "description": ""
+          }
+        ]
+      },
+      "impact": {
+        "name_cn": "击球",
+        "metrics": [
+          {
+            "key": "spine_tilt_change",
+            "name": "脊柱前倾变化量(起身量)",
+            "value": 6.6,
+            "unit": "°",
+            "ref": [
+              0.0,
+              8.0
+            ],
+            "status": "normal",
+            "source": "measured",
+            "estimated": false,
+            "confidence": 1.0,
+            "description": "击球时相比准备时站直了多少，数值越接近0越好"
+          }
+        ]
+      },
+      "follow_through": {
+        "name_cn": "送杆",
+        "metrics": [
+          {
+            "key": "trail_arm_flexion",
+            "name": "后臂伸展度",
+            "value": 121.4,
+            "unit": "°",
+            "ref": [
+              150.0,
+              172.0
+            ],
+            "status": "critical_low",
+            "source": "measured",
+            "estimated": false,
+            "confidence": 1.0,
+            "description": "右肘弯曲角度，正常折叠利于力量传导"
+          }
+        ]
+      },
+      "finish": {
+        "name_cn": "收杆",
+        "metrics": [
+          {
+            "key": "balance_hold",
+            "name": "收杆平衡保持时长",
+            "value": 0.1,
+            "unit": "s",
+            "ref": [
+              0.8,
+              3.0
+            ],
+            "status": "low",
+            "source": "measured",
+            "estimated": false,
+            "confidence": 1.0,
+            "description": "收杆后站稳的时间，越长代表平衡性越好"
+          }
+        ]
+      }
+    },
+    "risks": {
+      "address": [],
+      "takeaway": [],
+      "backswing": [],
+      "top": [],
+      "downswing": [],
+      "impact": [],
+      "follow_through": [],
+      "finish": [
+        {
+          "rule_id": "RISK-017",
+          "risk_name": "收杆不稳定风险",
+          "risk_level": "low",
+          "metric_key": "balance_hold",
+          "value": 0.1,
+          "trigger_description": "你的收杆平衡保持时间为 0.10s，低于参考范围(≥0.8s)。收杆不稳说明挥杆过程中重心转移存在缺陷。",
+          "manual_page": "10"
+        }
+      ]
+    },
+    "risk_count": 1,
+    "warnings": [
+      "球杆识别置信度偏低，挥杆平面为估算值，仅供参考",
+      "视频在收杆后过早结束，平衡保持时长可能被低估"
+    ],
+    "key_metrics": {
+      "top_swing_plane": 64.9,
+      "impact_spine_tilt_change": 6.6,
+      "downswing_shaft_plane_dev": {
+        "value": 10.0,
+        "source": "proxy",
+        "ref": [
+          -10.0,
+          15.0
+        ]
+      },
+      "follow_through_shoulder_turn": null,
+      "risks_016": []
+    },
+    "elapsed_sec": 7.53
+  }
+]

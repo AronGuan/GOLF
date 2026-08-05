@@ -15,7 +15,13 @@ from pathlib import Path
 from typing import Dict, List, Optional
 
 from . import config
-from .schemas import AnalysisResult, ErrorCode, TaskState, TaskStatus
+from .schemas import (
+    AnalysisResult,
+    CameraView,
+    ErrorCode,
+    TaskState,
+    TaskStatus,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -43,12 +49,14 @@ class TaskStore:
         self,
         video_path: Optional[str] = None,
         out_dir: Optional[str] = None,
+        camera_view: CameraView = CameraView.FACE_ON,
     ) -> TaskState:
         """创建任务记录并准备任务目录。
 
         Args:
             video_path: 视频落盘路径；上传流程中可先留空，落盘后再 :meth:`update`。
             out_dir: 任务目录；留空则按 ``{DATA_DIR}/{task_id}`` 自动创建。
+            camera_view: 用户选择的拍摄机位（v2 新增，默认 face-on 兼容旧版）。
 
         Returns:
             新建的 :class:`TaskState`。
@@ -66,6 +74,7 @@ class TaskStore:
             message="排队中",
             video_path=video_path,
             out_dir=str(target_dir),
+            camera_view=camera_view,
             created_at=now,
             updated_at=now,
         )
@@ -93,9 +102,14 @@ class TaskStore:
     # -- 状态流转 ---------------------------------------------------------
 
     def set_progress(
-        self, task_id: str, step: int, progress: int, message: str
+        self, task_id: str, step: int, progress: int, message: str, step_text: str = ""
     ) -> None:
-        """上报进度。进度**单调不回退**：新值小于旧值时忽略数值但仍更新文案。"""
+        """上报进度。进度**单调不回退**：新值小于旧值时忽略数值但仍更新文案。
+
+        Args:
+            step_text: PDD 的字符串 step（v2 新增）；空串时回落
+                ``config.STEP_TEXTS.get(step, "")``。
+        """
         with self._lock:
             state = self._tasks.get(task_id)
             if state is None or state.status in _TERMINAL_STATES:
@@ -106,6 +120,7 @@ class TaskStore:
             if new_progress > state.progress:
                 state.progress = new_progress
             state.message = message
+            state.step_text = step_text or config.STEP_TEXTS.get(int(step), "")
             state.updated_at = time.time()
 
     def fail(self, task_id: str, code: ErrorCode, message: str = "") -> None:

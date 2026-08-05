@@ -1,8 +1,11 @@
-"""HTTP 接口集成测试（架构文档 §4），使用 FastAPI TestClient，不起 uvicorn 进程。
+"""HTTP 接口集成测试（架构 ARCHITECTURE.md §4 + ARCHITECTURE-v2.md §6 接口契约）。
 
 上传用例统一使用 ``.tools/_probe/t.mp4``（1.0s 匀速灰阶合成视频），
 它会在后台流水线里被 ``probe_video`` 判为 ``BAD_VIDEO``（时长 < 1.5s），
 既能覆盖失败链路，又不会加载 MediaPipe 模型、执行很快。
+
+v2 覆盖：PDD 双路径注册、错误码映射（10001/10002/10003/20001/20002）、
+``video``/``file`` 双字段名、``camera_view`` 缺省与非法值、legacy 码回滚开关。
 """
 
 from __future__ import annotations
@@ -14,7 +17,8 @@ import time
 import pytest
 
 from app import config
-from app.schemas import ErrorCode, TaskStatus
+from app.schemas import CameraView, ErrorCode, TaskStatus
+from app.task_store import task_store
 
 PROBE_MP4 = r"E:\project\golf\.tools\_probe\t.mp4"
 
@@ -28,11 +32,14 @@ def probe_bytes() -> bytes:
 
 
 def create_task(client, content: bytes, name: str = "swing.mp4",
-                ctype: str = "video/mp4"):
+                ctype: str = "video/mp4", path: str = "/api/v1/tasks",
+                field: str = "file", camera_view: str = None):
     """上传并返回响应。"""
-    return client.post(
-        f"{config_api()}/tasks", files={"file": (name, content, ctype)}
-    )
+    files = {field: (name, content, ctype)}
+    data = {}
+    if camera_view is not None:
+        data["camera_view"] = camera_view
+    return client.post(path, files=files, data=data)
 
 
 def config_api() -> str:
@@ -67,7 +74,7 @@ class TestHealth:
         assert resp.status_code == 200
         body = resp.json()
         assert body["code"] == 0
-        assert body["message"] == "ok"
+        assert body["message"] == "success"
         assert body["data"]["status"] == "ok"
         assert body["data"]["mediapipe"] == "0.10.14"
 
@@ -98,30 +105,37 @@ class TestHealth:
 
 
 class TestCreateTask:
-    """``POST /api/v1/tasks``。"""
+    """``POST /api/v1/tasks``（旧路径）与 ``POST /api/v1/task/create``（PDD 主路径）。"""
 
-    def test_create_success(self, api_client, probe_bytes):
-        resp = create_task(api_client, probe_bytes)
+    @pytest.mark.parametrize("path", ["/api/v1/tasks", "/api/v1/task/create"])
+    def test_create_success(self, api_client, probe_bytes, path):
+        resp = create_task(api_client, probe_bytes, path=path)
         assert resp.status_code == 201, resp.text
         body = resp.json()
         assert body["code"] == 0
-        assert body["message"] == "ok"
+        assert body["message"] == "success"
         task_id = body["data"]["task_id"]
         assert re.fullmatch(r"[0-9a-f]{12}", task_id), task_id
         assert body["data"]["status"] == TaskStatus.PENDING.value
 
-    def test_task_dir_created(self, api_client, probe_bytes):
-        task_id = create_task(api_client, probe_bytes).json()["data"]["task_id"]
+    @pytest.mark.parametrize("path", ["/api/v1/tasks", "/api/v1/task/create"])
+    def test_task_dir_created(self, api_client, probe_bytes, path):
+        task_id = create_task(api_client, probe_bytes, path=path).json()["data"]["task_id"]
         assert (config.DATA_DIR / task_id).is_dir()
 
-    @pytest.mark.parametrize("name", ["swing.mov", "swing.avi", "swing.txt", "a.MP4.zip"])
+    @pytest.mark.parametrize("name", ["swing.avi", "swing.txt", "a.MP4.zip"])
     def test_reject_non_mp4_extension(self, api_client, probe_bytes, name):
         resp = create_task(api_client, probe_bytes, name=name)
         assert resp.status_code == 400
         body = resp.json()
-        assert body["code"] == 4001
+        assert body["code"] == config.PDD_CODE_BAD_FORMAT  # 10002
         assert body["data"] is None
         assert "mp4" in body["message"]
+
+    def test_accept_mov_extension(self, api_client, probe_bytes):
+        """PDD 放开 .mov（v2 契约变更）。"""
+        resp = create_task(api_client, probe_bytes, name="swing.mov")
+        assert resp.status_code == 201, resp.text
 
     def test_accept_uppercase_extension(self, api_client, probe_bytes):
         resp = create_task(api_client, probe_bytes, name="SWING.MP4")
@@ -130,30 +144,94 @@ class TestCreateTask:
     def test_reject_bad_content_type(self, api_client, probe_bytes):
         resp = create_task(api_client, probe_bytes, name="swing.mp4", ctype="image/png")
         assert resp.status_code == 400
-        assert resp.json()["code"] == 4001
+        assert resp.json()["code"] == config.PDD_CODE_BAD_FORMAT
 
     def test_reject_empty_file(self, api_client):
         resp = create_task(api_client, b"")
         assert resp.status_code == 400
         body = resp.json()
-        assert body["code"] == 4001
+        assert body["code"] == config.PDD_CODE_BAD_FORMAT
         assert "空" in body["message"]
 
     def test_reject_oversize(self, api_client):
-        """> 20MB 必须 4001（架构 §4.2）。"""
+        """> 20MB 必须 10001（PDD 文件过大）。"""
         oversize = b"\x00" * (config.MAX_UPLOAD_BYTES + 1024 * 1024)
         resp = create_task(api_client, oversize)
         assert resp.status_code == 400
         body = resp.json()
-        assert body["code"] == 4001
+        assert body["code"] == config.PDD_CODE_FILE_TOO_LARGE  # 10001
         assert "20MB" in body["message"]
 
     def test_rejected_upload_leaves_no_task(self, api_client, probe_bytes):
         """校验失败必须回滚任务目录，不留垃圾。"""
         before = set(os.listdir(config.DATA_DIR))
-        create_task(api_client, probe_bytes, name="bad.mov")
+        create_task(api_client, probe_bytes, name="bad.avi")
         after = set(os.listdir(config.DATA_DIR))
         assert after == before
+
+    def test_missing_file_field_returns_10002(self, api_client):
+        """``video`` / ``file`` 双字段都缺失 -> 10002（格式不支持）。"""
+        resp = api_client.post("/api/v1/tasks")
+        assert resp.status_code == 400
+        assert resp.json()["code"] == config.PDD_CODE_BAD_FORMAT
+
+
+class TestFieldNameCompat:
+    """``video``（PDD）为主、``file``（旧）兼容。"""
+
+    def test_video_field_accepted(self, api_client, probe_bytes):
+        resp = create_task(api_client, probe_bytes, field="video")
+        assert resp.status_code == 201, resp.text
+
+    def test_file_field_still_accepted(self, api_client, probe_bytes):
+        resp = create_task(api_client, probe_bytes, field="file")
+        assert resp.status_code == 201, resp.text
+
+    def test_video_preferred_over_file(self, api_client, probe_bytes):
+        """同时给两个字段时以 ``video`` 为准（不抛错即可）。"""
+        files = {
+            "video": ("a.mp4", probe_bytes, "video/mp4"),
+            "file": ("b.mp4", probe_bytes, "video/mp4"),
+        }
+        resp = api_client.post("/api/v1/tasks", files=files)
+        assert resp.status_code == 201, resp.text
+
+
+class TestCameraView:
+    """``camera_view`` 必填二选一；缺省/非法值按 face_on 落值不硬拒。"""
+
+    def test_default_face_on(self, api_client, probe_bytes):
+        resp = create_task(api_client, probe_bytes)  # 不传 camera_view
+        assert resp.status_code == 201, resp.text
+        task_id = resp.json()["data"]["task_id"]
+        state = task_store.get(task_id)
+        assert state is not None
+        assert state.camera_view is CameraView.FACE_ON
+
+    def test_explicit_down_the_line(self, api_client, probe_bytes):
+        resp = create_task(api_client, probe_bytes, camera_view="down_the_line")
+        assert resp.status_code == 201, resp.text
+        state = task_store.get(resp.json()["data"]["task_id"])
+        assert state.camera_view is CameraView.DOWN_THE_LINE
+
+    def test_explicit_face_on(self, api_client, probe_bytes):
+        resp = create_task(api_client, probe_bytes, camera_view="face_on")
+        assert resp.status_code == 201, resp.text
+        state = task_store.get(resp.json()["data"]["task_id"])
+        assert state.camera_view is CameraView.FACE_ON
+
+    def test_auto_accepted_internally(self, api_client, probe_bytes):
+        """``auto`` 内部可接受（B6：一致性校验用）。"""
+        resp = create_task(api_client, probe_bytes, camera_view="auto")
+        assert resp.status_code == 201, resp.text
+        state = task_store.get(resp.json()["data"]["task_id"])
+        assert state.camera_view is CameraView.AUTO
+
+    def test_invalid_value_falls_back_face_on(self, api_client, probe_bytes):
+        resp = create_task(api_client, probe_bytes, camera_view="side_view")
+        assert resp.status_code == 201, resp.text
+        state = task_store.get(resp.json()["data"]["task_id"])
+        assert state.camera_view is CameraView.FACE_ON
 
 
 # ---------------------------------------------------------------------------
@@ -162,13 +240,13 @@ class TestCreateTask:
 
 
 class TestTaskStatus:
-    """``GET /api/v1/tasks/{task_id}``。"""
+    """``GET /api/v1/tasks/{task_id}``（旧）与 ``/api/v1/task/status/{task_id}``（PDD）。"""
 
     def test_unknown_task_404(self, api_client):
         resp = api_client.get("/api/v1/tasks/deadbeefcafe")
         assert resp.status_code == 404
         body = resp.json()
-        assert body["code"] == 4004
+        assert body["code"] == config.PDD_CODE_TASK_NOT_FOUND  # 20001
         assert body["data"] is None
 
     def test_status_payload_schema(self, api_client, probe_bytes):
@@ -178,16 +256,21 @@ class TestTaskStatus:
         data = resp.json()["data"]
         assert set(data) == {
             "task_id", "status", "progress", "step",
-            "message", "error_code", "error_message",
+            "message", "error_code", "error_message", "step_text",
         }
         assert data["task_id"] == task_id
         assert data["status"] in {s.value for s in TaskStatus}
         assert isinstance(data["progress"], int) and 0 <= data["progress"] <= 100
         assert isinstance(data["step"], int) and 1 <= data["step"] <= 4
         assert isinstance(data["message"], str) and data["message"]
+        assert isinstance(data["step_text"], str)
+        # step_text 应来自 config.STEP_TEXTS
+        assert data["step_text"] == config.STEP_TEXTS.get(data["step"], "") or data[
+            "step_text"
+        ]
 
     def test_bad_video_reports_chinese_error(self, api_client, probe_bytes):
-        """t.mp4 时长 1.0s < 1.5s -> BAD_VIDEO + 中文文案（架构 §4.7）。"""
+        """t.mp4 时长 1.0s < 1.5s -> BAD_VIDEO + 中文文案（业务失败在 data 内）。"""
         task_id = create_task(api_client, probe_bytes).json()["data"]["task_id"]
         data = wait_terminal(api_client, task_id)
         assert data["status"] == TaskStatus.FAILED.value
@@ -198,6 +281,31 @@ class TestTaskStatus:
         }, data
         assert data["error_message"] == config.ERROR_MESSAGES[data["error_code"]]
         assert re.search(r"[\u4e00-\u9fa5]", data["error_message"]), "文案必须是中文"
+
+
+class TestDualPath:
+    """PDD 主路径与旧路径行为等价。"""
+
+    def test_status_paths_equivalent(self, api_client, probe_bytes):
+        task_id = create_task(api_client, probe_bytes).json()["data"]["task_id"]
+        old = api_client.get(f"/api/v1/tasks/{task_id}").json()
+        new = api_client.get(f"/api/v1/task/status/{task_id}").json()
+        assert old == new
+        assert old["code"] == 0
+
+    def test_result_paths_equivalent(self, api_client, probe_bytes):
+        task_id = create_task(api_client, probe_bytes).json()["data"]["task_id"]
+        wait_terminal(api_client, task_id)
+        old = api_client.get(f"/api/v1/tasks/{task_id}/result")
+        new = api_client.get(f"/api/v1/task/result/{task_id}")
+        # 任务失败时两条路径都应返回 20002（任务尚未完成）
+        assert old.status_code == new.status_code
+        assert old.json()["code"] == new.json()["code"] == config.PDD_CODE_TASK_PENDING
+
+    def test_pdd_path_unknown_task_404(self, api_client):
+        resp = api_client.get("/api/v1/task/status/deadbeefcafe")
+        assert resp.status_code == 404
+        assert resp.json()["code"] == config.PDD_CODE_TASK_NOT_FOUND
 
 
 # ---------------------------------------------------------------------------
@@ -211,16 +319,98 @@ class TestTaskResult:
     def test_unknown_task_404(self, api_client):
         resp = api_client.get("/api/v1/tasks/deadbeefcafe/result")
         assert resp.status_code == 404
-        assert resp.json()["code"] == 4004
+        assert resp.json()["code"] == config.PDD_CODE_TASK_NOT_FOUND
 
-    def test_unfinished_or_failed_returns_4009(self, api_client, probe_bytes):
+    def test_unfinished_or_failed_returns_20002(self, api_client, probe_bytes):
         task_id = create_task(api_client, probe_bytes).json()["data"]["task_id"]
         wait_terminal(api_client, task_id)
         resp = api_client.get(f"/api/v1/tasks/{task_id}/result")
         assert resp.status_code == 409
         body = resp.json()
-        assert body["code"] == 4009
+        assert body["code"] == config.PDD_CODE_TASK_PENDING  # 20002
         assert body["data"] is None
+
+
+# ---------------------------------------------------------------------------
+# 错误码映射 / legacy 回滚
+# ---------------------------------------------------------------------------
+
+
+class TestErrorCodeMapping:
+    """对外 PDD 码（10001/10002/10003/20001/20002）。"""
+
+    def test_oversize_10001(self, api_client):
+        oversize = b"\x00" * (config.MAX_UPLOAD_BYTES + 1024 * 1024)
+        resp = create_task(api_client, oversize)
+        assert resp.json()["code"] == 10001
+
+    def test_bad_format_10002(self, api_client, probe_bytes):
+        resp = create_task(api_client, probe_bytes, name="bad.avi")
+        assert resp.json()["code"] == 10002
+
+    def test_duration_10003_via_handler(self):
+        """10003（时长超范围）只在 AnalysisError 显式携带时可达；直接测响应层映射。"""
+        from app.main import err
+
+        response = err(4001, "时长超范围", config.PDD_CODE_BAD_DURATION)
+        body = response.body.decode("utf-8")
+        assert '"code":10003' in body
+        assert response.status_code == 400
+
+    def test_task_not_found_20001(self, api_client):
+        resp = api_client.get("/api/v1/tasks/deadbeefcafe")
+        assert resp.json()["code"] == 20001
+
+    def test_task_pending_20002(self, api_client, probe_bytes):
+        task_id = create_task(api_client, probe_bytes).json()["data"]["task_id"]
+        wait_terminal(api_client, task_id)
+        resp = api_client.get(f"/api/v1/tasks/{task_id}/result")
+        assert resp.json()["code"] == 20002
+
+    def test_internal_5000_maps_10004(self, api_client, monkeypatch):
+        """请求处理中的未处理异常 -> 5000 内部码、对外 10004（响应层兜底）。"""
+        from fastapi.testclient import TestClient
+
+        from app.main import app
+
+        def _boom(task_id):
+            raise RuntimeError("unexpected")
+
+        monkeypatch.setattr(task_store, "get", _boom)
+        with TestClient(app, raise_server_exceptions=False) as client:
+            resp = client.get("/api/v1/tasks/deadbeefcafe")
+        assert resp.status_code == 500
+        body = resp.json()
+        assert body["code"] == config.PDD_CODE_INTERNAL  # 10004
+        assert "unexpected" not in (body["message"] or ""), "不得泄漏内部异常信息"
+
+
+class TestLegacyCodeStyle:
+    """``config.API_CODE_STYLE="legacy"`` 时对外回落旧码（线上回滚开关）。"""
+
+    @pytest.fixture(autouse=True)
+    def _legacy(self, monkeypatch):
+        monkeypatch.setattr(config, "API_CODE_STYLE", "legacy")
+        yield
+
+    def test_unknown_task_returns_4004(self, api_client):
+        resp = api_client.get("/api/v1/tasks/deadbeefcafe")
+        assert resp.json()["code"] == 4004
+
+    def test_bad_format_returns_4001(self, api_client, probe_bytes):
+        resp = create_task(api_client, probe_bytes, name="bad.avi")
+        assert resp.json()["code"] == 4001
+
+    def test_oversize_returns_4001(self, api_client):
+        oversize = b"\x00" * (config.MAX_UPLOAD_BYTES + 1024 * 1024)
+        resp = create_task(api_client, oversize)
+        assert resp.json()["code"] == 4001
+
+    def test_pending_returns_4009(self, api_client, probe_bytes):
+        task_id = create_task(api_client, probe_bytes).json()["data"]["task_id"]
+        wait_terminal(api_client, task_id)
+        resp = api_client.get(f"/api/v1/tasks/{task_id}/result")
+        assert resp.json()["code"] == 4009
 
 
 # ---------------------------------------------------------------------------
@@ -254,5 +444,5 @@ class TestStaticAndFallback:
         resp = api_client.get("/api/v1/not-exists")
         assert resp.status_code == 404
         body = resp.json()
-        assert body["code"] == 4004
+        assert body["code"] == config.PDD_CODE_TASK_NOT_FOUND  # 20001
         assert body["data"] is None

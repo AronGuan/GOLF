@@ -1,0 +1,48 @@
+[
+  {
+    "name": "DTL-087d40a0",
+    "path": "E:\\project\\golf\\.tools\\_probe\\samples\\087d40a0e808f2c319b8097d89599780.mp4",
+    "chosen_view": "down_the_line",
+    "ok": false,
+    "stage_failed": "segment",
+    "error_code": "NO_SWING",
+    "error_detail": "address->top too short: 4 < 14",
+    "meta": {
+      "fps": 30.0,
+      "duration": 2.733,
+      "width": 720,
+      "height": 1280,
+      "frame_count": 82,
+      "sample_step": 1,
+      "low_fps": false
+    },
+    "extract": {
+      "sampled": 82,
+      "detected": 82,
+      "miss_ratio": 0.0
+    }
+  },
+  {
+    "name": "DTL-707fb04a",
+    "path": "E:\\project\\golf\\.tools\\_probe\\samples\\707fb04a3dbd91db19b97e0ca4aee959.mp4",
+    "chosen_view": "down_the_line",
+    "ok": false,
+    "stage_failed": "segment",
+    "error_code": "NO_SWING",
+    "error_detail": "address->top too short: 4 < 14",
+    "meta": {
+      "fps": 30.0,
+      "duration": 4.4,
+      "width": 720,
+      "height": 1280,
+      "frame_count": 132,
+      "sample_step": 1,
+      "low_fps": false
+    },
+    "extract": {
+      "sampled": 132,
+      "detected": 132,
+      "miss_ratio": 0.0
+    }
+  }
+]

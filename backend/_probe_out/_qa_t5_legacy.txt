@@ -1,0 +1,4 @@
+[boot] legacy server health: True
+legacy unknown task: status=404 code=4004 (expect 4004) -> PASS
+legacy bad format: status=400 code=4001 (expect 4001) -> PASS
+legacy old-path success: status=201 code=0 (expect 0) -> PASS

@@ -1,0 +1,1 @@
+health: 200 {"code":0,"data":{"status":"ok","mediapipe":"0.10.14"},"message":"success"}

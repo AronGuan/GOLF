@@ -1,0 +1,13 @@
+[boot] pdd server health: True
+== 20002 结果未完成 ==
+  [PASS] 20002 result-not-ready (code)
+  [PASS] 20002 http 409
+  [PASS] same task eventually has result
+== 5000 -> 10004 ==
+  [PASS] 5000->10004 covered by test_api + static review
+== legacy 回滚（独立进程 API_CODE_STYLE=legacy）==
+  [PASS] legacy server boot
+  [FAIL] legacy unknown -> 4004 :: status=404 code=20001 {"code":20001,"data":null,"message":"任务不存在或已过期"}
+  [FAIL] legacy bad format -> 4001 :: status=400 code=10002 {"code":10002,"data":null,"message":"只支持 mp4 / mov 格式的视频"}
+  [PASS] legacy old-path file upload -> 201
+EXTRA DONE PASS=6 FAIL=2

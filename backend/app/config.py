@@ -10,6 +10,7 @@
     5. 符号约定常量（架构文档 §10.3）—— 符号校准只改这里
     6. 渲染
     7. 文案（错误码中文映射、免责声明）
+    8. 球杆检测（club-detection-design.md §5.2 T01）
 """
 
 from __future__ import annotations
@@ -50,8 +51,8 @@ LOG_LEVEL: Final[str] = os.getenv("GOLF_LOG_LEVEL", "INFO")
 #: 上传文件大小上限（20MB）
 MAX_UPLOAD_BYTES: Final[int] = 20 * 1024 * 1024
 
-#: 允许的扩展名
-ALLOWED_VIDEO_EXTS: Final[FrozenSet[str]] = frozenset({".mp4"})
+#: 允许的扩展名（PDD 要求放开 .mov）
+ALLOWED_VIDEO_EXTS: Final[FrozenSet[str]] = frozenset({".mp4", ".mov"})
 
 #: 允许的 content-type（部分客户端会传 application/octet-stream）
 ALLOWED_CONTENT_TYPES: Final[FrozenSet[str]] = frozenset(
@@ -59,13 +60,24 @@ ALLOWED_CONTENT_TYPES: Final[FrozenSet[str]] = frozenset(
         "video/mp4",
         "video/mpeg4",
         "application/mp4",
+        "video/quicktime",
         "application/octet-stream",
         "",
     }
 )
 
-#: 上传文件名（落盘固定名）
+#: 上传文件名（落盘固定名，兼容旧路径）
 UPLOAD_FILENAME: Final[str] = "upload.mp4"
+
+
+def upload_filename(ext: str) -> str:
+    """按原始扩展名生成落盘固定名（PDD 放开 .mov 后使用）。
+
+    Args:
+        ext: 扩展名，可带点（``".mov"``）或不带（``"mov"``）。
+    """
+    suffix = ext.lower() if ext.startswith(".") else f".{ext.lower()}"
+    return f"upload{suffix}"
 
 #: 单任务处理超时（秒）
 TASK_TIMEOUT_SEC: Final[float] = 120.0
@@ -100,7 +112,13 @@ DARK_MEAN_THRESHOLD: Final[float] = 40.0
 
 #: 未检出人体帧占比阈值
 MISS_RATIO_NO_PERSON: Final[float] = 0.50
-MISS_RATIO_LOW_QUALITY: Final[float] = 0.10
+
+#: 低质量判定阈值（低于该比例视为可分析，高于则提示 LOW_QUALITY）。
+#: 0.10 -> 0.15：实测 DTL-4e8d0d7e miss_ratio=0.133（即 86.7% 帧成功检出），
+#: 放宽后切分完全正常（8 阶段齐全、Top 肩转 +76.8° 符号量纲均正确），旧阈值把
+#: 一段「其实可分析」的视频误杀成 LOW_QUALITY；0.15 仍能在 >15% 漏检时提示不稳定，
+#: 与 MISS_RATIO_NO_PERSON=0.50 形成「提示→硬失败」两段式分级。
+MISS_RATIO_LOW_QUALITY: Final[float] = 0.15
 
 #: 核心 13 点平均 visibility 低于该值即视为"低质量帧"
 LOW_VIS_THRESHOLD: Final[float] = 0.50
@@ -123,16 +141,28 @@ POSE_KW: Final[Dict[str, object]] = {
 
 # ---------------------------------------------------------------------------
 # 4. 8 阶段切分算法参数（架构文档 §7.7，工程师照此调参）
+#
+# ⚠️ 标尺口径（2026-08 真实视频校准后变更，见 docs/VALIDATION-A.md）：
+#    以下所有「肩宽制」阈值的基准，是 :func:`app.segmenter.build_signals` 换算到
+#    **各向同性图像宽度单位**后的肩宽。此前 y 方向未做 ``H/W`` 校正，竖屏
+#    720×1280 与横屏 1280×720 之间阈值实际漂移 3.2 倍。校正后旧阈值需整体
+#    ×1.78（竖屏换算系数）才等效，下面的新默认值即据此重算并用 11 段真实视频回归。
 # ---------------------------------------------------------------------------
 
 #: 滑动平均窗口时长（秒）
 SMOOTH_WIN_SEC: Final[float] = 0.08
 
-#: 静止判定速度阈值（肩宽/秒）
-V_STILL: Final[float] = 0.25
+#: 静止判定速度阈值（肩宽/秒）。
+#: 0.25 -> 0.55：换算系数 1.78 折算得 0.45，再上调至 0.55。
+#: 依据：真实视频站位段并非绝对静止（球手 waggle / 重心调整），实测 470057ac
+#: 站位段速度在 0.2~1.5 间抖动，0.45 只能捞到零星 3 帧静止段，Address 被定位到
+#: 真实站位前 1s；0.55 后 8/9 段视频的 Address / Finish 静止段判定命中。
+V_STILL: Final[float] = 0.55
 
-#: 判定"存在挥杆"的最小速度峰值（肩宽/秒）
-V_PEAK_MIN: Final[float] = 1.5
+#: 判定"存在挥杆"的最小速度峰值（肩宽/秒）。
+#: 1.5 -> 2.7（= 1.5 × 1.78）。实测真实挥杆速度峰 9.99~23.92，余量充足；
+#: 静止站立视频速度峰 < 1，判据依然成立。
+V_PEAK_MIN: Final[float] = 2.7
 
 #: Address 静止段最短时长（秒）
 STILL_MIN_SEC_ADDR: Final[float] = 0.10
@@ -140,17 +170,21 @@ STILL_MIN_SEC_ADDR: Final[float] = 0.10
 #: Finish 静止段最短时长（秒）
 STILL_MIN_SEC_FINISH: Final[float] = 0.15
 
-#: Impact 高度回落容差（肩宽）
-IMPACT_Y_TOL: Final[float] = 0.15
+#: Impact 高度回落容差（肩宽）。
+#: 0.15 -> 0.35：换算系数折合 0.27，再放宽。依据：实测击球帧手位普遍略高于
+#: Address（470057ac 高 0.42 肩宽、正面2 高 0.31 肩宽）——平滑窗抹平了手腕
+#: 过底点的瞬时最低位。容差不足会让高度穿越分支整体失效、退化成纯速度峰。
+IMPACT_Y_TOL: Final[float] = 0.35
 
 #: Impact 速度峰搜索半窗（秒）
 IMPACT_WIN_SEC: Final[float] = 0.05
 
 #: 手腕过髋线判据（肩宽）
-H_HIP: Final[float] = 0.10
+H_HIP: Final[float] = 0.18
 
-#: 最小垂直行程（肩宽）
-MIN_WRIST_TRAVEL: Final[float] = 0.60
+#: 最小垂直行程（肩宽）。0.60 -> 1.07（= 0.60 × 1.78）。
+#: 实测 9 段可切分视频换算后行程 2.1~6.7，静止视频 ≈ 0，判据区分度充足。
+MIN_WRIST_TRAVEL: Final[float] = 1.07
 
 #: ②③⑤⑦ 兜底比例
 FALLBACK_RATIO: Final[Tuple[float, float, float, float]] = (0.35, 0.70, 0.50, 0.35)
@@ -161,11 +195,32 @@ TOP_SEARCH_MARGIN: Final[float] = 0.05
 #: 顶点速度反向点精修半窗（秒）
 TOP_REFINE_SEC: Final[float] = 0.10
 
-#: Address -> Top 的最短时长（秒），过短判 NO_SWING
-MIN_TOP_ADDR_SEC: Final[float] = 0.15
+#: Address -> Top 的最短时长（秒），过短判 NO_SWING。
+#: 0.15 -> 0.45。依据：11 段真实视频中，7 段正常切分的 Address->Top 实测
+#: 0.80~3.63s（最小 0.80s）；2 段「视频起点已在上杆中、根本没拍到站位」的样本
+#: （087d40a0 / 707fb04a）分别只有 0.13s 与 0.33s。0.45s 可干净分开两类，
+#: 让残缺视频得到诚实的 NO_SWING 而不是 8 个挤在 0.2s 内的垃圾阶段。
+MIN_TOP_ADDR_SEC: Final[float] = 0.45
+
+#: locate_address 候选静止段的「髋部相对手位高度」上限。
+#: 站位的手位贴近髋线（``h≈0``，可略负），而**顶点前减速微停**发生在 ``h≈2``
+#: （手已高举、手腕瞬时变慢），后者会被 :data:`V_STILL` 误判成一段静止，从而把
+#: Address 定位到顶点前几帧、把 Address→Top 挤压成 1 帧触发假 ``NO_SWING``
+#: （实测 正面2：真实 Address 在 h≈-0.3 的低手位，顶点前微停 h≈2.0）。用该上限
+#: 过滤掉高点假静止，只对低手位的静止段视为 Address。
+ADDR_H_MAX: Final[float] = 0.6
 
 #: Top -> Impact 的最短时长（秒），过短判 NO_SWING
 MIN_IMPACT_TOP_SEC: Final[float] = 0.06
+
+#: Top -> Impact 的最长时长（秒）。用于把 :func:`app.segmenter.locate_impact` 的搜索
+#: 区间限制在物理可行范围，避免顶点后长时间举杆时把击球定位到几秒之后。
+#: 0.60 -> 1.5：实测 DTL-470057ac 因顶点后手位长期高于容差带、首个高度回落发生在
+#: 95 帧（3.17s）之后，必须用上界拦掉这个假下杆；但 0.60s 同时把一段慢动作/慢挥
+#: 视频（正面2）的真实击球（手位回到 Address 高度约在顶点后 1.17s）也截断在边界、
+#: 误把下杆压成 0.6s。1.5s 仍远小于 470057ac 的 3.17s（继续拦掉假下杆），却足以
+#: 容纳慢挥与慢动作视频的真实下杆，使 impact 落回「手位回到 Address 高度」的语义点。
+MAX_DOWNSWING_SEC: Final[float] = 1.5
 
 #: Finish 兜底 A 所需的击球后最短余量（秒）
 FINISH_FALLBACK_SEC: Final[float] = 0.10
@@ -232,15 +287,163 @@ ERROR_MESSAGES: Final[Dict[str, str]] = {
     "INTERNAL": "分析失败了，请稍后重试",
 }
 
-#: 结果页固定免责声明（PRD §6.5）
+#: 结果页固定免责声明（PDD §3.4.4 全文，v2 替换）
 DISCLAIMER: Final[str] = (
-    "以上数据基于单目视频姿态估算，仅供动作参考，存在测量误差，不构成专业教学建议。"
+    "以上姿态数据基于单目视频估算，存在测量误差。损伤风险评估基于"
+    "《高尔夫运动保障手册》中的一般性知识，仅供参考，不构成医学诊断或"
+    "专业教学建议。如有身体不适，请咨询专业医疗机构。"
 )
+
+#: DTL 机位追加的投影角说明（我方补充，非 PDD 原文，已报备）
+DISCLAIMER_DTL_SUFFIX: Final[str] = "挥杆平面角为投影角估算，非真实空间角。"
 
 #: 低帧率提示
 WARN_LOW_FPS: Final[str] = "帧率偏低，击球阶段定位可能不准"
+
+#: 用户所选机位与自动判定不一致时的提示（v2，不阻断）
+WARN_VIEW_MISMATCH: Final[str] = (
+    "所选拍摄机位与画面特征不一致，指标口径可能受影响，建议按拍摄指引重新拍摄"
+)
 
 
 def error_message(code_value: str) -> str:
     """按错误码取中文文案，未知码回落到 INTERNAL 文案。"""
     return ERROR_MESSAGES.get(code_value, ERROR_MESSAGES["INTERNAL"])
+
+
+# ---------------------------------------------------------------------------
+# 8. 球杆检测（球杆检测技术方案 §5.2 / T01 常量清单）
+#
+# 设计定位：路径 A（经典 CV 几何：手腕锚定 ROI + Hough 杆身拟合）
+#           + 路径 C（帧差杆头互补），零新依赖、CPU 增量 < 1s。
+# 路径 B（YOLO/ONNX）本期**已取消**，仅保留 ``CLUB_MODE`` / ``CLUB_ONNX_*``
+# 三个占位常量，便于将来一键切换而不动管线；当前唯一受支持的模式是 ``"geom"``。
+# ---------------------------------------------------------------------------
+
+#: 球杆检测总开关。False 时 :func:`app.club_detector.detect` 直接返回
+#: ``ClubTrack(available=False)``，主链路（现有 23 指标）完全不受影响。
+CLUB_ENABLED: Final[bool] = True
+
+#: 检测模式：``"geom"``（本期唯一实现）| ``"onnx"``（预留）| ``"off"``
+CLUB_MODE: Final[str] = "geom"
+
+#: DTL（侧面）机位杆长先验 = 系数 × 图像身高（鼻–踝中点像素距）。
+#: 依据：身高 1.75m 时 7 号铁 ≈ 0.94m（0.54×身高），一号木 ≈ 1.14m（0.65×身高）。
+#: ⚠️ 侧面机位双肩与光轴近似共线、投影肩宽被严重压缩，**不可**用 S_px 当标尺。
+CLUB_LEN_RATIO_DTL: Final[Tuple[float, float]] = (0.52, 0.66)
+
+#: face-on（正面）机位杆长先验 = 系数 × 图像肩宽（肩宽 ≈ 0.25×身高）
+CLUB_LEN_RATIO_FACEON: Final[Tuple[float, float]] = (2.0, 2.8)
+
+#: ROI 扇形半张角（度）：``(Address 帧, 后续帧)``。
+#: 后续帧靠上一帧杆身方向 + 手腕速度做一阶预测，把搜索区收窄到 ±25°——
+#: **时序预测是鲁棒性的最大来源**，禁止退化成逐帧独立检测。
+CLUB_ROI_FAN_DEG: Final[Tuple[float, float]] = (45.0, 25.0)
+
+#: HoughLinesP ``minLineLength`` = 该系数 × club_len_px
+CLUB_HOUGH_MIN_LEN_RATIO: Final[float] = 0.35
+
+#: HoughLinesP ``maxLineGap`` = 该系数 × club_len_px
+CLUB_HOUGH_MAX_GAP_RATIO: Final[float] = 0.10
+
+#: 过滤①：候选线段延长线到握把的垂距上限 = 该系数 × club_len_px（杆身必过握把）
+CLUB_GRIP_DIST_RATIO: Final[float] = 0.08
+
+#: 过滤②：候选线段方向与时序预测方向的夹角上限（度）
+CLUB_DIR_TOL_DEG: Final[float] = 25.0
+
+#: 三级降级 L0 阈值：``overall_confidence >= CLUB_CONF_MIN`` 用真实球杆几何量
+CLUB_CONF_MIN: Final[float] = 0.55
+
+#: 三级降级 L1 阈值：``CLUB_CONF_PROXY_MIN <= conf < CLUB_CONF_MIN`` 回退腕–肩代理；
+#: 低于该值则整项剔除（L2），绝不填参考中值造出绿色假"正常"
+CLUB_CONF_PROXY_MIN: Final[float] = 0.25
+
+#: Hough / 帧差分支切换的速度倍率（相对 :data:`V_STILL`）
+CLUB_SPEED_SWITCH_RATIO: Final[float] = 3.0
+
+#: 分支切换速度阈值（肩宽/秒）= :data:`CLUB_SPEED_SWITCH_RATIO` × :data:`V_STILL`。
+#: ``speed < 阈值`` 走 Hough（低速段杆身锐利），否则走帧差（高速段运动模糊）。
+CLUB_SPEED_SWITCH: Final[float] = CLUB_SPEED_SWITCH_RATIO * V_STILL
+
+#: 结果图上杆身线段颜色（BGR，亮黄）与线宽
+CLUB_COLOR: Final[Tuple[int, int, int]] = (0, 220, 255)
+CLUB_THICKNESS: Final[int] = 3
+
+#: 【预留】ONNX 模型路径；空串表示未部署
+CLUB_ONNX_PATH: Final[str] = ""
+
+#: 【预留】ONNX 推理输入边长
+CLUB_ONNX_IMGSZ: Final[int] = 320
+
+#: 机位自动判定：Address 帧「图像肩宽 / 图像身高」低于该值判为 DTL。
+#: face-on 约 0.22~0.28；DTL 因双肩前后重叠会掉到 < 0.13。
+VIEW_SHOULDER_RATIO_DTL: Final[float] = 0.13
+
+#: 球杆识别失败（L2）时追加的用户可见提示（球杆检测技术方案 §4.5）
+WARN_CLUB_UNAVAILABLE: Final[str] = (
+    "球杆识别不清，本次未给出挥杆平面数据，建议在光线充足、背景简洁的环境下重拍侧面机位"
+)
+
+#: 球杆置信度不足、回退腕–肩连线代理（L1）时追加的提示
+WARN_CLUB_PROXY: Final[str] = (
+    "球杆识别置信度偏低，挥杆平面为估算值，仅供参考"
+)
+
+#: 单次检测最多解码的帧数（原 club_detector._MAX_DECODE_FRAMES=48 下调）。
+#: 8 事件帧 + 各自前一帧 + Top→Impact 窗口采样；锚点预算 = 该值 // 2，
+#: 因此解码帧数（targets）恒 ≤ 该值。单 worker 内存护栏（架构 §5.2）。
+CLUB_MAX_DECODE_FRAMES: Final[int] = 28
+
+#: 球杆检测解码字节预算（192 MiB）。``plan_frames()`` 按 ``w*h*3`` 估算
+#: 单帧字节，超预算时自动削减窗口采样点，**下限保留 8 个事件帧**
+#: （保证 renderer 恒 8 张）。
+DECODE_BYTES_BUDGET: Final[int] = 192 * 1024 * 1024
+
+#: DTL 等效肩宽标尺 = 图像身高 × 该系数（肩宽 ≈ 0.25×身高 的人体测量先验）。
+#: ⚠️ 经验常量，需用真实视频回归校准（架构 §10 #6）。
+#: 校准值 0.26（2026-08 实测，见 docs/VALIDATION-B）：3 段正面视频 Address 帧
+#: 「图像肩宽/图像身高」实测 0.2486 / 0.2674 / 0.2706（均值 0.262，中位数 0.267），
+#: 与人体测量先验 0.25 一致；取 0.26 落在实测区间内且与先验接近。
+SHOULDER_TO_HEIGHT_RATIO: Final[float] = 0.26
+
+
+# ---------------------------------------------------------------------------
+# 9. v2 风险引擎与接口契约（架构 ARCHITECTURE-v2.md §4 / §6）
+# ---------------------------------------------------------------------------
+
+#: 风险引擎总开关。False 时 :func:`app.risk_engine.evaluate_all` 恒返回空，
+#: 一键关停整个风险区（线上止血阀）。
+RISK_ENGINE_ENABLED: Final[bool] = True
+
+#: 灰度强开白名单：内部自测/灰度时强开某几条缺文案规则（如 ``{"RISK-003"}``），
+#: **不改代码**。注意：强开会绕过 :data:`RiskRule.enabled`，但文案自检
+#: （``risk_engine.self_check``）仍以 ``enabled=True`` 为准——强开规则若缺文案
+#: 会产出空描述卡片，仅限内部使用。
+RISK_RULES_FORCE_ENABLE: Final[FrozenSet[str]] = frozenset()
+
+#: 五态判定的 critical 区间宽度倍数（架构 §3.5）。
+#: ``critical`` ⟺ ``value < ref_min - span×ratio`` 或 ``value > ref_max + span×ratio``，
+#: ``span = ref_max - ref_min``。默认 1.0 = 超出一个完整区间宽度即重度偏离。
+CRITICAL_SPAN_RATIO: Final[float] = 1.0
+
+#: 错误码输出风格：``"pdd"``（对外 PDD 码）| ``"legacy"``（旧内部码）。
+#: 线上出事的回滚开关（架构 §6.3）。
+API_CODE_STYLE: Final[str] = "pdd"
+
+#: PDD 错误码（对外契约，架构 §6.3）
+PDD_CODE_FILE_TOO_LARGE: Final[int] = 10001
+PDD_CODE_BAD_FORMAT: Final[int] = 10002
+PDD_CODE_BAD_DURATION: Final[int] = 10003
+PDD_CODE_INTERNAL: Final[int] = 10004
+PDD_CODE_TASK_NOT_FOUND: Final[int] = 20001
+#: 「任务尚未完成」PDD 未定义，我方在结果域内顺延的暂定值（架构 §10 #1）
+PDD_CODE_TASK_PENDING: Final[int] = 20002
+
+#: step(int) -> step_text(str) 映射（PDD 的字符串 step；step4 文案 = 「计算姿态指标与风险」）
+STEP_TEXTS: Final[Dict[int, str]] = {
+    1: "上传并校验视频",
+    2: "提取身体关键点",
+    3: "识别8个挥杆阶段",
+    4: "计算姿态指标与风险",
+}

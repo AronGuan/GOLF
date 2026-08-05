@@ -1,8 +1,8 @@
 /**
  * 首页 / 上传页。
  *
- * 职责：拍摄引导 + wx.chooseMedia 选视频 + 本地三项校验 + 上传（带百分比）
- *       -> navigateTo 分析中页
+ * 职责：机位二选一 + 拍摄引导（随机位切换）+ wx.chooseMedia 选视频 +
+ *       本地三项校验 + 上传（带 camera_view 与百分比）-> navigateTo 分析中页。
  */
 const api = require('../../utils/api.js');
 
@@ -13,8 +13,13 @@ const MAX_DURATION = 15;
 /** 大小上限（字节） */
 const MAX_SIZE = 20 * 1024 * 1024;
 
-Page({
-  data: {
+/** 机位定义（互斥二选一，v2） */
+const VIEWS = {
+  face_on: {
+    key: 'face_on',
+    label: '正面机位',
+    sub: '正对身体拍摄 · 竖持手机',
+    icon: '🙋',
     requirements: [
       '正面机位：镜头正对身体（面向你）',
       '手机竖持固定，不要手持晃动',
@@ -22,7 +27,30 @@ Page({
       '距离 2~3 米',
       '时长 2~15 秒，只拍一次挥杆',
       '建议 60fps 以上（拍摄设置）'
-    ],
+    ]
+  },
+  down_the_line: {
+    key: 'down_the_line',
+    label: '侧面机位',
+    sub: '垂直于目标线拍摄 · 横持手机',
+    icon: '🏌️',
+    requirements: [
+      '侧面机位：镜头垂直于目标线',
+      '球手侧面面对镜头（右肩侧朝向镜头）',
+      '手机横持固定，保持水平不倾斜',
+      '球杆与目标线在画面中清晰可见',
+      '全身入镜，距离 2~3 米',
+      '时长 2~15 秒，只拍一次挥杆'
+    ]
+  }
+};
+
+Page({
+  data: {
+    views: VIEWS,
+    /** 当前选中机位 key */
+    cameraView: 'face_on',
+    requirements: VIEWS.face_on.requirements,
     /** @type {object|null} 已选视频信息 */
     video: null,
     valid: false,
@@ -32,12 +60,34 @@ Page({
     uploadPercent: 0
   },
 
+  onLoad() {
+    // 恢复上次选择的机位（跨页面保持）
+    const app = getApp();
+    const saved = app.globalData.cameraView;
+    if (saved && VIEWS[saved]) {
+      this.setData({
+        cameraView: saved,
+        requirements: VIEWS[saved].requirements
+      });
+    }
+  },
+
   onShow() {
     // 从结果页 redirect 回来时重置上传态，避免按钮卡在「上传中」
     if (this.data.uploading) {
       this.setData({ uploading: false, uploadPercent: 0 });
       this._refreshSubmit();
     }
+  },
+
+  /** 切换机位（互斥二选一） */
+  onSelectView(e) {
+    const key = e.currentTarget.dataset.view;
+    if (!VIEWS[key] || key === this.data.cameraView) {
+      return;
+    }
+    getApp().globalData.cameraView = key;
+    this.setData({ cameraView: key, requirements: VIEWS[key].requirements });
   },
 
   /** 现场拍摄 */
@@ -109,7 +159,7 @@ Page({
   },
 
   /**
-   * 本地三项校验：时长 / 大小 / 格式。
+   * 本地三项校验：时长 / 大小 / 格式（v2 放开 .mov）。
    * @param {string} path
    * @param {number} size
    * @param {number} duration
@@ -119,8 +169,9 @@ Page({
   _validate(path, size, duration) {
     const lower = (path || '').toLowerCase();
     const clean = lower.split('?')[0];
-    if (clean.indexOf('.mp4') !== clean.length - 4) {
-      return { ok: false, reason: '只支持 mp4 格式的视频，请重新选择' };
+    const okExt = clean.endsWith('.mp4') || clean.endsWith('.mov');
+    if (!okExt) {
+      return { ok: false, reason: '只支持 mp4 / mov 格式的视频，请重新选择' };
     }
     if (!duration || duration < MIN_DURATION) {
       return { ok: false, reason: '视频太短了，请拍摄 2~15 秒的完整挥杆' };
@@ -147,10 +198,11 @@ Page({
       return;
     }
     const filePath = this.data.video.path;
+    const cameraView = this.data.cameraView;
     this.setData({ uploading: true, uploadPercent: 0, canSubmit: false });
 
     api
-      .uploadVideo(filePath, (percent) => {
+      .uploadVideo(filePath, cameraView, (percent) => {
         this.setData({ uploadPercent: percent });
       })
       .then((data) => {

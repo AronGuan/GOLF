@@ -13,7 +13,9 @@ App({
     /** @type {object|null} 最近一次分析结果 */
     result: null,
     /** @type {object|null} 最近一次选择的视频信息 */
-    lastVideo: null
+    lastVideo: null,
+    /** @type {string} 用户选择的机位（v2）：'face_on' | 'down_the_line' */
+    cameraView: 'face_on'
   },
 
   onLaunch() {

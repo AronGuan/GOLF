@@ -11,12 +11,12 @@ const POLL_INTERVAL = 1500;
 /** 最大轮询次数（1500ms × 80 = 120s） */
 const MAX_POLLS = 80;
 
-/** 4 个步骤的静态定义 */
+/** 4 个步骤的静态定义（v2：step4 文案 = 「计算姿态指标与风险」） */
 const STEP_DEFS = [
   { id: 1, index: '①', name: '上传完成' },
   { id: 2, index: '②', name: '提取身体关键点' },
   { id: 3, index: '③', name: '识别 8 个挥杆阶段' },
-  { id: 4, index: '④', name: '计算姿态指标' }
+  { id: 4, index: '④', name: '计算姿态指标与风险' }
 ];
 
 Page({
@@ -107,7 +107,8 @@ Page({
       .then((state) => this._apply(state))
       .catch((error) => {
         // 网络抖动不立刻判失败，连续失败到超时上限自然会退出
-        if (error && error.code === 4004) {
+        // v2：PDD 码 20001（任务不存在）；兼容旧码 4004
+        if (error && (error.code === 20001 || error.code === 4004)) {
           this._fail('任务不存在，请重新拍摄上传');
         }
       });
@@ -138,13 +139,21 @@ Page({
       return;
     }
 
+    // v2：优先展示后端 step_text（PDD 字符串 step），缺省回落本地 4 步文案
+    const message = state.step_text || state.message || this._stepName(step);
     this.setData({
       progress,
       step,
-      message: state.message || '正在分析...',
+      message,
       steps: this._buildSteps(step, false),
       etaText: this._eta(progress)
     });
+  },
+
+  /** 本地 step 文案兜底 @private */
+  _stepName(step) {
+    const def = STEP_DEFS.find((s) => s.id === step);
+    return (def ? def.name : '正在分析...');
   },
 
   /**

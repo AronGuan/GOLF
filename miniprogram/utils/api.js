@@ -4,6 +4,9 @@
  * 页面内**禁止**裸调 wx.request / wx.uploadFile，一律走本模块。
  * 真机调试请把 BASE_URL 改成开发机的局域网 IP（并在开发者工具勾选
  * 「不校验合法域名、web-view、TLS 版本以及 HTTPS 证书」）。
+ *
+ * v2（架构 §6.5）：三条 URL 改 PDD 主路径；上传携带 ``camera_view``；
+ * 错误码映射新增 PDD 码（10001/10002/20001/20002）。
  */
 
 /** 后端基地址 */
@@ -16,7 +19,7 @@ const API_PREFIX = '/api/v1';
 const TIMEOUT = 20000;
 
 /**
- * 后端错误码 -> 中文文案（兜底用；优先使用后端下发的 error_message）
+ * 后端业务错误码 -> 中文文案（兜底用；优先使用后端下发的 error_message）
  */
 const ERROR_MESSAGES = {
   NO_PERSON: '没有检测到人物，请确保全身在画面内后重拍',
@@ -28,15 +31,28 @@ const ERROR_MESSAGES = {
   INTERNAL: '分析失败了，请稍后重试'
 };
 
+/** PDD 对外错误码 -> 中文文案（v2 新增） */
+const PDD_ERROR_MESSAGES = {
+  10001: '视频大小超过 20MB',
+  10002: '只支持 mp4 / mov 格式的视频',
+  10003: '视频时长需在 2~15 秒之间',
+  10004: '服务器内部错误，请稍后重试',
+  20001: '任务不存在或已过期',
+  20002: '任务尚未完成，请稍后再试'
+};
+
 /**
  * 按错误码取中文文案。
- * @param {string} code 后端 ErrorCode
+ * @param {string|number} code 后端 ErrorCode 或 PDD 错误码
  * @param {string} [fallback] 后端已下发的文案，优先使用
  * @return {string}
  */
 function messageOf(code, fallback) {
   if (fallback) {
     return fallback;
+  }
+  if (typeof code === 'number') {
+    return PDD_ERROR_MESSAGES[code] || ERROR_MESSAGES.INTERNAL;
   }
   return ERROR_MESSAGES[code] || ERROR_MESSAGES.INTERNAL;
 }
@@ -95,17 +111,20 @@ function request(options) {
 }
 
 /**
- * 上传视频并创建任务。
+ * 上传视频并创建任务（PDD 主路径 /api/v1/task/create，字段名 video）。
  * @param {string} filePath 本地临时文件路径
+ * @param {string} [cameraView] 'face_on' | 'down_the_line' | 'auto'
  * @param {function(number):void} [onProgress] 上传百分比回调 0~100
  * @return {Promise<{task_id:string, status:string}>}
  */
-function uploadVideo(filePath, onProgress) {
+function uploadVideo(filePath, cameraView, onProgress) {
+  const view = cameraView || 'face_on';
   return new Promise((resolve, reject) => {
     const task = wx.uploadFile({
-      url: BASE_URL + API_PREFIX + '/tasks',
+      url: BASE_URL + API_PREFIX + '/task/create',
       filePath,
-      name: 'file',
+      name: 'video',
+      formData: { camera_view: view },
       timeout: 120000,
       success(res) {
         // 注意：wx.uploadFile 的 res.data 是字符串，必须 JSON.parse
@@ -130,21 +149,21 @@ function uploadVideo(filePath, onProgress) {
 }
 
 /**
- * 查询任务状态。
+ * 查询任务状态（PDD 主路径 /api/v1/task/status/{id}）。
  * @param {string} taskId
  * @return {Promise<object>}
  */
 function getTaskStatus(taskId) {
-  return request({ url: '/tasks/' + taskId });
+  return request({ url: '/task/status/' + taskId });
 }
 
 /**
- * 获取完整分析结果。
+ * 获取完整分析结果（PDD 主路径 /api/v1/task/result/{id}）。
  * @param {string} taskId
  * @return {Promise<object>}
  */
 function getResult(taskId) {
-  return request({ url: '/tasks/' + taskId + '/result' });
+  return request({ url: '/task/result/' + taskId });
 }
 
 /**
@@ -159,6 +178,7 @@ module.exports = {
   BASE_URL,
   API_PREFIX,
   ERROR_MESSAGES,
+  PDD_ERROR_MESSAGES,
   messageOf,
   request,
   uploadVideo,

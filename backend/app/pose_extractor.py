@@ -67,7 +67,9 @@ def probe_video(path: str) -> VideoMeta:
     duration = frame_count / fps
     if duration < config.MIN_DURATION_SEC or duration > config.MAX_DURATION_SEC:
         raise AnalysisError(
-            ErrorCode.BAD_VIDEO, f"duration out of range: {duration:.2f}s"
+            ErrorCode.BAD_VIDEO,
+            f"duration out of range: {duration:.2f}s",
+            pdd_code=config.PDD_CODE_BAD_DURATION,  # 对外 10003（时长超范围）
         )
 
     sample_step = max(1, math.ceil(frame_count / config.MAX_INFER_FRAMES))

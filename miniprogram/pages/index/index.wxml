@@ -6,10 +6,35 @@
     <view class="hero-sub">拍一段挥杆，30 秒拿到 8 阶段姿态报告</view>
   </view>
 
+  <!-- 机位二选一（v2） -->
+  <view class="card view-card">
+    <view class="card-title">选择拍摄机位</view>
+    <view class="view-grid">
+      <view
+        class="view-option {{cameraView === 'face_on' ? 'view-option--on' : ''}}"
+        data-view="face_on"
+        bindtap="onSelectView">
+        <view class="view-icon">🙋</view>
+        <view class="view-label">正面机位</view>
+        <view class="view-sub">正对身体 · 竖持</view>
+        <view class="view-dot" wx:if="{{cameraView === 'face_on'}}">✓</view>
+      </view>
+      <view
+        class="view-option {{cameraView === 'down_the_line' ? 'view-option--on' : ''}}"
+        data-view="down_the_line"
+        bindtap="onSelectView">
+        <view class="view-icon">🏌️</view>
+        <view class="view-label">侧面机位</view>
+        <view class="view-sub">垂直于目标线 · 横持</view>
+        <view class="view-dot" wx:if="{{cameraView === 'down_the_line'}}">✓</view>
+      </view>
+    </view>
+  </view>
+
   <!-- 机位示意图（纯 CSS 绘制，不引入图片资源） -->
   <view class="diagram card">
     <view class="diagram-row">
-      <view class="phone">
+      <view class="phone {{cameraView === 'down_the_line' ? 'phone--landscape' : ''}}">
         <view class="phone-screen"></view>
       </view>
 
@@ -27,17 +52,17 @@
         <view class="g-leg-r"></view>
       </view>
     </view>
-    <view class="diagram-caption">正面机位（face-on）· 手机竖持固定 · 全身入镜</view>
+    <view class="diagram-caption">{{cameraView === 'face_on' ? '正面机位（face-on）· 手机竖持固定 · 全身入镜' : '侧面机位（down-the-line）· 手机横持水平 · 球杆清晰可见'}}</view>
   </view>
 
-  <!-- 拍摄要求 -->
+  <!-- 拍摄要求（随机位切换） -->
   <view class="card req-card">
-    <view class="card-title">拍摄要求</view>
+    <view class="card-title">拍摄要求 <text class="req-tag">{{cameraView === 'face_on' ? '正面' : '侧面'}}</text></view>
     <view class="req-item" wx:for="{{requirements}}" wx:key="*this">
       <view class="req-dot"></view>
       <view class="req-text">{{item}}</view>
     </view>
-    <view class="req-note">当前版本仅支持<text class="req-strong">右手球手</text>与<text class="req-strong">正面机位</text></view>
+    <view class="req-note">当前版本仅支持<text class="req-strong">右手球手</text>；侧面机位部分阶段指标较少属正常</view>
   </view>
 
   <!-- 选择视频 -->
@@ -75,6 +100,4 @@
     class="btn btn-primary submit"
     disabled="{{!canSubmit}}"
     bindtap="onSubmit">{{uploading ? '上传中...' : '开始分析'}}</button>
-
-  <view class="tips">分析完成后原视频将被立即删除，结果图保留 7 天</view>
 </view>

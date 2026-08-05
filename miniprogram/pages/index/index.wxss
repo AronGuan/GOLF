@@ -14,10 +14,88 @@
   color: #9aa6b5;
 }
 
+/* ---------------- 机位二选一（v2） ---------------- */
+
+.view-card {
+  margin-top: 4rpx;
+}
+
+.view-grid {
+  display: flex;
+  gap: 20rpx;
+}
+
+.view-option {
+  position: relative;
+  flex: 1;
+  padding: 24rpx 12rpx 20rpx;
+  border-radius: 16rpx;
+  background: #1f2630;
+  border: 2rpx solid #2a323e;
+  text-align: center;
+}
+
+.view-option--on {
+  border-color: #1fbf75;
+  background: rgba(31, 191, 117, 0.08);
+}
+
+.view-icon {
+  font-size: 44rpx;
+}
+
+.view-label {
+  margin-top: 8rpx;
+  font-size: 28rpx;
+  font-weight: 600;
+  color: #f2f5f8;
+}
+
+.view-option--on .view-label {
+  color: #1fbf75;
+}
+
+.view-sub {
+  margin-top: 4rpx;
+  font-size: 20rpx;
+  color: #9aa6b5;
+}
+
+.view-dot {
+  position: absolute;
+  right: 10rpx;
+  top: 10rpx;
+  width: 34rpx;
+  height: 34rpx;
+  line-height: 34rpx;
+  border-radius: 50%;
+  font-size: 22rpx;
+  color: #0e1116;
+  background: #1fbf75;
+}
+
 /* ---------------- 机位示意图（纯 CSS） ---------------- */
 
 .diagram {
   padding: 34rpx 28rpx 22rpx;
+  margin-top: 24rpx;
+}
+
+.phone--landscape {
+  width: 140rpx;
+  height: 78rpx;
+  padding: 6rpx 8rpx;
+  margin-top: 62rpx;
+}
+
+.req-tag {
+  margin-left: 12rpx;
+  padding: 0 12rpx;
+  border-radius: 999rpx;
+  font-size: 20rpx;
+  font-weight: 400;
+  color: #1fbf75;
+  background: rgba(31, 191, 117, 0.14);
 }
 
 .diagram-row {
@@ -290,11 +368,4 @@
 
 .submit {
   margin-top: 36rpx;
-}
-
-.tips {
-  margin-top: 22rpx;
-  text-align: center;
-  font-size: 23rpx;
-  color: #6b7686;
 }

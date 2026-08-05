@@ -2,11 +2,23 @@
 const app = getApp();
 const api = require('../../utils/api.js');
 
-/** 三态中文文案。 */
-const STATUS_TEXT = { low: '偏低', normal: '标准', high: '偏高' };
+/** 五态中文文案（v2：3 态 -> 5 态）。 */
+const STATUS_TEXT = {
+  low: '偏低',
+  normal: '正常',
+  high: '偏高',
+  critical_low: '严重偏低',
+  critical_high: '严重偏高'
+};
+
+/** 风险等级展示（v2 区域4；配色以架构 §6.5 为准）。 */
+const RISK_LEVEL_TEXT = { high: '高风险', medium: '中风险', low: '低风险' };
 
 /** 单位 -> 小数位数。 */
 const UNIT_DIGITS = { '°': 1, '%': 1, s: 2, ':1': 1, '': 2 };
+
+/** 机位标签。 */
+const VIEW_LABEL = { face_on: '正面机位', down_the_line: '侧面机位' };
 
 /**
  * 数值格式化。
@@ -61,12 +73,34 @@ function decorate(m) {
     name: m.name,
     unit: unit,
     status: status,
-    statusText: STATUS_TEXT[status] || '标准',
+    statusText: STATUS_TEXT[status] || '正常',
     valueText: formatValue(value, unit),
     refText: formatValue(refMin, unit) + '~' + formatValue(refMax, unit),
     refFrom: refFrom.toFixed(2),
     refWidth: Math.max(refTo - refFrom, 1).toFixed(2),
-    markPct: markPct.toFixed(2)
+    markPct: markPct.toFixed(2),
+    description: m.description || ''
+  };
+}
+
+/**
+ * 为一条风险装饰展示字段。
+ * @param {object} r 后端返回的 RiskItem
+ * @returns {object}
+ */
+function decorateRisk(r) {
+  return {
+    rule_id: r.rule_id,
+    risk_name: r.risk_name,
+    level: r.risk_level || 'low',
+    levelText: RISK_LEVEL_TEXT[r.risk_level] || '低风险',
+    trigger_description: r.trigger_description || '',
+    suggestions: Array.isArray(r.suggestions) ? r.suggestions : [],
+    manual_excerpt: r.manual_excerpt || '',
+    manual_page: r.manual_page || '',
+    metric_name: r.metric_name || '',
+    valueText: formatValue(r.value, r.unit || ''),
+    unit: r.unit || ''
   };
 }
 
@@ -80,7 +114,11 @@ Page({
     globals: [],
     meta: {},
     warnings: [],
-    disclaimer: ''
+    disclaimer: '',
+    // ---- v2 ----
+    viewLabel: '',
+    analyzedDate: '',
+    manual: null // 手册原文弹窗内容
   },
 
   onLoad(options) {
@@ -133,7 +171,10 @@ Page({
       estimated: !!p.estimated,
       image_url: p.image_url,
       timeText: (Number(p.timestamp) || 0).toFixed(2) + 's · 第 ' + p.frame_index + ' 帧',
-      metrics: (p.metrics || []).map(decorate)
+      metrics: (p.metrics || []).map(decorate),
+      // v2 区域4：风险区（后端已按 high→medium→low 排序）
+      risks: (p.risks || []).map(decorateRisk),
+      emptyMetrics: !p.metrics || p.metrics.length === 0
     }));
 
     const gm = result.global_metrics || {};
@@ -148,6 +189,13 @@ Page({
       durationText: (Number(vm.duration) || 0).toFixed(1)
     };
 
+    // v2：机位标签（顶层 camera_view 优先，回落 video_meta）
+    const rawView = result.camera_view || vm.camera_view || 'face_on';
+    const viewLabel = VIEW_LABEL[rawView] || '正面机位';
+    const now = new Date();
+    const analyzedDate =
+      now.getFullYear() + '-' + (now.getMonth() + 1) + '-' + now.getDate();
+
     const current = phases.length > 3 ? 3 : 0; // 默认 ④ 顶点
     this.setData({
       loaded: phases.length > 0,
@@ -158,7 +206,9 @@ Page({
       globals: globals,
       meta: meta,
       warnings: result.warnings || [],
-      disclaimer: result.disclaimer || ''
+      disclaimer: result.disclaimer || '',
+      viewLabel: viewLabel,
+      analyzedDate: analyzedDate
     });
   },
 
@@ -225,6 +275,29 @@ Page({
         wx.showToast({ title: '图片下载失败', icon: 'none' });
       }
     });
+  },
+
+  /** 打开手册原文半屏弹窗（v2） */
+  onOpenManual(e) {
+    const index = Number(e.currentTarget.dataset.index);
+    const risk = (this.data.cur && this.data.cur.risks[index]) || null;
+    if (!risk || !risk.manual_excerpt) {
+      return;
+    }
+    this.setData({ manual: risk });
+  },
+
+  /** 关闭手册原文弹窗 */
+  onCloseManual() {
+    this.setData({ manual: null });
+  },
+
+  /** 阻止冒泡 */
+  noop() {},
+
+  /** [查看完整报告] 占位按钮（P1，本期不实现功能） */
+  onFullReport() {
+    wx.showToast({ title: '即将上线', icon: 'none' });
   },
 
   onRetake() {

@@ -1,7 +1,13 @@
-<!--pages/result/result.wxml 分析结果页：8 阶段缩略图 + 大图 + 指标卡 + 全程指标-->
+<!--pages/result/result.wxml 分析结果页：8 阶段缩略图 + 大图 + 指标卡 + 风险区 + 全程指标-->
 <view class="page">
 
   <block wx:if="{{loaded}}">
+
+    <!-- 顶部机位标签（v2）+ 提示 -->
+    <view class="topbar">
+      <view class="topbar__view">{{viewLabel}} · {{analyzedDate}}</view>
+      <view class="topbar__sub">挥杆姿态报告</view>
+    </view>
 
     <!-- 顶部提示（低帧率 / 估算阶段等） -->
     <view class="warn-bar" wx:if="{{warnings.length > 0}}">
@@ -55,32 +61,73 @@
       </view>
     </view>
 
-    <!-- 当前阶段 4 项指标 -->
+    <!-- 当前阶段指标（v2：空状态优雅处理 + description 术语解释行） -->
     <view class="section">
       <view class="section__title">
         <text>阶段指标</text>
-        <text class="section__sub">共 {{cur.metrics.length}} 项</text>
+        <text class="section__sub" wx:if="{{cur.metrics.length > 0}}">共 {{cur.metrics.length}} 项</text>
       </view>
 
-      <view class="mcard" wx:for="{{cur.metrics}}" wx:key="key">
-        <view class="mcard__row">
-          <view class="mcard__name">{{item.name}}</view>
-          <view class="mcard__val">
-            <text class="mcard__num status--{{item.status}}">{{item.valueText}}</text>
-            <text class="mcard__unit">{{item.unit}}</text>
+      <!-- 0 项指标：占位卡（用户决策 2：侧面机位部分阶段允许 0~1 项） -->
+      <view class="empty-metric" wx:if="{{cur.emptyMetrics}}">
+        <view class="empty-metric__icon">📊</view>
+        <view class="empty-metric__text">该机位在本阶段暂无可测指标</view>
+        <view class="empty-metric__sub">换正面机位可查看更多指标</view>
+      </view>
+
+      <block wx:else>
+        <view class="mcard" wx:for="{{cur.metrics}}" wx:key="key">
+          <view class="mcard__row">
+            <view class="mcard__name">{{item.name}}</view>
+            <view class="mcard__val">
+              <text class="mcard__num status--{{item.status}}">{{item.valueText}}</text>
+              <text class="mcard__unit">{{item.unit}}</text>
+            </view>
           </view>
-        </view>
 
-        <view class="bar">
-          <view class="bar__track"></view>
-          <view class="bar__ref" style="left:{{item.refFrom}}%;width:{{item.refWidth}}%;"></view>
-          <view class="bar__mark status-bg--{{item.status}}" style="left:{{item.markPct}}%;"></view>
-        </view>
+          <view class="bar">
+            <view class="bar__track"></view>
+            <view class="bar__ref" style="left:{{item.refFrom}}%;width:{{item.refWidth}}%;"></view>
+            <view class="bar__mark status-bg--{{item.status}}" style="left:{{item.markPct}}%;"></view>
+          </view>
 
-        <view class="mcard__foot">
-          <view class="chip chip--{{item.status}}">{{item.statusText}}</view>
-          <view class="mcard__ref">参考 {{item.refText}}{{item.unit}}</view>
+          <view class="mcard__foot">
+            <view class="chip chip--{{item.status}}">{{item.statusText}}</view>
+            <view class="mcard__ref">参考 {{item.refText}}{{item.unit}}</view>
+          </view>
+
+          <!-- v2：术语解释行 -->
+          <view class="mcard__desc" wx:if="{{item.description}}">{{item.description}}</view>
         </view>
+      </block>
+    </view>
+
+    <!-- 🆕 区域4：本阶段风险与改进建议（v2） -->
+    <view class="section">
+      <view class="section__title">
+        <text>风险与改进建议</text>
+        <text class="section__sub" wx:if="{{cur.risks.length > 0}}">共 {{cur.risks.length}} 条</text>
+      </view>
+
+      <!-- 无风险空状态 -->
+      <view class="risk-ok" wx:if="{{cur.risks.length === 0}}">
+        <view class="risk-ok__icon">✅</view>
+        <view class="risk-ok__text">本阶段动作良好，无高风险项</view>
+      </view>
+
+      <!-- 风险卡片列表 -->
+      <view class="rcard rcard--{{item.level}}" wx:for="{{cur.risks}}" wx:key="rule_id">
+        <view class="rcard__head">
+          <view class="rcard__dot"></view>
+          <view class="rcard__name">{{item.risk_name}}</view>
+          <view class="rcard__level">{{item.levelText}}</view>
+        </view>
+        <view class="rcard__reason">{{item.trigger_description}}</view>
+        <view class="rcard__suggest" wx:if="{{item.suggestions.length > 0}}">
+          <view class="rcard__suggest-title">改进建议：</view>
+          <view class="rcard__suggest-item" wx:for="{{item.suggestions}}" wx:for-item="sg" wx:key="*this">· {{sg}}</view>
+        </view>
+        <view class="rcard__manual" wx:if="{{item.manual_excerpt}}" data-index="{{index}}" bindtap="onOpenManual">📖 查看手册原文</view>
       </view>
     </view>
 
@@ -100,14 +147,17 @@
     <view class="section">
       <view class="section__title"><text>视频信息</text></view>
       <view class="meta">
+        <view class="meta__i"><text class="meta__k">机位</text><text class="meta__v">{{viewLabel}}</text></view>
         <view class="meta__i"><text class="meta__k">分辨率</text><text class="meta__v">{{meta.width}}×{{meta.height}}</text></view>
         <view class="meta__i"><text class="meta__k">帧率</text><text class="meta__v">{{meta.fpsText}} fps</text></view>
         <view class="meta__i"><text class="meta__k">时长</text><text class="meta__v">{{meta.durationText}} s</text></view>
-        <view class="meta__i"><text class="meta__k">总帧数</text><text class="meta__v">{{meta.frame_count}}</text></view>
       </view>
     </view>
 
     <view class="disclaimer">{{disclaimer}}</view>
+
+    <!-- v2：[查看完整报告] 占位按钮（P1 预留） -->
+    <view class="report-btn" bindtap="onFullReport">查看完整报告（即将上线）</view>
 
     <view class="footer">
       <view class="btn btn--primary" bindtap="onRetake">再分析一次</view>
@@ -119,6 +169,21 @@
     <view class="empty__icon">·</view>
     <view class="empty__text">结果已失效，请重新上传视频</view>
     <view class="btn btn--primary" bindtap="onRetake">去上传</view>
+  </view>
+
+  <!-- 🆕 手册原文半屏弹窗（v2） -->
+  <view class="mask" wx:if="{{manual}}" bindtap="onCloseManual">
+    <view class="manual" catchtap="noop">
+      <view class="manual__head">
+        <text class="manual__title">{{manual.risk_name}}</text>
+        <text class="manual__close" bindtap="onCloseManual">✕</text>
+      </view>
+      <view class="manual__page" wx:if="{{manual.manual_page}}">手册页码：{{manual.manual_page}}</view>
+      <scroll-view class="manual__body" scroll-y="true">
+        <text class="manual__text">{{manual.manual_excerpt}}</text>
+      </scroll-view>
+      <view class="manual__foot" bindtap="onCloseManual">关闭</view>
+    </view>
   </view>
 
 </view>

@@ -1,0 +1,48 @@
+[boot] server health: True {"code":0,"data":{"status":"ok","mediapipe":"0.10.14"},"mess
+======================================================================
+A. 双路径等价
+  [PASS] A pdd /task/create 201
+  [PASS] A legacy /tasks (file) 201
+  [PASS] A status payload equivalent
+  [PASS] A status HTTP 200 both
+======================================================================
+D. 真实视频新路径全流程（task_pdd=c821fddb0882）
+  [PASS] D terminal success
+  [PASS] D step_text non-empty
+  [PASS] D 8 phases
+  [PASS] D camera_view face_on
+  [PASS] D risks produced
+  [PASS] D has description
+  [PASS] D disclaimer
+  [PASS] D total_frames
+======================================================================
+B. PDD 错误码
+  [PASS] B .avi -> 10002
+  [PASS] B unknown task -> 20001
+  [PASS] B result-not-ready -> 20002 (skipped, already done)
+  [PASS] B oversize -> 10001
+  [PASS] B empty file -> 10002
+  [PASS] B no file field -> 10002
+  [PASS] B unknown ext -> 10002
+  [PASS] B 5000->10004 (static: err(5000,..,PDD_CODE_INTERNAL))
+======================================================================
+C. camera_view
+  [PASS] C default -> 201
+  [PASS] C explicit dtl -> 201
+  [PASS] C dtl camera_view propagated
+  [PASS] C dtl has swing_plane or dropped gracefully
+  [PASS] C invalid view -> 201 (fallback)
+======================================================================
+E. 路由形态
+  [PASS] E /task/status/{id} -> 20001 (not 404 路由)
+  [PASS] E /tasks/{id} -> 20001
+  [PASS] E /task/result/{id} -> 20001
+  [PASS] E /tasks/{id}/result -> 20001
+  [PASS] E empty task_id -> 404/400 不 500
+  [PASS] E long id -> 20001 (not 500)
+======================================================================
+F. video/file 双字段
+  [PASS] F both fields -> 201 (video wins)
+  [PASS] F _pick_upload video-first (static)
+======================================================================
+QA T5 VERIFY DONE  PASS=33 FAIL=0

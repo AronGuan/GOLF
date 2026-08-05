@@ -1,0 +1,25 @@
+[boot] server health: True -> {"code":0,"data":{"status":"ok","mediapipe":"0.10.14"},"message":"success"}
+======================================================================
+① POST /api/v1/task/create + camera_view=face_on（真实视频全流程）
+  create status=201 body={"code":0,"data":{"task_id":"4b911906c33f","status":"pending"},"message":"success"}
+  poll terminal status=success step=4 step_text='计算姿态指标与风险' progress=100
+  result camera_view=face_on phases=8 risks_total=2 warnings=['帧率偏低，击球阶段定位可能不准', '视频在收杆后过早结束，平衡保持时长可能被低估']
+  top metrics=[('shoulder_turn', 66.4, 'low'), ('hip_turn', 17.0, 'critical_low'), ('x_factor', 49.5, 'high'), ('lead_arm_straightness', 107.2, 'critical_low')]
+  follow_through metrics=[('hip_open_angle', 79.1), ('shoulder_turn', 122.0), ('trail_arm_flexion', 136.5), ('spine_tilt_side', 1.5)] risks=[]
+  has description field: True
+======================================================================
+② POST /api/v1/tasks（旧路径）+ 旧路径状态查询
+  create status=201 body={"code":0,"data":{"task_id":"dcc89e8fddcd","status":"pending"},"message":"success"}
+  old-path status GET code=0
+  pdd-path status GET code=0 (两条路径等价=True)
+======================================================================
+③ PDD 错误码
+  bad format(.avi): status=400 code=10002 msg=只支持 mp4 / mov 格式的视频  (期望 10002)
+  unknown task: status=404 code=20001  (期望 20001)
+  result-not-ready: status=409 code=20002 msg=任务尚未完成  (期望 20002)
+  oversize: status=400 code=10001  (期望 10001)
+======================================================================
+④ camera_view 缺省（不硬拒）
+  create without camera_view: status=201 body={"code":0,"data":{"task_id":"56f29ee173f5","status":"pending"},"message":"success"}  (期望 201)
+======================================================================
+SMOKE DONE

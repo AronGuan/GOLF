@@ -14,6 +14,7 @@
 from __future__ import annotations
 
 import logging
+import math
 from typing import Dict, List, Optional, Sequence, Tuple
 
 import numpy as np
@@ -53,8 +54,24 @@ def _sample_step_of(frames: Sequence[FrameLandmarks]) -> int:
     return int(max(1, round(float(np.median(positive)))))
 
 
-def build_signals(frames: Sequence[FrameLandmarks], fps: float) -> SwingSignals:
+def build_signals(
+    frames: Sequence[FrameLandmarks], fps: float, aspect: float = 1.0
+) -> SwingSignals:
     """构建切分所需的一维信号（架构文档 §7.1）。
+
+    Args:
+        frames: :func:`pose_extractor.extract` 的产出。
+        fps: 原视频帧率。
+        aspect: 画幅纵横比 ``height / width``，用于把归一化坐标换算到**各向同性**
+            的「图像宽度」单位。
+
+            为什么必须传：``norm`` 的 x、y 都在 ``[0,1]``，但一个单位的 x 是
+            ``W`` 像素、一个单位的 y 是 ``H`` 像素。竖屏 720×1280 下两者差
+            1.78 倍，而本函数把「竖直行程」除以「近似水平的肩宽」来做归一化，
+            不校正就等于所有肩宽制阈值随手机横竖屏漂移 1.78²≈3.2 倍
+            （实测：竖屏样本 ``travel_in_S≈1.9~2.6``，横屏样本 ``≈3.1``，
+            换算回真实像素后恰好反过来）。默认 ``1.0`` 保持历史行为，
+            真实视频调用方**必须**传 ``meta.height / meta.width``。
 
     Raises:
         AnalysisError: ``NO_SWING`` —— 帧数过少或肩宽标尺异常。
@@ -66,9 +83,12 @@ def build_signals(frames: Sequence[FrameLandmarks], fps: float) -> SwingSignals:
     step = _sample_step_of(frames)
     dt = step / float(fps) if fps > 0 else 1.0 / 30.0
 
-    norm = np.stack([f.norm for f in frames], axis=0).astype(np.float64)  # (n,33,3)
+    raw = np.stack([f.norm for f in frames], axis=0).astype(np.float64)  # (n,33,3)
+    ratio = float(aspect) if math.isfinite(float(aspect)) and aspect > 0 else 1.0
+    # 只拉伸 y：换算后 x/y 同为「图像宽度」单位，各向同性
+    norm = raw * np.array([1.0, ratio, 1.0], dtype=np.float64)
 
-    # S3 肩宽标尺：全片中位数（归一化图像坐标）
+    # S3 肩宽标尺：全片中位数（各向同性图像坐标，单位=图像宽度）
     shoulder_vec = norm[:, geometry.L_SHOULDER, :2] - norm[:, geometry.R_SHOULDER, :2]
     widths = np.linalg.norm(shoulder_vec, axis=1)
     widths = widths[np.isfinite(widths)]
@@ -170,11 +190,18 @@ def _runs_below(values: np.ndarray, threshold: float) -> List[Tuple[int, int]]:
 
 
 def locate_top(sig: SwingSignals) -> int:
-    """④ 顶点：图像最高点附近的速度反向点。
+    """④ 顶点：手位相对髋部最高处附近的速度反向点。
 
-    在 §7.2 基础上补了一条物理前提：**顶点必然早于全局速度峰（≈击球）**。
-    很多球手收杆时手位与顶点等高甚至更高，只取「窗口内最高点」会把顶点误判到
-    收杆，进而触发假 ``NO_SWING``；用速度峰收窄搜索上界即可消除该失效模式。
+    在 §7.2 基础上补了两条工程修正：
+
+    1. **顶点必然早于全局速度峰（≈击球）**。很多球手收杆时手位与顶点等高甚至
+       更高，只取「窗口内最高点」会把顶点误判到收杆，进而触发假 ``NO_SWING``；
+       用速度峰收窄搜索上界即可消除该失效模式。
+    2. 用 **髋部相对高度 ``h``** 取代绝对图像纵坐标 ``wrist_y``。绝对纵坐标会被
+       人体整体平移与镜头晃动污染：实测样本 ``0bb16a97`` 中，站位阶段
+       ``wrist_y=0.4905`` 反而比真实顶点 ``wrist_y=0.4948`` 更"高"（球手全程
+       在画面内缓慢下移），顶点被定位到第 10 帧，直接误报 ``NO_SWING``；
+       改用 ``h``（站位 0.4 / 真实顶点 1.07）后定位正确。``h`` 天然抵消平移。
     """
     n = sig.n
     lo = int(round(config.TOP_SEARCH_MARGIN * n))
@@ -187,7 +214,7 @@ def locate_top(sig: SwingSignals) -> int:
     if i_peak - lo >= min_span:
         hi = max(lo + 1, min(hi, i_peak))
 
-    i_y = lo + int(np.argmin(sig.wrist_y[lo:hi]))
+    i_y = lo + int(np.argmax(sig.h[lo:hi]))
     radius = max(1, int(round(config.TOP_REFINE_SEC * sig.fps_eff)))
     a = max(lo, i_y - radius)
     b = min(hi, i_y + radius + 1)
@@ -208,7 +235,15 @@ def locate_address(sig: SwingSignals, i_top: int) -> Tuple[int, bool]:
 
     segment = sig.speed[:i_top]
     min_len = max(2, int(round(config.STILL_MIN_SEC_ADDR * fe)))
-    runs = [r for r in _runs_below(segment, config.V_STILL) if r[1] - r[0] + 1 >= min_len]
+    # 候选静止段：长度达标「且」末帧手位贴近髋线（低 h）。
+    # 过滤掉顶点前减速微停——它发生在 h≈2（手已高举），会被 V_STILL 误判成静止，
+    # 导致 Address 被定位到顶点前几帧、Address→Top 挤压成 1 帧触发假 NO_SWING。
+    runs = [
+        r
+        for r in _runs_below(segment, config.V_STILL)
+        if r[1] - r[0] + 1 >= min_len
+        and float(sig.h[r[1]]) <= config.ADDR_H_MAX
+    ]
 
     if runs:
         i_addr = runs[-1][1]
@@ -227,7 +262,19 @@ def locate_address(sig: SwingSignals, i_top: int) -> Tuple[int, bool]:
 
 
 def locate_impact(sig: SwingSignals, i_top: int, i_addr: int) -> Tuple[int, bool]:
-    """⑥ 击球：手腕回落到 Address 高度附近后的速度峰。
+    """⑥ 击球：下杆窗口内「手位回落到 Address 高度」处的速度峰。
+
+    相对 §7.2 的两处工程修正（均由真实视频实测反推）：
+
+    1. **搜索区间被限制在物理可行的下杆时长内**（:data:`config.MAX_DOWNSWING_SEC`）。
+       原实现在 ``(i_top, n)`` 全区间找首个高度回落点，实测样本 ``470057ac``
+       因顶点后手位一直高于容差带，首个"回落"发生在 95 帧之后 —— 算出 3.17s
+       的下杆，比真实值大一个数量级。
+    2. **高度判据改用髋部相对高度 ``h``**，理由同 :func:`locate_top`：绝对
+       ``wrist_y`` 会被人体整体平移污染。
+    3. 窗口内**没有**回落穿越时回退到速度峰。实测 9 段视频中速度峰分支给出的
+       下杆时长全部落在 0.20~0.30s（真实值 0.25~0.30s），可靠性显著高于
+       高度穿越分支，故窗口收紧后二者结论一致。
 
     Raises:
         AnalysisError: ``NO_SWING`` —— 下杆时长异常。
@@ -237,24 +284,30 @@ def locate_impact(sig: SwingSignals, i_top: int, i_addr: int) -> Tuple[int, bool
     if i_top >= n - 1:
         raise AnalysisError(ErrorCode.NO_SWING, "top at sequence tail")
 
-    y_addr = float(sig.wrist_y[i_addr])
-    tail = np.arange(i_top + 1, n)
-    crossed = np.where(sig.wrist_y[i_top + 1 : n] >= y_addr - config.IMPACT_Y_TOL * sig.S)[0]
+    min_gap = max(2, int(round(config.MIN_IMPACT_TOP_SEC * fe)))
+    # 下杆搜索上界：物理上限，且至少要容纳 min_gap 帧
+    span = max(min_gap + 1, int(round(config.MAX_DOWNSWING_SEC * fe)))
+    hi = min(n, i_top + 1 + span)
+    if hi <= i_top + 1:
+        hi = min(n, i_top + 2)
+
+    h_addr = float(sig.h[i_addr])
+    window = sig.h[i_top + 1 : hi]
+    crossed = np.where(window <= h_addr + config.IMPACT_Y_TOL)[0]
 
     if crossed.size > 0:
-        i_cross = int(tail[crossed[0]])
+        i_cross = int(i_top + 1 + crossed[0])
         radius = max(1, int(round(config.IMPACT_WIN_SEC * fe)))
         a = max(i_top + 1, i_cross - radius)
-        b = min(n, i_cross + radius + 1)
+        b = min(hi, i_cross + radius + 1)
         if b <= a:
-            b = min(n, a + 1)
+            b = min(hi, a + 1)
         i_impact = a + int(np.argmax(sig.speed[a:b]))
         estimated = False
     else:
-        i_impact = i_top + 1 + int(np.argmax(sig.speed[i_top + 1 : n]))
+        i_impact = i_top + 1 + int(np.argmax(sig.speed[i_top + 1 : hi]))
         estimated = True
 
-    min_gap = max(2, int(round(config.MIN_IMPACT_TOP_SEC * fe)))
     if i_impact - i_top < min_gap:
         raise AnalysisError(
             ErrorCode.NO_SWING,
@@ -464,13 +517,15 @@ def segment_swing(
     frames: Sequence[FrameLandmarks],
     fps: float,
     sig: Optional[SwingSignals] = None,
+    aspect: float = 1.0,
 ) -> List[SwingEvent]:
     """8 阶段切分主入口。
 
     Args:
         frames: :func:`pose_extractor.extract` 的产出。
         fps: 原视频帧率。
-        sig: 可选的预构建信号包（避免重复计算）。
+        sig: 可选的预构建信号包（避免重复计算）。传入时 ``aspect`` 被忽略。
+        aspect: 画幅纵横比 ``height / width``，含义见 :func:`build_signals`。
 
     Returns:
         恒定 8 个、帧号严格递增的 :class:`SwingEvent`。
@@ -478,7 +533,7 @@ def segment_swing(
     Raises:
         AnalysisError: ``NO_SWING``。
     """
-    signals = sig if sig is not None else build_signals(frames, fps)
+    signals = sig if sig is not None else build_signals(frames, fps, aspect=aspect)
     _guard_no_swing(signals)
 
     i_top = locate_top(signals)
@@ -541,10 +596,11 @@ def _cli(argv: Sequence[str]) -> int:
             f"miss_ratio={1 - detected / max(1, len(frames)):.3f} avg_core_vis={avg_vis:.3f}"
         )
 
-        signals = build_signals(frames, meta.fps)
+        aspect = meta.height / meta.width if meta.width > 0 else 1.0
+        signals = build_signals(frames, meta.fps, aspect=aspect)
         print(
             f"[signals] n={signals.n} S={signals.S:.4f} dt={signals.dt:.4f} "
-            f"speed_max={float(np.max(signals.speed)):.3f}"
+            f"speed_max={float(np.max(signals.speed)):.3f} aspect={aspect:.3f}"
         )
 
         events = segment_swing(frames, meta.fps, sig=signals)

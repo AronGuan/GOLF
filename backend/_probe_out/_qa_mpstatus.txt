@@ -1,0 +1,10 @@
+ M miniprogram/app.js
+ M miniprogram/app.wxss
+ M miniprogram/pages/analyzing/analyzing.js
+ M miniprogram/pages/index/index.js
+ M miniprogram/pages/index/index.wxml
+ M miniprogram/pages/index/index.wxss
+ M miniprogram/pages/result/result.js
+ M miniprogram/pages/result/result.wxml
+ M miniprogram/pages/result/result.wxss
+ M miniprogram/utils/api.js

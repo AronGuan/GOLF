@@ -1,0 +1,5 @@
+JS/WXML 静态检查: NONE
+uploadVideo 调用点:
+  miniprogram\pages\index\index.js -> .uploadVideo(filePath, cameraView, (percent) => {
+  miniprogram\utils\api.js -> function uploadVideo(filePath, cameraView, onProgress) {
+  miniprogram\utils\api.js -> uploadVideo,
