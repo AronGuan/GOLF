@@ -13,14 +13,13 @@
 from __future__ import annotations
 
 import math
-from typing import Tuple
 
 import cv2
 import numpy as np
 import pytest
 
-from app import club_detector, config, frame_reader, geometry, metrics
-from app.schemas import CameraView, ClubTrack, MetricSource, PhaseKey, VideoMeta
+from app import club_detector, config, frame_reader, geometry
+from app.schemas import CameraView, ClubTrack, VideoMeta
 
 from conftest import FPS, N_FRAMES, VIDEO_H, VIDEO_W, make_swing_frames
 
@@ -298,118 +297,3 @@ class TestPlanFramesBudget:
             frames, events, meta=meta, budget_bytes=192 * 1024 * 1024
         )
         assert t2 == t1, "小视频不应被字节护栏削减"
-
-
-# ---------------------------------------------------------------------------
-# ⑥ shaft_plane_dev 三级降级（架构 §5.4，L0/L1/L2）
-# ---------------------------------------------------------------------------
-
-
-class TestShaftPlaneDevDegradation:
-    """``m_shaft_plane_dev`` 按 ``overall_confidence`` 走 L0/L1/L2。"""
-
-    def _build_ctx(self, conf: float, available: bool = True, view=CameraView.DOWN_THE_LINE):
-        """构造带指定置信度 ClubTrack 的 DTL MetricContext。"""
-        from app import metrics, segmenter
-        from app.schemas import ClubDetection, ClubTrack
-        from conftest import FPS
-
-        frames = make_swing_frames()
-        meta = VideoMeta(
-            fps=FPS, duration=4.0, width=VIDEO_W, height=VIDEO_H,
-            frame_count=len(frames), sample_step=1, low_fps=False,
-        )
-        sig = segmenter.build_signals(frames, FPS)
-        events = segmenter.segment_swing(frames, FPS, sig=sig)
-
-        detections = []
-        if available:
-            # 给 Address/Top/Impact 关键帧造出有效检测（握把+杆头像素点），
-            # 并在 Top→Impact 窗口内补 4+ 个中间锚点（L0 轨迹拟合需 ≥4 点）
-            lm_by_frame = {f.frame_index: f for f in frames}
-            anchor_frames = [
-                ev.frame_index
-                for ev in events
-                if ev.key in (
-                    PhaseKey.ADDRESS, PhaseKey.TOP, PhaseKey.DOWNSWING, PhaseKey.IMPACT
-                )
-            ]
-            top_i = next(e.array_index for e in events if e.key is PhaseKey.TOP)
-            impact_i = next(e.array_index for e in events if e.key is PhaseKey.IMPACT)
-            for i in range(top_i, impact_i + 1):
-                anchor_frames.append(frames[i].frame_index)
-            for fi in sorted(set(anchor_frames)):
-                norm = lm_by_frame[fi].norm
-                grip = np.array(
-                    [norm[geometry.L_WRIST, 0] * VIDEO_W,
-                     norm[geometry.L_WRIST, 1] * VIDEO_H],
-                    dtype=np.float64,
-                )
-                head = grip + np.array([-40.0, -120.0], dtype=np.float64)
-                detections.append(
-                    ClubDetection(
-                        frame_index=fi, grip=grip, head=head,
-                        confidence=conf, method="hough",
-                    )
-                )
-        club = ClubTrack(
-            detections=detections,
-            club_len_px=180.0,
-            overall_confidence=conf,
-            available=available,
-            view=view,
-            swing_plane_measurable=view is CameraView.DOWN_THE_LINE,
-        )
-        ctx = metrics.build_context(
-            frames, events, sig, meta, view=view, club=club
-        )
-        ctx.phase = PhaseKey.DOWNSWING
-        return ctx
-
-    def test_l0_measured_high_confidence(self):
-        """L0：conf=0.8 >= CLUB_CONF_MIN -> MEASURED、非估算。"""
-        ctx = self._build_ctx(0.8)
-        items = {m.key: m for m in metrics.compute_phase_metrics(ctx)}
-        assert "shaft_plane_dev" in items
-        item = items["shaft_plane_dev"]
-        assert item.source is MetricSource.MEASURED
-        assert item.estimated is False
-        assert item.confidence == pytest.approx(0.8)
-        assert item.ref_min == pytest.approx(-5.0)
-        assert item.ref_max == pytest.approx(10.0)
-        assert math.isfinite(item.value)
-
-    def test_l1_proxy_medium_confidence(self):
-        """L1：conf=0.4 in [0.25, 0.55) -> PROXY、估算、参考区间双向放宽 5°。"""
-        ctx = self._build_ctx(0.4)
-        items = {m.key: m for m in metrics.compute_phase_metrics(ctx)}
-        assert "shaft_plane_dev" in items
-        item = items["shaft_plane_dev"]
-        assert item.source is MetricSource.PROXY
-        assert item.estimated is True
-        assert item.ref_min == pytest.approx(-10.0)   # -5 - 5
-        assert item.ref_max == pytest.approx(15.0)    # 10 + 5
-        assert math.isfinite(item.value)
-        assert any(config.WARN_CLUB_PROXY in w for w in ctx.warnings)
-
-    def test_l2_dropped_low_confidence(self):
-        """L2：conf=0.1 < CLUB_CONF_PROXY_MIN -> 整项剔除 + WARN_CLUB_UNAVAILABLE。"""
-        ctx = self._build_ctx(0.1)
-        items = metrics.compute_phase_metrics(ctx)
-        assert all(m.key != "shaft_plane_dev" for m in items)
-        assert any(config.WARN_CLUB_UNAVAILABLE in w for w in ctx.warnings)
-
-    def test_l2_dropped_unavailable_track(self):
-        """L2：club.available=False -> 剔除 + warning。"""
-        ctx = self._build_ctx(0.0, available=False)
-        items = metrics.compute_phase_metrics(ctx)
-        assert all(m.key != "shaft_plane_dev" for m in items)
-        assert any(config.WARN_CLUB_UNAVAILABLE in w for w in ctx.warnings)
-
-    def test_face_on_excluded_without_warning(self):
-        """face-on：shaft_plane_dev 被机位过滤剔除，且不产生球杆 warning（§5.4 L2）。"""
-        ctx = self._build_ctx(0.8, available=False, view=CameraView.FACE_ON)
-        items = metrics.compute_phase_metrics(ctx)
-        assert all(m.key != "shaft_plane_dev" for m in items)
-        assert not any("球杆" in w for w in ctx.warnings)
-        assert frame_reader.stats()["opens"] == 1

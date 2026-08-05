@@ -1,20 +1,20 @@
 """分析流水线编排（架构 ARCHITECTURE.md §6 + ARCHITECTURE-v2.md §5）。
 
-进度与步骤映射（v2 重新分段）::
+进度与步骤映射（v2 重新分段；2026-08 球杆检测下线后再次收拢）::
 
     step 1 上传/校验        0  -> 8
     step 2 提取身体关键点    8  -> 56
     step 3 识别 8 个挥杆阶段 56 -> 68
-    step 4 机位解析/球杆检测 68 -> 74
-          计算姿态指标与风险 74 -> 86
+    step 4 机位解析/指标/风险 68 -> 86
           渲染 8 张截图      86 -> 96
           装配分析报告       96 -> 100
 
 v2 三处插入点（相对 MVP，其余节点行为不变）：
     1. step3 后插入机位解析（``view_detector.resolve``）；
-    2. 指标前插入共享解码 + 球杆检测（``club_detector``，与 renderer 共享同一
-       次解码，解码趟数锁 2 趟）；
-    3. 指标后插入风险引擎（``risk_engine.evaluate_all``），装进 ``PhaseResult.risks``。
+    2. 指标后插入风险引擎（``risk_engine.evaluate_all``），装进 ``PhaseResult.risks``。
+
+⚠️ 2026-08：球杆检测已下线（原 step4a 的 ``club_detector`` 共享解码块摘除），
+主管线不再解码 Top→Impact 窗口采样帧，只解码 8 个事件帧供渲染。
 """
 
 from __future__ import annotations
@@ -27,7 +27,6 @@ from pathlib import Path
 from typing import Dict, List
 
 from . import (
-    club_detector,
     config,
     frame_reader,
     metrics,
@@ -55,11 +54,10 @@ logger = logging.getLogger(__name__)
 #: 并发软限流
 CONCURRENCY_SEM = threading.Semaphore(config.MAX_CONCURRENT_TASKS)
 
-#: 进度分界点（v2 分段）
+#: 进度分界点（v2 分段，球杆检测下线后去掉 _P_CLUB_END）
 _P_PROBE_DONE = 8
 _P_EXTRACT_END = 56
 _P_SEGMENT_END = 68
-_P_CLUB_END = 74
 _P_METRIC_END = 86
 _P_RENDER_END = 96
 _P_DONE = 100
@@ -142,9 +140,9 @@ def _run(task_id: str) -> None:
     task_store.set_progress(task_id, 3, _P_SEGMENT_END, "阶段识别完成")
     _check_timeout(created_at)
 
-    # ---- step 4a：机位解析 + 共享解码 + 球杆检测 --------------------------
+    # ---- step 4a：机位解析 + 解码 8 个事件帧（供 renderer）---------------
     task_store.set_progress(
-        task_id, 4, _P_SEGMENT_END + 2, "正在检测球杆...",
+        task_id, 4, _P_SEGMENT_END + 2, "正在解析机位与解码事件帧...",
         step_text=config.STEP_TEXTS[4],
     )
     addr_index = next((e.array_index for e in events if e.key is PhaseKey.ADDRESS), 0)
@@ -152,37 +150,23 @@ def _run(task_id: str) -> None:
     meta.camera_view = view
 
     event_frames = [e.frame_index for e in events]
-    frames_bgr: Dict[int, object] = {}
-    if config.CLUB_ENABLED:
-        anchors, targets = club_detector.plan_frames(
-            frames, events, meta=meta, budget_bytes=config.DECODE_BYTES_BUDGET
-        )
-        frames_bgr = frame_reader.grab_frames(
-            video_path, sorted(set(targets) | set(event_frames))
-        )
-        club = club_detector.detect(
-            video_path, frames, signals, view, meta, events, frames_bgr=frames_bgr
-        )
-    else:
-        # 球杆检测关闭：只解码 8 个事件帧供 renderer，主链路零影响
-        frames_bgr = frame_reader.grab_frames(video_path, event_frames)
-        club = None
+    # 球杆检测下线：只解码 8 个事件帧供 renderer，解码趟数锁 1 趟（共享）
+    frames_bgr = frame_reader.grab_frames(video_path, event_frames)
 
-    # 🔑 立刻释放非渲染帧，把内存峰值压回 8 帧
+    # 🔑 只保留 8 个事件帧，内存峰值锁 8 帧
     frames_bgr = {k: v for k, v in frames_bgr.items() if k in set(event_frames)}
-    task_store.set_progress(task_id, 4, _P_CLUB_END, "球杆检测完成")
 
     # ---- step 4b：指标计算（机位过滤 + fn_key 分派 + 五态判定）------------
-    task_store.set_progress(task_id, 4, _P_CLUB_END + 2, "正在计算姿态指标...")
-    ctx = metrics.build_context(frames, events, signals, meta, view=view, club=club)
+    task_store.set_progress(task_id, 4, _P_SEGMENT_END + 4, "正在计算姿态指标...")
+    ctx = metrics.build_context(frames, events, signals, meta, view=view)
 
     phase_metrics: Dict[PhaseKey, list] = {}
     total_phases = len(PHASE_ORDER)
     for order, key in enumerate(PHASE_ORDER):
         ctx.phase = key
         phase_metrics[key] = metrics.compute_phase_metrics(ctx)
-        value = _P_CLUB_END + int(
-            (_P_METRIC_END - _P_CLUB_END) * (order + 1) / total_phases
+        value = _P_SEGMENT_END + int(
+            (_P_METRIC_END - _P_SEGMENT_END) * (order + 1) / total_phases
         )
         task_store.set_progress(task_id, 4, value, "正在计算姿态指标...")
 
@@ -193,11 +177,10 @@ def _run(task_id: str) -> None:
     task_store.set_progress(task_id, 4, _P_METRIC_END, "正在匹配损伤风险...")
     risk_map = risk_engine.evaluate_all(phase_metrics, view)
 
-    # ---- step 4d：渲染截图（共享解码帧 + 杆身 + DTL 水平参考线）-----------
+    # ---- step 4d：渲染截图（共享解码帧 + DTL 水平参考线）------------------
     task_store.set_progress(task_id, 4, _P_METRIC_END + 2, "正在生成阶段截图...")
     images = renderer.render_events(
-        video_path, events, out_dir, frames, frames_bgr=frames_bgr,
-        club=club, view=view,
+        video_path, events, out_dir, frames, frames_bgr=frames_bgr, view=view,
     )
     task_store.set_progress(task_id, 4, _P_RENDER_END, "正在生成分析报告...")
 

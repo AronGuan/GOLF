@@ -314,14 +314,21 @@ def error_message(code_value: str) -> str:
 # ---------------------------------------------------------------------------
 # 8. 球杆检测（球杆检测技术方案 §5.2 / T01 常量清单）
 #
-# 设计定位：路径 A（经典 CV 几何：手腕锚定 ROI + Hough 杆身拟合）
-#           + 路径 C（帧差杆头互补），零新依赖、CPU 增量 < 1s。
-# 路径 B（YOLO/ONNX）本期**已取消**，仅保留 ``CLUB_MODE`` / ``CLUB_ONNX_*``
-# 三个占位常量，便于将来一键切换而不动管线；当前唯一受支持的模式是 ``"geom"``。
+# ⚠️ 状态（2026-08 下线）：用户反馈球杆识别率偏低（实测真实视频置信度仅
+# 0.206~0.462，全为 L1 proxy、无 L0 真实几何结果），已决定**先下线球杆检测**，
+# 后期再做。主管线（pipeline/metrics/renderer/reference）已摘除调用链，
+# 球杆增强指标不再产出；``swing_plane``（PDD 版，纯 MediaPipe）保留。
+#
+# 本段常量保留给已归档的 :mod:`app.club_detector` 模块（文件不删、后期直接复用）：
+# ``CLUB_ENABLED`` / ``CLUB_MODE`` / ``CLUB_MAX_DECODE_FRAMES`` 等仍被该模块
+# 与 ``tests/test_club_detector.py`` 引用，**不能删除**。已移除仅被已下线主管线
+# 代码消费的常量：三级降级阈值（``CLUB_CONF_MIN`` / ``CLUB_CONF_PROXY_MIN``）、
+# 渲染色（``CLUB_COLOR`` / ``CLUB_THICKNESS``）、用户提示（``WARN_CLUB_*``）、
+# ONNX 占位、以及解码字节预算（``DECODE_BYTES_BUDGET``，管线不再解码窗口采样帧）。
 # ---------------------------------------------------------------------------
 
-#: 球杆检测总开关。False 时 :func:`app.club_detector.detect` 直接返回
-#: ``ClubTrack(available=False)``，主链路（现有 23 指标）完全不受影响。
+#: 球杆检测总开关。仅 :func:`app.club_detector.detect` 读取（模块已归档，
+#: 主管线不再引用）；False 时直接返回 ``ClubTrack(available=False)``。
 CLUB_ENABLED: Final[bool] = True
 
 #: 检测模式：``"geom"``（本期唯一实现）| ``"onnx"``（预留）| ``"off"``
@@ -352,13 +359,6 @@ CLUB_GRIP_DIST_RATIO: Final[float] = 0.08
 #: 过滤②：候选线段方向与时序预测方向的夹角上限（度）
 CLUB_DIR_TOL_DEG: Final[float] = 25.0
 
-#: 三级降级 L0 阈值：``overall_confidence >= CLUB_CONF_MIN`` 用真实球杆几何量
-CLUB_CONF_MIN: Final[float] = 0.55
-
-#: 三级降级 L1 阈值：``CLUB_CONF_PROXY_MIN <= conf < CLUB_CONF_MIN`` 回退腕–肩代理；
-#: 低于该值则整项剔除（L2），绝不填参考中值造出绿色假"正常"
-CLUB_CONF_PROXY_MIN: Final[float] = 0.25
-
 #: Hough / 帧差分支切换的速度倍率（相对 :data:`V_STILL`）
 CLUB_SPEED_SWITCH_RATIO: Final[float] = 3.0
 
@@ -366,45 +366,22 @@ CLUB_SPEED_SWITCH_RATIO: Final[float] = 3.0
 #: ``speed < 阈值`` 走 Hough（低速段杆身锐利），否则走帧差（高速段运动模糊）。
 CLUB_SPEED_SWITCH: Final[float] = CLUB_SPEED_SWITCH_RATIO * V_STILL
 
-#: 结果图上杆身线段颜色（BGR，亮黄）与线宽
-CLUB_COLOR: Final[Tuple[int, int, int]] = (0, 220, 255)
-CLUB_THICKNESS: Final[int] = 3
-
-#: 【预留】ONNX 模型路径；空串表示未部署
-CLUB_ONNX_PATH: Final[str] = ""
-
-#: 【预留】ONNX 推理输入边长
-CLUB_ONNX_IMGSZ: Final[int] = 320
-
 #: 机位自动判定：Address 帧「图像肩宽 / 图像身高」低于该值判为 DTL。
 #: face-on 约 0.22~0.28；DTL 因双肩前后重叠会掉到 < 0.13。
+#: ⚠️ 非球杆常量：view_detector 机位判定使用，必须保留。
 VIEW_SHOULDER_RATIO_DTL: Final[float] = 0.13
-
-#: 球杆识别失败（L2）时追加的用户可见提示（球杆检测技术方案 §4.5）
-WARN_CLUB_UNAVAILABLE: Final[str] = (
-    "球杆识别不清，本次未给出挥杆平面数据，建议在光线充足、背景简洁的环境下重拍侧面机位"
-)
-
-#: 球杆置信度不足、回退腕–肩连线代理（L1）时追加的提示
-WARN_CLUB_PROXY: Final[str] = (
-    "球杆识别置信度偏低，挥杆平面为估算值，仅供参考"
-)
 
 #: 单次检测最多解码的帧数（原 club_detector._MAX_DECODE_FRAMES=48 下调）。
 #: 8 事件帧 + 各自前一帧 + Top→Impact 窗口采样；锚点预算 = 该值 // 2，
 #: 因此解码帧数（targets）恒 ≤ 该值。单 worker 内存护栏（架构 §5.2）。
 CLUB_MAX_DECODE_FRAMES: Final[int] = 28
 
-#: 球杆检测解码字节预算（192 MiB）。``plan_frames()`` 按 ``w*h*3`` 估算
-#: 单帧字节，超预算时自动削减窗口采样点，**下限保留 8 个事件帧**
-#: （保证 renderer 恒 8 张）。
-DECODE_BYTES_BUDGET: Final[int] = 192 * 1024 * 1024
-
 #: DTL 等效肩宽标尺 = 图像身高 × 该系数（肩宽 ≈ 0.25×身高 的人体测量先验）。
 #: ⚠️ 经验常量，需用真实视频回归校准（架构 §10 #6）。
 #: 校准值 0.26（2026-08 实测，见 docs/VALIDATION-B）：3 段正面视频 Address 帧
 #: 「图像肩宽/图像身高」实测 0.2486 / 0.2674 / 0.2706（均值 0.262，中位数 0.267），
 #: 与人体测量先验 0.25 一致；取 0.26 落在实测区间内且与先验接近。
+#: ⚠️ 非球杆常量：metrics DTL 位移标尺使用，必须保留。
 SHOULDER_TO_HEIGHT_RATIO: Final[float] = 0.26
 
 

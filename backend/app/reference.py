@@ -8,8 +8,11 @@ v2 变更（相对 MVP）：
   ``description``（术语解释行）、``critical``（是否参与五态重度判定）、
   ``proxy_ref_pad``（L1 代理降级时参考区间双向放宽量）；
 - 指标 key 全部对齐 PDD v2.0（§3.3 映射表），``views`` 按机位归属落值；
-- 新增 ④ ``swing_plane`` 与 ⑤ ``shaft_plane_dev``；
+- 新增 ④ ``swing_plane``（纯 MediaPipe）；
 - ``judge()`` 保留为三态薄封装，新增 ``judge5()`` 五态判定（区间宽度倍数）。
+
+> ⚠️ 2026-08：球杆检测已下线，⑤ 杆面平面偏差指标随之下架；
+> ④ ``swing_plane``（PDD 版，不依赖球杆）保留。
 
 > 依赖方向：``reference -> schemas / config``（config 仅为 ``judge5`` 读
 > ``CRITICAL_SPAN_RATIO``）。**不** import ``metrics``，避免循环导入。
@@ -227,12 +230,6 @@ METRIC_SPECS: Dict[PhaseKey, List[MetricSpec]] = {
             "pelvis_shift", "骨盆水平位移", UNIT_PCT, 4.0, 12.0,
             views=_F, fn_key="pelvis_shift_pct",
             description=_desc("pelvis_shift"),
-        ),
-        # 🆕 全新·球杆增强：⑤ 下杆杆头轨迹相对 base plane 偏差，DTL 专属
-        MetricSpec(
-            "shaft_plane_dev", "杆面平面偏差", UNIT_DEG, -5.0, 10.0,
-            views=_D, allow_drop=True, proxy_ref_pad=5.0, critical=False,
-            description="",
         ),
     ],
     PhaseKey.IMPACT: [

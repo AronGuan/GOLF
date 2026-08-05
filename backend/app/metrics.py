@@ -9,10 +9,13 @@
    归一化：face-on = Address 帧图像肩宽（``S_px``）；DTL = 图像身高 ×
    ``config.SHOULDER_TO_HEIGHT_RATIO``（侧面双肩投影被压缩，不能用图像肩宽）。
 3. 每个指标出口统一过 :func:`_sanitize`，保证无 ``NaN`` / ``inf``，角度夹到 ±180；
-   对 ``allow_drop=True`` 的指标（``swing_plane`` / ``shaft_plane_dev``）失败时
+   对 ``allow_drop=True`` 的指标（``swing_plane``）失败时
    **整项剔除**（返回 ``None``），绝不填 ``ref_mid`` 造假绿值。
 4. 指标函数按 ``MetricSpec.impl_key`` 分派（``fn_key or key``），对外 key 与
    实现 key 的映射收敛在 ``reference.py``，本模块零映射逻辑。
+
+> ⚠️ 2026-08：球杆检测已下线（相关指标移除，见 config.py §8 说明）。
+> ``swing_plane``（PDD 版，纯 MediaPipe 左肩 11→左腕 15）不依赖球杆，原样保留。
 """
 
 from __future__ import annotations
@@ -28,7 +31,6 @@ from . import config, geometry, reference
 from .reference import MetricSpec
 from .schemas import (
     CameraView,
-    ClubTrack,
     FrameLandmarks,
     GlobalMetrics,
     MetricSource,
@@ -66,8 +68,6 @@ class MetricContext:
     # ---- v2 新增 ----
     #: 实际解析后的机位（进入本模块前必须已是 FACE_ON / DOWN_THE_LINE 之一）
     view: CameraView = CameraView.FACE_ON
-    #: 球杆检测轨迹（可为 ``None`` / ``available=False``，指标自行降级）
-    club: Optional[ClubTrack] = None
     #: Address 帧图像身高（像素），DTL 位移标尺的基准
     body_h_px: float = 0.0
     #: 位移类指标的像素标尺：face_on = ``S_px``；DTL = ``body_h_px × 0.25``
@@ -449,7 +449,7 @@ def m_max_head_drift_pct(ctx: MetricContext) -> float:
 
 
 # ---------------------------------------------------------------------------
-# v2 新增：swing_plane（纯 MediaPipe）与 shaft_plane_dev（球杆增强）
+# v2 新增：swing_plane（纯 MediaPipe，不依赖球杆）
 # ---------------------------------------------------------------------------
 
 
@@ -481,112 +481,6 @@ def m_swing_plane(ctx: MetricContext) -> float:
     return 180.0 - ang if ang > 90.0 else ang
 
 
-def _fit_traj_angle(points: List[np.ndarray]) -> float:
-    """对像素点集做 PCA 直线拟合，返回拟合直线与图像水平线的夹角。
-
-    有效点 < 4 个 -> ``nan``（L0 的精度底线）。
-    """
-    if len(points) < 4:
-        return float("nan")
-    stack = np.asarray(points, dtype=np.float64).reshape(-1, 2)
-    centroid, direction = geometry.fit_line_2d(stack)
-    if not np.all(np.isfinite(direction)):
-        return float("nan")
-    return geometry.line_angle_from_horizontal(centroid, centroid + direction)
-
-
-def _shaft_base_angle(ctx: MetricContext, club: ClubTrack) -> float:
-    """L0 base plane：① Address 帧 杆身（grip→head）与水平线夹角。"""
-    addr_ev = ctx.event_of(PhaseKey.ADDRESS)
-    detection = club.get(addr_ev.frame_index)
-    if detection is None or not detection.valid:
-        return float("nan")
-    return geometry.line_angle_from_horizontal(detection.grip, detection.head)
-
-
-def _shaft_traj_angle(ctx: MetricContext, club: ClubTrack) -> float:
-    """L0 轨迹：Top→Impact 窗口内所有有效杆头点拟合直线与水平线夹角。"""
-    top_ev = ctx.event_of(PhaseKey.TOP)
-    impact_ev = ctx.event_of(PhaseKey.IMPACT)
-    lo = min(int(top_ev.frame_index), int(impact_ev.frame_index))
-    hi = max(int(top_ev.frame_index), int(impact_ev.frame_index))
-    points = [
-        d.head for d in club.detections if d.valid and lo <= d.frame_index <= hi
-    ]
-    return _fit_traj_angle(points)
-
-
-def _proxy_wrist_traj_angle(ctx: MetricContext) -> float:
-    """L1 代理轨迹：Top→Impact 各帧引导腕（15）像素点拟合直线与水平线夹角。"""
-    top_ev = ctx.event_of(PhaseKey.TOP)
-    impact_ev = ctx.event_of(PhaseKey.IMPACT)
-    i_lo = min(int(top_ev.array_index), int(impact_ev.array_index))
-    i_hi = max(int(top_ev.array_index), int(impact_ev.array_index))
-    points: List[np.ndarray] = []
-    for i in range(i_lo, i_hi + 1):
-        frame = ctx.frames[i]
-        if (
-            math.isfinite(float(frame.visibility[geometry.L_WRIST]))
-            and float(frame.visibility[geometry.L_WRIST]) >= 0.3
-        ):
-            points.append(_img_pt(ctx, frame, geometry.L_WRIST))
-    return _fit_traj_angle(points)
-
-
-def m_shaft_plane_dev(ctx: MetricContext) -> float:
-    """⑤ 下杆段杆头轨迹拟合直线的倾角，相对 base plane 的偏差（°）。
-
-    正 = steep / over the top；负 = shallow。参考 −5 ~ +10°。仅 DTL 机位。
-
-    三级降级（架构 §5.4，判据 = ``ClubTrack.overall_confidence``）：
-    - L0 measured（``conf >= CLUB_CONF_MIN``）：真实杆头轨迹；写
-      ``ctx.source_of["shaft_plane_dev"] = (MEASURED, conf)``；
-    - L1 proxy（``CLUB_CONF_PROXY_MIN <= conf < CLUB_CONF_MIN``）：回退引导腕–肩
-      连线代理；参考区间由 ``spec.proxy_ref_pad`` 双向放宽；写
-      ``(PROXY, conf)`` 并追加 ``WARN_CLUB_PROXY``；
-    - L2 dropped（``conf < CLUB_CONF_PROXY_MIN`` 或 club 不可用）：返回 NaN
-      -> ``allow_drop`` 整项剔除；仅 DTL 时追加 ``WARN_CLUB_UNAVAILABLE``。
-    """
-    # 正面机位本就不适用（spec.views 已过滤，这里是防御）
-    if ctx.view is not CameraView.DOWN_THE_LINE:
-        return float("nan")
-
-    club = ctx.club
-    if club is None or not club.available:
-        ctx.warn(config.WARN_CLUB_UNAVAILABLE)
-        return float("nan")
-
-    conf = float(club.overall_confidence)
-    if not math.isfinite(conf) or conf < config.CLUB_CONF_PROXY_MIN:
-        ctx.warn(config.WARN_CLUB_UNAVAILABLE)
-        return float("nan")
-
-    if conf >= config.CLUB_CONF_MIN:
-        # ---- L0 measured --------------------------------------------------
-        base_angle = _shaft_base_angle(ctx, club)
-        traj_angle = _shaft_traj_angle(ctx, club)
-        if not (math.isfinite(base_angle) and math.isfinite(traj_angle)):
-            ctx.warn(config.WARN_CLUB_UNAVAILABLE)
-            return float("nan")
-        ctx.source_of["shaft_plane_dev"] = (MetricSource.MEASURED, conf)
-        return traj_angle - base_angle
-
-    # ---- L1 proxy（腕–肩连线代理）----------------------------------------
-    addr_ev = ctx.event_of(PhaseKey.ADDRESS)
-    addr_frame = ctx.frames[addr_ev.array_index]
-    base_angle = geometry.line_angle_from_horizontal(
-        _img_pt(ctx, addr_frame, geometry.L_SHOULDER),
-        _img_pt(ctx, addr_frame, geometry.L_WRIST),
-    )
-    traj_angle = _proxy_wrist_traj_angle(ctx)
-    if not (math.isfinite(base_angle) and math.isfinite(traj_angle)):
-        ctx.warn(config.WARN_CLUB_UNAVAILABLE)
-        return float("nan")
-    ctx.source_of["shaft_plane_dev"] = (MetricSource.PROXY, conf)
-    ctx.warn(config.WARN_CLUB_PROXY)
-    return traj_angle - base_angle
-
-
 #: key -> 计算函数（key = 实现 key / fn_key）
 METRIC_FUNCS: Dict[str, Callable[[MetricContext], float]] = {
     "spine_forward_tilt": m_spine_forward_tilt,
@@ -613,7 +507,6 @@ METRIC_FUNCS: Dict[str, Callable[[MetricContext], float]] = {
     "max_head_drift_pct": m_max_head_drift_pct,
     # ---- v2 新增 ----
     "swing_plane": m_swing_plane,
-    "shaft_plane_dev": m_shaft_plane_dev,
 }
 
 # 启动即自检：参考表里的每个实现 key 都必须有实现
@@ -734,14 +627,12 @@ def build_context(
     signals: SwingSignals,
     meta: VideoMeta,
     view: CameraView = CameraView.FACE_ON,
-    club: Optional[ClubTrack] = None,
 ) -> MetricContext:
     """装配 :class:`MetricContext`。
 
     Args:
         frames / events / signals / meta: 与 MVP 相同。
         view: 实际解析后的机位（进入本模块前必须已是 FACE_ON / DOWN_THE_LINE）。
-        club: 球杆检测轨迹；``None`` 或 ``available=False`` 时相关指标自动降级。
     """
     addr_index = next(
         (e.array_index for e in events if e.key is PhaseKey.ADDRESS), 0
@@ -777,7 +668,6 @@ def build_context(
         S=world_scale,
         S_px=s_px,
         view=view,
-        club=club,
         body_h_px=body_h_px,
         scale_px=scale_px,
     )

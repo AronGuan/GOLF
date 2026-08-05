@@ -22,19 +22,19 @@ from app.schemas import (
 
 from conftest import FPS, make_swing_frames
 
-#: 每阶段 MetricSpec 总数（含两机位全部 spec，架构 §3.3 统计表 + shaft_plane_dev）
+#: 每阶段 MetricSpec 总数（含两机位全部 spec，架构 §3.3 统计表）
 PHASE_SPEC_COUNTS = {
     PhaseKey.ADDRESS: 4,
     PhaseKey.TAKEAWAY: 4,
     PhaseKey.BACKSWING: 4,
     PhaseKey.TOP: 5,
-    PhaseKey.DOWNSWING: 5,
+    PhaseKey.DOWNSWING: 4,
     PhaseKey.IMPACT: 4,
     PhaseKey.FOLLOW_THROUGH: 4,
     PhaseKey.FINISH: 4,
 }
 
-#: 机位过滤后各阶段指标数（架构 §3.3 统计表；DTL ⑤ 视球杆可用性为 0~1）
+#: 机位过滤后各阶段指标数（架构 §3.3 统计表；DTL ⑤ 已随球杆检测下线，恒 0）
 FACE_ON_COUNTS = {
     PhaseKey.ADDRESS: 3,
     PhaseKey.TAKEAWAY: 4,
@@ -50,7 +50,7 @@ DTL_COUNTS = {
     PhaseKey.TAKEAWAY: 2,
     PhaseKey.BACKSWING: 2,
     PhaseKey.TOP: 2,
-    PhaseKey.DOWNSWING: (0, 1),  # 球杆可用时 1，否则 0
+    PhaseKey.DOWNSWING: 0,  # 球杆增强指标下线后恒 0
     PhaseKey.IMPACT: 1,
     PhaseKey.FOLLOW_THROUGH: 1,
     PhaseKey.FINISH: 1,
@@ -127,17 +127,6 @@ class TestReferenceTable:
         assert spec.views == frozenset({CameraView.DOWN_THE_LINE})
         assert spec.allow_drop is True
         assert (spec.ref_min, spec.ref_max) == (55.0, 65.0)
-
-    def test_shaft_plane_dev_spec(self):
-        spec = next(
-            s for s in reference.METRIC_SPECS[PhaseKey.DOWNSWING]
-            if s.key == "shaft_plane_dev"
-        )
-        assert spec.views == frozenset({CameraView.DOWN_THE_LINE})
-        assert spec.allow_drop is True
-        assert spec.proxy_ref_pad == pytest.approx(5.0)
-        assert spec.critical is False
-        assert (spec.ref_min, spec.ref_max) == (-5.0, 10.0)
 
 
 # ---------------------------------------------------------------------------
@@ -341,7 +330,6 @@ class TestViewFilter:
             assert "swing_plane" not in keys, "face-on 不应出现 swing_plane (AC-09)"
             assert "spine_tilt_fwd" not in keys, "face-on 不应出现 spine_tilt_fwd"
             assert "spine_tilt_change" not in keys, "face-on 不应出现 spine_tilt_change"
-            assert "shaft_plane_dev" not in keys, "face-on 不应出现 shaft_plane_dev"
 
     def test_dtl_has_swing_plane_and_spine_tilt_change(self, ctx_dtl):
         """DTL 专属指标出现（AC-10）。"""
@@ -352,8 +340,8 @@ class TestViewFilter:
         impact_keys = {m.key for m in metrics.compute_phase_metrics(ctx_dtl)}
         assert "spine_tilt_change" in impact_keys, "DTL IMPACT 应出现 spine_tilt_change"
 
-    def test_dtl_downswing_empty_without_club(self, ctx_dtl):
-        """决策 2：侧面 ⑤ 在球杆不可用时 0 项，且不报错（空状态数据侧验证）。"""
+    def test_dtl_downswing_empty_after_club_offline(self, ctx_dtl):
+        """决策 2（2026-08 更新）：⑤ 随球杆检测下线后，DTL 下杆恒 0 项。"""
         ctx_dtl.phase = PhaseKey.DOWNSWING
         items = metrics.compute_phase_metrics(ctx_dtl)
         assert items == []
