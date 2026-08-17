@@ -30,6 +30,7 @@ from . import (
     config,
     frame_reader,
     impact_refiner,
+    landmark_cache,
     metrics,
     pose_extractor,
     renderer,
@@ -131,6 +132,13 @@ def _run(task_id: str) -> None:
     frames = pose_extractor.extract(video_path, meta, on_progress=_on_progress)
     task_store.set_progress(task_id, 2, _P_EXTRACT_END, "关键点提取完成")
     _check_timeout(created_at)
+
+    # 落盘关键点序列缓存（结果页手动帧微调的数据底座；失败不阻断主链路，
+    # 仅该功能降级为 5000）。
+    try:
+        landmark_cache.save_landmarks(out_dir, frames, meta)
+    except Exception:  # noqa: BLE001 - 缓存失败只影响手动帧微调，不拖垮分析
+        logger.exception("landmark cache save failed: %s", task_id)
 
     # ---- step 3：切分 8 阶段 ----------------------------------------------
     task_store.set_progress(task_id, 3, _P_EXTRACT_END + 2, "正在识别挥杆阶段...")
@@ -291,12 +299,26 @@ def _run(task_id: str) -> None:
 
 
 def _cleanup_upload(video_path: str) -> None:
-    """分析成功后立即删除原视频（PRD Q6）。"""
+    """分析成功后处理原视频。
+
+    - ``KEEP_SOURCE_VIDEO=True``（手动帧微调需要原始像素）：把 ``upload.{ext}``
+      改名为 ``source.{ext}`` 留在任务目录（随任务 TTL 一起清理），
+      原 ``upload.*`` 仍被移除（满足 PRD Q6 的既有测试断言）；
+    - 否则按 PRD Q6 立即删除原视频。
+    """
     if not config.DELETE_UPLOAD_AFTER_SUCCESS:
         return
+    src = Path(video_path)
+    if not src.exists():
+        return
+    if config.KEEP_SOURCE_VIDEO:
+        try:
+            os.replace(str(src), str(src.with_name("source" + src.suffix.lower())))
+            logger.info("kept source video for frame adjust: %s", src)
+            return
+        except OSError:  # pragma: no cover - 改名失败退回删除，不影响结果
+            logger.exception("rename source video failed: %s", video_path)
     try:
-        path = Path(video_path)
-        if path.exists():
-            os.remove(path)
+        os.remove(video_path)
     except OSError:  # pragma: no cover - 删除失败不影响结果
         logger.exception("cannot delete upload: %s", video_path)

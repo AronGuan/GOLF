@@ -129,6 +129,31 @@ def _draw_impact_marker(img: np.ndarray, center: Tuple[int, int]) -> None:
     )
 
 
+def _compose(
+    bgr: np.ndarray,
+    event: SwingEvent,
+    frame_lm: Optional[FrameLandmarks],
+    view: CameraView = CameraView.FACE_ON,
+    marker: Optional[Tuple[int, int]] = None,
+) -> np.ndarray:
+    """把单帧画面合成成带骨架叠加的结果图（不写盘，返回 BGR 图）。
+
+    事件帧图（``_render_one``）与手动帧微调接口（``render_frame_png``）共用，
+    保证两处绘制顺序/样式逐像素一致。
+    """
+    img, scale = _resize_long_side(bgr, config.RENDER_LONG_SIDE)
+    height, width = img.shape[:2]
+    if frame_lm is not None:
+        _draw_skeleton(img, frame_lm.norm, width, height)
+    if view is CameraView.DOWN_THE_LINE:
+        _draw_horizon(img)
+    if marker is not None:
+        # marker 为原图像素坐标，按缩放比换算到渲染图坐标
+        _draw_impact_marker(img, (marker[0] * scale, marker[1] * scale))
+    _draw_label(img, f"#{event.index} f{event.frame_index} {event.timestamp:.2f}s")
+    return img
+
+
 def _render_one(
     bgr: np.ndarray,
     event: SwingEvent,
@@ -138,18 +163,7 @@ def _render_one(
     marker: Optional[Tuple[int, int]] = None,
 ) -> str:
     """渲染并写盘单张结果图，返回文件名。"""
-    img, scale = _resize_long_side(bgr, config.RENDER_LONG_SIDE)
-    height, width = img.shape[:2]
-    if frame_lm is not None:
-        _draw_skeleton(img, frame_lm.norm, width, height)
-    if view is CameraView.DOWN_THE_LINE:
-        _draw_horizon(img)
-    if marker is not None:
-        # marker 为原图像素坐标，按缩放比换算到渲染图坐标
-        _draw_impact_marker(
-            img, (marker[0] * scale, marker[1] * scale)
-        )
-    _draw_label(img, f"#{event.index} f{event.frame_index} {event.timestamp:.2f}s")
+    img = _compose(bgr, event, frame_lm, view, marker)
 
     filename = phase_image_name(event.key)
     path = out_dir / filename
@@ -159,6 +173,37 @@ def _render_one(
     if not ok:
         raise AnalysisError(ErrorCode.INTERNAL, f"cannot write image: {path}")
     return filename
+
+
+def render_frame_png(
+    bgr: np.ndarray,
+    event: SwingEvent,
+    frame_lm: Optional[FrameLandmarks],
+    view: CameraView = CameraView.FACE_ON,
+    marker: Optional[Tuple[int, int]] = None,
+) -> bytes:
+    """渲染单帧骨架叠加图并编码为 PNG 字节（手动帧微调接口用，不写盘）。
+
+    绘制样式与事件帧图完全一致（同一 :func:`_compose`），仅编码格式为 PNG。
+
+    Args:
+        bgr: 原始帧 BGR 图。
+        event: 用于左上角标签（阶段号 + 实际帧号 + 时间戳）。
+        frame_lm: 该帧关键点；``None`` 时只画原画面（理论上不会发生）。
+        view: 机位（DTL 画水平参考线）。
+        marker: 可选标记（默认关闭，与事件帧图一致）。
+
+    Returns:
+        PNG 编码字节。
+
+    Raises:
+        AnalysisError: ``INTERNAL`` —— PNG 编码失败。
+    """
+    img = _compose(bgr, event, frame_lm, view, marker)
+    ok, encoded = cv2.imencode(".png", img)
+    if not ok:
+        raise AnalysisError(ErrorCode.INTERNAL, "cannot encode png")
+    return encoded.tobytes()
 
 
 def render_events(

@@ -23,11 +23,12 @@ from typing import Any, Dict, Optional
 
 from fastapi import BackgroundTasks, FastAPI, File, Form, Request, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, Response
 from fastapi.staticfiles import StaticFiles
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from . import config
+from .frame_service import FrameError, render_frame
 from .pipeline import run_analysis
 from .schemas import AnalysisError, CameraView, TaskStatus
 from .task_store import task_store
@@ -286,3 +287,28 @@ async def get_result(task_id: str) -> JSONResponse:
             4009, "任务尚未完成", config.PDD_CODE_TASK_PENDING
         )
     return ok(state.result.model_dump(mode="json"))
+
+
+@app.get(f"{API_PREFIX}/task/{{task_id}}/frame/{{frame_index}}")
+@app.get(f"{API_PREFIX}/tasks/{{task_id}}/frame/{{frame_index}}")
+async def get_frame(task_id: str, frame_index: int) -> Response:
+    """动态渲染指定帧的骨架叠加图 PNG（结果页缩略图 ◀▶ 手动微调）。
+
+    - 双路径：PDD 主路径 ``/api/v1/task/{id}/frame/{idx}`` + 旧别名
+      ``/api/v1/tasks/{id}/frame/{idx}``；
+    - 成功返回 ``image/png`` 二进制，实际渲染帧号经响应头 ``X-Frame-Index``
+      回传（降采样视频中间帧会快照到最近采样帧）；
+    - 失败返回统一错误包：任务不存在 20001、任务未完成 20002、
+      帧号越界/超出调整范围 20003。
+
+    说明：只做**展示级**微调（换图），本期不重算指标（指标卡保持原值）。
+    """
+    try:
+        png, actual = render_frame(task_id, frame_index)
+    except FrameError as exc:
+        return err(exc.code, exc.message, exc.pdd_code)
+    return Response(
+        content=png,
+        media_type="image/png",
+        headers={"X-Frame-Index": str(actual)},
+    )

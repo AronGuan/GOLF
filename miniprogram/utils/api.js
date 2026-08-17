@@ -38,7 +38,8 @@ const PDD_ERROR_MESSAGES = {
   10003: '视频时长需在 2~15 秒之间',
   10004: '服务器内部错误，请稍后重试',
   20001: '任务不存在或已过期',
-  20002: '任务尚未完成，请稍后再试'
+  20002: '任务尚未完成，请稍后再试',
+  20003: '帧号超出可调整范围'
 };
 
 /**
@@ -174,6 +175,83 @@ function health() {
   return request({ url: '/health' });
 }
 
+/**
+ * 把 ArrayBuffer 按字节解码成字符串（解析错误包 JSON 用，不引入 TextDecoder）。
+ * @param {ArrayBuffer} buf
+ * @return {string}
+ */
+function bytesToText(buf) {
+  if (!buf) return '';
+  const bytes = new Uint8Array(buf);
+  let out = '';
+  for (let i = 0; i < bytes.length; i += 1) {
+    out += String.fromCharCode(bytes[i]);
+  }
+  return out;
+}
+
+/**
+ * 拉取指定帧的骨架叠加图 PNG（结果页缩略图 ◀▶ 手动微调，v3 新增）。
+ *
+ * 后端返回二进制 PNG（非统一 JSON 包），故不走 request() 封装；响应头
+ * ``X-Frame-Index`` 回传实际渲染帧号（降采样视频中间帧会被快照到最近采样帧）。
+ * 图片写入本地临时文件后返回，供 <image> 直接使用。
+ *
+ * @param {string} taskId 任务 ID
+ * @param {number} frameIndex 原视频帧号
+ * @return {Promise<{tempFilePath:string, frameIndex:number}>}
+ */
+function getFrameImage(taskId, frameIndex) {
+  const url = BASE_URL + API_PREFIX + '/task/' + taskId + '/frame/' + frameIndex;
+  return new Promise((resolve, reject) => {
+    wx.request({
+      url,
+      method: 'GET',
+      responseType: 'arraybuffer',
+      timeout: TIMEOUT,
+      header: { 'content-type': 'application/json' },
+      success(res) {
+        if (res.statusCode === 200 && res.data) {
+          const raw = res.header || {};
+          let actual = Number(raw['X-Frame-Index']);
+          if (!isFinite(actual)) actual = Number(raw['x-frame-index']);
+          if (!isFinite(actual)) actual = frameIndex;
+          const filePath =
+            wx.env.USER_DATA_PATH + '/frame_' + taskId + '_' + frameIndex + '.png';
+          wx.getFileSystemManager().writeFile({
+            filePath,
+            data: res.data,
+            encoding: 'binary',
+            success() {
+              resolve({ tempFilePath: filePath, frameIndex: actual });
+            },
+            fail() {
+              reject({ code: -1, message: '图片保存失败，请重试' });
+            }
+          });
+        } else if (res.statusCode >= 400) {
+          // 错误响应是统一 JSON 包（ArrayBuffer 形式），解码后解析
+          let body = { code: -1, message: '请求失败' };
+          try {
+            body = JSON.parse(bytesToText(res.data));
+          } catch (e) {
+            // 保持默认 body
+          }
+          reject({
+            code: typeof body.code === 'number' ? body.code : -1,
+            message: body.message || '请求失败'
+          });
+        } else {
+          reject({ code: -1, message: '请求失败' });
+        }
+      },
+      fail() {
+        reject({ code: -1, message: '网络连接失败，请检查后端服务是否已启动' });
+      }
+    });
+  });
+}
+
 module.exports = {
   BASE_URL,
   API_PREFIX,
@@ -184,5 +262,6 @@ module.exports = {
   uploadVideo,
   getTaskStatus,
   getResult,
+  getFrameImage,
   health
 };

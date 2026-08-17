@@ -20,6 +20,9 @@ const UNIT_DIGITS = { '°': 1, '%': 1, s: 2, ':1': 1, '': 2 };
 /** 机位标签。 */
 const VIEW_LABEL = { face_on: '正面机位', down_the_line: '侧面机位' };
 
+/** 手动帧微调：事件帧 ± 可调帧数（与后端 config.FRAME_ADJUST_RANGE 对齐）。 */
+const FRAME_RANGE = 30;
+
 /**
  * 数值格式化。
  * @param {number} value 原始值
@@ -115,6 +118,7 @@ Page({
     meta: {},
     warnings: [],
     disclaimer: '',
+    taskId: '',
     // ---- v2 ----
     viewLabel: '',
     analyzedDate: '',
@@ -162,29 +166,51 @@ Page({
    * @param {object} result AnalysisResult
    */
   _apply(result) {
-    const phases = (result.phases || []).map((p) => ({
-      index: p.index,
-      key: p.key,
-      name_cn: p.name_cn,
-      name_en: p.name_en,
-      frame_index: p.frame_index,
-      estimated: !!p.estimated,
-      image_url: p.image_url,
-      timeText: (Number(p.timestamp) || 0).toFixed(2) + 's · 第 ' + p.frame_index + ' 帧',
-      metrics: (p.metrics || []).map(decorate),
-      // v2 区域4：风险区（后端已按 high→medium→low 排序）
-      risks: (p.risks || []).map(decorateRisk),
-      emptyMetrics: !p.metrics || p.metrics.length === 0
-    }));
+    const vm = result.video_meta || {};
+    const totalFrames = vm.total_frames || vm.frame_count || 0;
+    const fps = Number(vm.fps) || 0;
+
+    const phases = (result.phases || []).map((p) => {
+      const eventFrame = Number(p.frame_index) || 0;
+      const timeText =
+        (Number(p.timestamp) || 0).toFixed(2) + 's · 第 ' + eventFrame + ' 帧';
+      return {
+        index: p.index,
+        key: p.key,
+        name_cn: p.name_cn,
+        name_en: p.name_en,
+        frame_index: eventFrame,
+        estimated: !!p.estimated,
+        image_url: p.image_url,
+        // ---- 手动帧微调（v3）：事件帧原值 + 调整态 ----
+        origImageUrl: p.image_url,
+        origTimeText: timeText,
+        timeText: timeText,
+        eventFrame: eventFrame,
+        adjCur: eventFrame, // 当前展示帧号（调整后 = 实际渲染帧）
+        adjFrame: null, // 非空 = 已手动调整过
+        adjActive: false, // 手动微调视觉标识
+        adjLoading: false,
+        adjMin: Math.max(0, eventFrame - FRAME_RANGE),
+        adjMax:
+          totalFrames > 0
+            ? Math.min(totalFrames - 1, eventFrame + FRAME_RANGE)
+            : eventFrame + FRAME_RANGE,
+        metrics: (p.metrics || []).map(decorate),
+        // v2 区域4：风险区（后端已按 high→medium→low 排序）
+        risks: (p.risks || []).map(decorateRisk),
+        emptyMetrics: !p.metrics || p.metrics.length === 0
+      };
+    });
 
     const gm = result.global_metrics || {};
     const globals = (gm.metrics || []).map(decorate);
 
-    const vm = result.video_meta || {};
     const meta = {
       width: vm.width || 0,
       height: vm.height || 0,
       frame_count: vm.frame_count || 0,
+      fps: fps,
       fpsText: (Number(vm.fps) || 0).toFixed(0),
       durationText: (Number(vm.duration) || 0).toFixed(1)
     };
@@ -208,7 +234,8 @@ Page({
       warnings: result.warnings || [],
       disclaimer: result.disclaimer || '',
       viewLabel: viewLabel,
-      analyzedDate: analyzedDate
+      analyzedDate: analyzedDate,
+      taskId: result.task_id || this.data.taskId
     });
   },
 
@@ -221,15 +248,83 @@ Page({
     if (!phases.length) return;
     const i = clamp(index, 0, phases.length - 1);
     if (i === this.data.current) return;
+    // 切换阶段时该阶段帧号/图片复位为事件帧（产品决策：手动微调不跨阶段记忆）
+    const phase = phases[i];
+    const reset = Object.assign({}, phase, {
+      image_url: phase.origImageUrl,
+      timeText: phase.origTimeText,
+      adjCur: phase.eventFrame,
+      adjFrame: null,
+      adjActive: false,
+      adjLoading: false
+    });
+    const nextPhases = phases.slice();
+    nextPhases[i] = reset;
     this.setData({
+      phases: nextPhases,
       current: i,
-      cur: phases[i],
+      cur: reset,
       scrollInto: 'thumb-' + i
     });
   },
 
   onSelect(e) {
     this._select(Number(e.currentTarget.dataset.index));
+  },
+
+  /**
+   * 缩略图下 ◀/▶ 按钮：当前阶段事件帧 ±1 帧（结果页手动微调，v3）。
+   * @param {Event} e dataset.delta = -1 | 1
+   */
+  onFrameStep(e) {
+    const delta = Number(e.currentTarget.dataset.delta);
+    this._stepFrame(delta);
+  },
+
+  /**
+   * 按方向步进当前阶段帧号，并做边界/加载中校验。
+   * @param {number} delta -1 上一帧 / +1 下一帧
+   */
+  _stepFrame(delta) {
+    const i = this.data.current;
+    const phase = this.data.phases[i];
+    if (!phase || phase.adjLoading) return;
+    const target = phase.adjCur + delta;
+    if (target < phase.adjMin || target > phase.adjMax) return;
+    this._loadFrame(i, target);
+  },
+
+  /**
+   * 拉取指定帧骨架图并替换当前阶段缩略图/大图。
+   * @param {number} i 阶段下标
+   * @param {number} target 目标帧号
+   */
+  _loadFrame(i, target) {
+    const phase = this.data.phases[i];
+    const taskId = this.data.taskId;
+    if (!phase || !taskId) return;
+    this.setData({ ['phases[' + i + '].adjLoading']: true });
+    api
+      .getFrameImage(taskId, target)
+      .then((res) => {
+        const fps = this.data.meta.fps || 0;
+        const sec = fps > 0 ? res.frameIndex / fps : 0;
+        const updated = Object.assign({}, phase, {
+          image_url: res.tempFilePath,
+          adjCur: res.frameIndex,
+          adjFrame: res.frameIndex,
+          adjActive: true,
+          adjLoading: false,
+          timeText: sec.toFixed(2) + 's · 第 ' + res.frameIndex + ' 帧'
+        });
+        const patch = { ['phases[' + i + ']']: updated };
+        if (i === this.data.current) patch.cur = updated;
+        this.setData(patch);
+      })
+      .catch((err) => {
+        this.setData({ ['phases[' + i + '].adjLoading']: false });
+        wx.showToast({ title: err.message || '帧加载失败', icon: 'none' });
+      });
   },
 
   onPrev() {
@@ -249,9 +344,28 @@ Page({
   onSaveImage() {
     const cur = this.data.cur;
     if (!cur || !cur.image_url) return;
+    const url = cur.image_url;
+    // 手动微调后 image_url 是本地临时 PNG（wxfile://...），直接存相册
+    const isLocal =
+      url.indexOf('wxfile://') === 0 || url.indexOf('http') !== 0;
+    if (isLocal) {
+      wx.showLoading({ title: '保存中', mask: true });
+      wx.saveImageToPhotosAlbum({
+        filePath: url,
+        success: () => {
+          wx.hideLoading();
+          wx.showToast({ title: '已保存到相册', icon: 'success' });
+        },
+        fail: () => {
+          wx.hideLoading();
+          wx.showToast({ title: '需要相册权限', icon: 'none' });
+        }
+      });
+      return;
+    }
     wx.showLoading({ title: '保存中', mask: true });
     wx.downloadFile({
-      url: cur.image_url,
+      url: url,
       success: (res) => {
         if (res.statusCode !== 200) {
           wx.hideLoading();

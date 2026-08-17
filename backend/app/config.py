@@ -471,3 +471,30 @@ STEP_TEXTS: Final[Dict[int, str]] = {
     3: "识别8个挥杆阶段",
     4: "计算姿态指标与风险",
 }
+
+
+# ---------------------------------------------------------------------------
+# 10. 手动帧微调（结果页缩略图 ◀▶，ARCHITECTURE-v4-frameadjust.md）
+# ---------------------------------------------------------------------------
+
+#: 手动帧微调总开关。False 时新接口直接返回 5000（不影响主链路）。
+FRAME_ADJUST_ENABLED: Final[bool] = True
+
+#: 切帧范围：事件帧 ± 该帧数（防越界/滥用；前端按钮同样按此限位）。
+FRAME_ADJUST_RANGE: Final[int] = 30
+
+#: 分析成功后是否保留原视频副本（动态帧渲染需要原始像素）。
+#: 原 ``upload.mp4`` 仍按 PRD Q6 移除；副本以 ``source.{ext}`` 存在任务目录内，
+#: 随任务 TTL（7 天）一起清理，不上传、不外链。关闭则恢复"分析后即删视频"旧行为
+#: （此时手动帧微调接口将因缺源视频返回 5000）。
+KEEP_SOURCE_VIDEO: Final[bool] = True
+
+#: 保留的视频副本文件名（实际为 ``source`` + 原扩展名，如 ``source.mp4``）
+SOURCE_FILENAME: Final[str] = "source.mp4"
+
+#: 关键点序列缓存文件名（分析时落盘，供手动帧微调接口复用同源关键点）
+LANDMARK_CACHE_FILENAME: Final[str] = "landmarks.npz"
+
+#: PDD 错误码 20003（帧号越界 / 超出可调整范围）。2000x 为任务结果域，
+#: 20001 任务不存在、20002 任务未完成、20003 帧号越界（PDD 未定义，我方顺延）。
+PDD_CODE_FRAME_OUT_OF_RANGE: Final[int] = 20003

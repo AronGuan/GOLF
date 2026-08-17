@@ -22,7 +22,7 @@
       scroll-with-animation="true"
       scroll-into-view="{{scrollInto}}">
       <view
-        class="thumb {{index === current ? 'thumb--on' : ''}}"
+        class="thumb {{index === current ? 'thumb--on' : ''}} {{item.adjActive ? 'thumb--adj' : ''}}"
         wx:for="{{phases}}"
         wx:key="key"
         id="thumb-{{index}}"
@@ -32,8 +32,21 @@
           <image class="thumb__img" src="{{item.image_url}}" mode="aspectFill" lazy-load="true" />
           <view class="thumb__no">{{item.index}}</view>
           <view class="thumb__est" wx:if="{{item.estimated}}">估</view>
+          <view class="thumb__adjtag" wx:if="{{item.adjActive}}">手动</view>
         </view>
         <view class="thumb__name">{{item.name_cn}}</view>
+        <!-- 手动帧微调（v3）：◀ ▶ + 帧号 + 手动标识 -->
+        <view class="thumb__adj">
+          <view
+            class="thumb__btn {{item.adjCur <= item.adjMin || item.adjLoading ? 'thumb__btn--off' : ''}}"
+            data-delta="-1"
+            catchtap="onFrameStep">◀</view>
+          <view class="thumb__frame {{item.adjActive ? 'thumb__frame--adj' : ''}}">{{item.adjCur}}帧</view>
+          <view
+            class="thumb__btn {{item.adjCur >= item.adjMax || item.adjLoading ? 'thumb__btn--off' : ''}}"
+            data-delta="1"
+            catchtap="onFrameStep">▶</view>
+        </view>
       </view>
     </scroll-view>
 
@@ -51,6 +64,7 @@
       <view class="hero__imgbox" bindtap="onPreview">
         <image class="hero__img" src="{{cur.image_url}}" mode="aspectFit" show-menu-by-longpress="true" />
         <view class="hero__tag" wx:if="{{cur.estimated}}">该帧为估算位置</view>
+        <view class="hero__tag hero__tag--adj" wx:if="{{cur.adjActive}}">手动调整 · 第{{cur.adjCur}}帧</view>
         <view class="hero__zoom">点击查看大图</view>
       </view>
 
