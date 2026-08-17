@@ -1,0 +1,5 @@
+all_events_decoded: True
+events_after: [('address', 198), ('takeaway', 213), ('backswing', 219), ('top', 228), ('downswing', 234), ('impact', 243), ('follow_through', 269), ('finish', 316)]
+decode: [198, 232, 233, 234, 235, 236, 237, 238, 239, 240, 241, 242, 243]
+possible: [198, 213, 219, 228, 230, 233, 234, 235, 236, 237, 238, 239, 240, 241, 242, 243, 262, 263, 264, 265, 266, 267, 268, 269, 316]
+union size: 26

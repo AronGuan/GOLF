@@ -221,6 +221,40 @@ class SwingEvent:
 
 
 @dataclass
+class ImpactRefineResult:
+    """击球帧校正结果（ARCHITECTURE-v3-clublite.md §4.1）。
+
+    硬约束：任何失败 -> ``available=False``（调用方保持原 events，绝不破坏主链路）。
+    校正只在**帧级时序**上移动 impact（±1~2 采样帧），不做像素级杆头定位。
+    内部结构，不出网；校正事实通过 impact 事件本身的
+    ``frame_index/timestamp/estimated`` 变化 + ``warnings`` 追加体现。
+
+    Attributes:
+        available: 校正是否可用（采纳判定通过）。
+        method: ``"motion"`` | ``"motion+shaft"`` | ``"none"``。
+        old_array_index: 校正前 impact 的 array 下标。
+        new_array_index: 校正后 impact 的 array 下标。
+        delta_frames: ``new - old``（array 下标差 = 采样帧差）。
+        confidence: 0~1，取最优候选的运动峰归一化强度。
+        ball_detected: Address 帧是否检出唯一高置信球点。
+        motion_peak_index: M1 最优候选（array 下标）；未检出为 None。
+        shaft_lowest_index: M2 杆头最低点候选（array 下标）；未检出为 None。
+        ball_center_px: 球心像素坐标 ``(x, y)``（渲染 marker 用）；未检为 None。
+    """
+
+    available: bool = False
+    method: str = "none"
+    old_array_index: int = -1
+    new_array_index: int = -1
+    delta_frames: int = 0
+    confidence: float = 0.0
+    ball_detected: bool = False
+    motion_peak_index: Optional[int] = None
+    shaft_lowest_index: Optional[int] = None
+    ball_center_px: Optional[Tuple[int, int]] = None
+
+
+@dataclass
 class ClubDetection:
     """单帧球杆检测结果（像素坐标系，与 ``metrics._img_pt()`` 同口径）。
 

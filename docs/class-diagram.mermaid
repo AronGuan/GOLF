@@ -1,0 +1,65 @@
+classDiagram
+    class ImpactRefineResult {
+        +bool available
+        +str method
+        +int old_array_index
+        +int new_array_index
+        +int delta_frames
+        +float confidence
+        +bool ball_detected
+        +Optional~int~ motion_peak_index
+        +Optional~int~ shaft_lowest_index
+    }
+
+    class impact_refiner {
+        +plan_refine_frames(events, signals, meta, back_sec, fwd_sec) Tuple~List~int~, List~int~~
+        +refine_impact(video_path, frames, events, signals, view, meta, frames_bgr) ImpactRefineResult
+        -_ground_roi(addr_lm, width, height, body_h_px) Tuple~int, int, int, int~
+        -_motion_signal(gray_frames, roi) ndarray
+        -_detect_ball(addr_bgr, roi) Optional~ndarray~
+        -_pick_candidates(motion, min_ratio, top_k) List~int~
+        -_shaft_lowest_y(bgr, landmark_px, grip_px, club_len_px, view) Optional~float~
+        -_score(motion, centroid, ground_line, ball) float
+    }
+
+    class segmenter {
+        +locate_impact(sig, i_top, i_addr) Tuple~int, bool~
+        +reanchor_impact(frames, signals, events, new_impact_array_index) Optional~List~SwingEvent~~
+    }
+
+    class pipeline {
+        +run_analysis(task_id) None
+        -_run(task_id) None
+    }
+
+    class frame_reader {
+        +grab_frames(video_path, frame_indices) Dict~int, ndarray~
+        +stats() Dict~str, int~
+    }
+
+    class view_detector {
+        +resolve(chosen, frames, meta, addr_index) Tuple~CameraView, Optional~str~~
+    }
+
+    class metrics {
+        +build_context(frames, events, signals, meta, view) MetricContext
+        +compute_phase_metrics(ctx) List~StageMetric~
+    }
+
+    class SwingEvent {
+        +int index
+        +PhaseKey key
+        +int frame_index
+        +float timestamp
+        +bool estimated
+        +int array_index
+    }
+
+    ImpactRefineResult ..> SwingEvent : 校正后更新 impact 事件
+    pipeline --> view_detector : 机位解析(addr 不变)
+    pipeline --> impact_refiner : plan_refine_frames + refine_impact
+    pipeline --> segmenter : reanchor_impact(重建 8 事件)
+    impact_refiner --> frame_reader : 共享第 2 趟解码
+    pipeline --> frame_reader : 解码 8 事件帧 ∪ 校正窗口帧
+    segmenter --> SwingEvent : 组装/重建
+    pipeline --> metrics : 基于校正后 events

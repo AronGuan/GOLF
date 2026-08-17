@@ -111,12 +111,31 @@ def _draw_horizon(img: np.ndarray) -> None:
     )
 
 
+def _draw_impact_marker(img: np.ndarray, center: Tuple[int, int]) -> None:
+    """在 impact 帧画球点/杆头圈（CLUBLITE 校正的可视化标注，默认关闭）。
+
+    center 为**原图像素坐标**；调用方需先按 ``_resize_long_side`` 的缩放比换算。
+    只画几何标注，不写中文（OpenCV 无法绘制中文，沿用本模块约定）。
+    """
+    cx, cy = int(round(center[0])), int(round(center[1]))
+    h, w = img.shape[:2]
+    if not (0 <= cx < w and 0 <= cy < h):
+        return
+    color = (0, 215, 255)  # BGR 亮黄
+    cv2.circle(img, (cx, cy), 16, color, 2, cv2.LINE_AA)
+    cv2.drawMarker(
+        img, (cx, cy), color, markerType=cv2.MARKER_CROSS,
+        markerSize=14, thickness=2, line_type=cv2.LINE_AA,
+    )
+
+
 def _render_one(
     bgr: np.ndarray,
     event: SwingEvent,
     frame_lm: Optional[FrameLandmarks],
     out_dir: Path,
     view: CameraView = CameraView.FACE_ON,
+    marker: Optional[Tuple[int, int]] = None,
 ) -> str:
     """渲染并写盘单张结果图，返回文件名。"""
     img, scale = _resize_long_side(bgr, config.RENDER_LONG_SIDE)
@@ -125,6 +144,11 @@ def _render_one(
         _draw_skeleton(img, frame_lm.norm, width, height)
     if view is CameraView.DOWN_THE_LINE:
         _draw_horizon(img)
+    if marker is not None:
+        # marker 为原图像素坐标，按缩放比换算到渲染图坐标
+        _draw_impact_marker(
+            img, (marker[0] * scale, marker[1] * scale)
+        )
     _draw_label(img, f"#{event.index} f{event.frame_index} {event.timestamp:.2f}s")
 
     filename = phase_image_name(event.key)
@@ -144,6 +168,7 @@ def render_events(
     frames: Sequence[FrameLandmarks],
     frames_bgr: Optional[Dict[int, np.ndarray]] = None,
     view: CameraView = CameraView.FACE_ON,
+    markers: Optional[Dict[int, Tuple[int, int]]] = None,
 ) -> Dict[PhaseKey, str]:
     """在 8 个事件帧上叠加骨架并导出 JPG。
 
@@ -158,6 +183,9 @@ def render_events(
         frames: 姿态提取产出，用于取该帧关键点。
         frames_bgr: 已解码帧字典（原视频帧号 -> BGR）；缺省时自行解码。
         view: 机位（控制水平参考线）。
+        markers: 可选标记 ``{原视频帧号: (x, y)}``；仅当
+            :data:`config.CLUBLITE_DRAW_MARKER` 为 True 时绘制（默认关闭，
+            输出与现状逐字节一致）。
 
     Returns:
         ``{PhaseKey: 文件名}``，恒 8 项。
@@ -179,6 +207,8 @@ def render_events(
         # 第二趟解码：改用共享帧解码工具（不再自开 VideoCapture）
         decoded = frame_reader.grab_frames(video_path, list(targets.keys()))
 
+    draw_markers = bool(config.CLUBLITE_DRAW_MARKER and markers)
+
     produced: Dict[PhaseKey, str] = {}
     pending = dict(targets)
     last_bgr: Optional[np.ndarray] = None
@@ -195,6 +225,7 @@ def render_events(
         for event in pending[frame_index]:
             produced[event.key] = _render_one(
                 bgr, event, lm_by_frame.get(frame_index), target_dir, view=view,
+                marker=markers.get(frame_index) if draw_markers else None,
             )
         del pending[frame_index]
 
@@ -208,6 +239,7 @@ def render_events(
                 produced[event.key] = _render_one(
                     last_bgr, event, lm_by_frame.get(frame_index), target_dir,
                     view=view,
+                    marker=markers.get(frame_index) if draw_markers else None,
                 )
 
     missing = [PHASE_META[e.key].name_en for e in events if e.key not in produced]

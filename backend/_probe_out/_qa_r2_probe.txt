@@ -1,0 +1,26 @@
+
+==============================================================================
+[正面1] face-on  E:\project\golf\.tools\_probe\samples\正面1.mp4
+==============================================================================
+INFO: Created TensorFlow Lite XNNPACK delegate for CPU.
+WARNING: All log messages before absl::InitializeLog() is called are written to STDERR
+W0000 00:00:1786966771.523415   17808 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1786966771.541086   17808 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+E:\project\golf\.tools\python312\Lib\site-packages\google\protobuf\symbol_database.py:55: UserWarning: SymbolDatabase.GetPrototype() is deprecated. Please use message_factory.GetMessageClass() instead. SymbolDatabase.GetPrototype() will be removed soon.
+  warnings.warn('SymbolDatabase.GetPrototype() is deprecated. Please '
+  meta: 720x1280 fps=26.0 dur=2.423s frames=63 step=1
+  impact 37 -> 38 (delta=+1) available=True method=motion+shaft conf=1.0 ball=False opens=1 refine_wall=0.101s
+
+==============================================================================
+[正面2] face-on  E:\project\golf\.tools\_probe\samples\正面2.mp4
+==============================================================================
+W0000 00:00:1786966773.114807   21180 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1786966773.129386   21180 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+  meta: 720x1280 fps=30.0 dur=12.967s frames=389 step=1
+  impact 284 -> 292 (delta=+8) available=True method=motion+shaft conf=1.0 ball=False opens=1 refine_wall=0.37s
+
+==============================================================================
+[正面3] face-on  E:\project\golf\.tools\_probe\samples\正面3.mp4
+==============================================================================
+W0000 00:00:1786966789.497518   26796 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1786966789.526486   26796 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.

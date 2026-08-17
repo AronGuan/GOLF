@@ -1,0 +1,30 @@
+sequenceDiagram
+    participant P as pipeline._run
+    participant S as segmenter
+    participant V as view_detector
+    participant F as frame_reader
+    participant R as impact_refiner
+    participant M as metrics
+
+    P->>S: segment_swing(frames, fps, sig)
+    S-->>P: events(8)  # impact 为腕部粗定位
+    P->>V: resolve(view, frames, meta, addr_index)
+    V-->>P: (view, warning)
+    P->>R: plan_refine_frames(events, signals, meta)
+    R-->>P: (候选帧, 解码帧集合)
+    P->>F: grab_frames(video, 事件帧 ∪ 校正窗口帧)
+    F-->>P: frames_bgr
+    P->>R: refine_impact(..., frames_bgr)
+    R->>R: _ground_roi / _motion_signal / _detect_ball / _pick_candidates / _score
+    R-->>P: ImpactRefineResult(available, new_array_index, delta_frames)
+
+    alt refine.available 且 MIN ≤ |delta| ≤ MAX
+        P->>S: reanchor_impact(frames, signals, events, new_index)
+        S-->>P: rebuilt_events 或 None
+        alt rebuilt 非 None
+            P->>P: events = rebuilt; 若 |delta|≥阈值追加 WARN_IMPACT_REFINED
+        end
+    end
+    P->>P: frames_bgr 过滤为仅 8 事件帧（释放窗口帧）
+    P->>M: build_context + compute_phase_metrics(ctx)
+    M-->>P: phase_metrics（基于校正后 impact 帧）

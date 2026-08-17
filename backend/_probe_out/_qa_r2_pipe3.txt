@@ -1,0 +1,17 @@
+2026-08-17 19:45:25,725 | INFO    | app.task_store | task created: 0f3643533620 -> E:\project\golf\backend\data\tasks\0f3643533620
+2026-08-17 19:45:25,727 | INFO    | app.main | upload ok: 0f3643533620 (296952 bytes) view=face_on
+2026-08-17 19:45:25,761 | INFO    | app.pose_extractor | brightness mean=76.8 over 10 samples
+2026-08-17 19:45:25,807 | INFO    | app.impact_refiner | impact refined: 51 -> 57 (delta=+6, method=motion, conf=0.99, ball=True)
+2026-08-17 19:45:25,807 | INFO    | app.pipeline | impact refined (task=0f3643533620): 51 -> 57 delta=+6 method=motion conf=0.99
+2026-08-17 19:45:25,858 | INFO    | app.task_store | task succeeded: 0f3643533620
+2026-08-17 19:45:25,858 | INFO    | app.pipeline | analysis done: 0f3643533620 in 0.13s (frames=120 view=face_on risks=1)
+2026-08-17 19:45:25,858 | INFO    | httpx | HTTP Request: POST http://testserver/api/v1/tasks "HTTP/1.1 201 Created"
+2026-08-17 19:45:25,858 | INFO    | httpx | HTTP Request: GET http://testserver/api/v1/tasks/0f3643533620 "HTTP/1.1 200 OK"
+2026-08-17 19:45:25,867 | INFO    | httpx | HTTP Request: GET http://testserver/api/v1/tasks/0f3643533620/result "HTTP/1.1 200 OK"
+2026-08-17 19:45:25,912 | INFO    | app.impact_refiner | impact refined: 51 -> 57 (delta=+6, method=motion, conf=0.99, ball=True)
+task status: success error=None
+impact=57 follow_through=59 finish=74 warnings=['击球帧已按杆头/球位置校正', '视频在收杆后过早结束，平衡保持时长可能被低估']
+opens=1 FT==finish? False
+API FT image == render(real FT frame 59)? True
+PASS: 真实 pipeline._run 集成验证——送杆图=真帧，opens<=2，无 fallback 错帧
+RC=0

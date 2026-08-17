@@ -1,0 +1,113 @@
+
+==============================================================================
+[正面1] face-on  E:\project\golf\.tools\_probe\samples\正面1.mp4
+==============================================================================
+INFO: Created TensorFlow Lite XNNPACK delegate for CPU.
+WARNING: All log messages before absl::InitializeLog() is called are written to STDERR
+W0000 00:00:1786966947.189024   11732 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1786966947.203347   26060 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+E:\project\golf\.tools\python312\Lib\site-packages\google\protobuf\symbol_database.py:55: UserWarning: SymbolDatabase.GetPrototype() is deprecated. Please use message_factory.GetMessageClass() instead. SymbolDatabase.GetPrototype() will be removed soon.
+  warnings.warn('SymbolDatabase.GetPrototype() is deprecated. Please '
+  meta: 720x1280 fps=26.0 dur=2.423s frames=63 step=1
+  impact 37 -> 38 (delta=+1) available=True method=motion+shaft conf=1.0 ball=False opens=1 refine_wall=0.116s
+
+==============================================================================
+[正面2] face-on  E:\project\golf\.tools\_probe\samples\正面2.mp4
+==============================================================================
+W0000 00:00:1786966948.799849   18720 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1786966948.814116   18720 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+  meta: 720x1280 fps=30.0 dur=12.967s frames=389 step=1
+  impact 284 -> 292 (delta=+8) available=True method=motion+shaft conf=1.0 ball=False opens=1 refine_wall=0.365s
+
+==============================================================================
+[正面3] face-on  E:\project\golf\.tools\_probe\samples\正面3.mp4
+==============================================================================
+W0000 00:00:1786966965.820704    2784 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1786966965.843119   23236 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+  meta: 720x1280 fps=27.0 dur=4.148s frames=112 step=1
+  impact 70 -> 74 (delta=+4) available=True method=motion+shaft conf=0.9277 ball=False opens=1 refine_wall=0.316s
+
+==============================================================================
+[DTL-087d40a0] dtl  E:\project\golf\.tools\_probe\samples\087d40a0e808f2c319b8097d89599780.mp4
+==============================================================================
+W0000 00:00:1786966971.640621   25864 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1786966971.663121   26372 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+  meta: 720x1280 fps=30.0 dur=2.733s frames=82 step=1
+  >>> FAILED at segment_swing: NO_SWING - address->top too short: 4 < 14
+
+==============================================================================
+[DTL-0bb16a97] dtl  E:\project\golf\.tools\_probe\samples\0bb16a974ef55676cc1b938d8539edfd.mp4
+==============================================================================
+W0000 00:00:1786966975.878929    1840 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1786966975.901907   37028 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+  meta: 720x1280 fps=30.0 dur=7.0s frames=210 step=1
+  impact 189 -> 197 (delta=+8) available=True method=motion+shaft conf=1.0 ball=False opens=1 refine_wall=0.535s
+
+==============================================================================
+[DTL-470057ac] dtl  E:\project\golf\.tools\_probe\samples\470057ac3dac2025eb6b0dcd390b6957.mp4
+==============================================================================
+W0000 00:00:1786966985.895930   27324 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1786966985.922679   31276 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+  meta: 720x1280 fps=30.0 dur=7.2s frames=216 step=1
+  impact 98 -> 104 (delta=+6) available=True method=motion+shaft conf=0.9894 ball=False opens=1 refine_wall=0.483s
+
+==============================================================================
+[DTL-4e8d0d7e] dtl  E:\project\golf\.tools\_probe\samples\4e8d0d7e517a67a2a7698fd1536289eb.mp4
+==============================================================================
+W0000 00:00:1786966996.074135   34608 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1786966996.095511   34608 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+  meta: 720x1280 fps=30.0 dur=12.067s frames=362 step=1
+  impact 235 -> 243 (delta=+8) available=True method=motion+shaft conf=1.0 ball=False opens=1 refine_wall=0.601s
+
+==============================================================================
+[DTL-707fb04a] dtl  E:\project\golf\.tools\_probe\samples\707fb04a3dbd91db19b97e0ca4aee959.mp4
+==============================================================================
+W0000 00:00:1786967011.857618   17592 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1786967011.872400   38604 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+  meta: 720x1280 fps=30.0 dur=4.4s frames=132 step=1
+  >>> FAILED at segment_swing: NO_SWING - address->top too short: 4 < 14
+
+==============================================================================
+[DTL-c6f67f38] dtl  E:\project\golf\.tools\_probe\samples\c6f67f38e5d293a5ce1458e5ff5a6f1b.mp4
+==============================================================================
+W0000 00:00:1786967018.339366   17516 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1786967018.360757   38544 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+  meta: 720x1280 fps=30.0 dur=10.4s frames=312 step=1
+  impact 177 -> 180 (delta=+3) available=True method=motion+shaft conf=0.8754 ball=False opens=1 refine_wall=0.729s
+
+==============================================================================
+[VID-1446d1b9] dtl  E:\project\golf\video\1446d1b95c4329272f1818d6990f3c4f.mp4
+==============================================================================
+W0000 00:00:1786967032.885150   20008 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1786967032.905346   21620 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+  meta: 1280x720 fps=30.0 dur=7.933s frames=238 step=1
+  impact 33 -> 40 (delta=+7) available=True method=motion+shaft conf=1.0 ball=False opens=1 refine_wall=0.404s
+
+==============================================================================
+[VID-a4fba3d2] dtl  E:\project\golf\video\a4fba3d24cf9beb59f9d3b06be26daab.mp4
+==============================================================================
+W0000 00:00:1786967043.643703   25340 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1786967043.676026   25340 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+  meta: 720x1280 fps=30.0 dur=11.267s frames=338 step=1
+  impact 163 -> 168 (delta=+5) available=True method=motion+shaft conf=0.9151 ball=False opens=1 refine_wall=0.322s
+
+##############################################################################
+逐段 delta 表（校正后 impact 相对校正前）:
+名称             机位      old  new  delta method          conf  ball opens
+正面1            face_on   37   38     +1 motion+shaft    1.00 False     1
+正面2            face_on  284  292     +8 motion+shaft    1.00 False     1
+正面3            face_on   70   74     +4 motion+shaft    0.93 False     1
+DTL-087d40a0   --     FAIL segment_swing/NO_SWING
+DTL-0bb16a97   down_the_line  189  197     +8 motion+shaft    1.00 False     1
+DTL-470057ac   down_the_line   98  104     +6 motion+shaft    0.99 False     1
+DTL-4e8d0d7e   down_the_line  235  243     +8 motion+shaft    1.00 False     1
+DTL-707fb04a   --     FAIL segment_swing/NO_SWING
+DTL-c6f67f38   down_the_line  177  180     +3 motion+shaft    0.88 False     1
+VID-1446d1b9   down_the_line   33   40     +7 motion+shaft    1.00 False     1
+VID-a4fba3d2   down_the_line  163  168     +5 motion+shaft    0.92 False     1
+
+切分成功 9/11；G1 校正成功 9/9
+校正后 8 事件帧全在解码集（无渲染 fallback）: 9/9
+delta 分布: min=1 max=8 mean=5.56 正移数=9 ∈[-2,+12] 比例=100%
+JSON -> E:\project\golf\backend\_probe_out\probe_qa_r2c.json
+RC=0

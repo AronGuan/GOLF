@@ -1,0 +1,20 @@
+2026-08-17 19:45:02,735 | INFO    | app.task_store | task created: 93e34decfd6a -> E:\project\golf\backend\data\tasks\93e34decfd6a
+2026-08-17 19:45:02,735 | INFO    | app.main | upload ok: 93e34decfd6a (296952 bytes) view=face_on
+2026-08-17 19:45:02,766 | INFO    | app.pose_extractor | brightness mean=76.8 over 10 samples
+2026-08-17 19:45:02,814 | INFO    | app.impact_refiner | impact refined: 51 -> 57 (delta=+6, method=motion, conf=0.99, ball=True)
+2026-08-17 19:45:02,814 | INFO    | app.pipeline | impact refined (task=93e34decfd6a): 51 -> 57 delta=+6 method=motion conf=0.99
+2026-08-17 19:45:02,866 | INFO    | app.task_store | task succeeded: 93e34decfd6a
+2026-08-17 19:45:02,866 | INFO    | app.pipeline | analysis done: 93e34decfd6a in 0.13s (frames=120 view=face_on risks=1)
+2026-08-17 19:45:02,866 | INFO    | httpx | HTTP Request: POST http://testserver/api/v1/tasks "HTTP/1.1 201 Created"
+2026-08-17 19:45:02,866 | INFO    | httpx | HTTP Request: GET http://testserver/api/v1/tasks/93e34decfd6a "HTTP/1.1 200 OK"
+2026-08-17 19:45:02,866 | INFO    | httpx | HTTP Request: GET http://testserver/api/v1/tasks/93e34decfd6a/result "HTTP/1.1 200 OK"
+2026-08-17 19:45:02,912 | WARNING | app.segmenter | reanchor_impact: new impact out of range -1 (n=120)
+task status: success error=None
+impact=57 follow_through=59 finish=74 warnings=['击球帧已按杆头/球位置校正', '视频在收杆后过早结束，平衡保持时长可能被低估']
+opens=1 FT==finish? False
+Traceback (most recent call last):
+  File "E:\project\golf\backend\_probe_out\qa_r2_pipeline_integration.py", line 123, in <module>
+    ft_event = next(e for e in new_events if e.key is PhaseKey.FOLLOW_THROUGH)
+                               ^^^^^^^^^^
+TypeError: 'NoneType' object is not iterable
+RC=1

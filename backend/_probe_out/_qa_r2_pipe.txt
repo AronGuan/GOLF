@@ -1,0 +1,22 @@
+2026-08-17 19:41:44,085 | INFO    | app.task_store | task created: 9772150608c4 -> E:\project\golf\backend\data\tasks\9772150608c4
+2026-08-17 19:41:44,085 | INFO    | app.main | upload ok: 9772150608c4 (296952 bytes) view=face_on
+2026-08-17 19:41:44,134 | INFO    | app.pose_extractor | brightness mean=76.8 over 10 samples
+2026-08-17 19:41:44,185 | INFO    | app.impact_refiner | impact refined: 51 -> 57 (delta=+6, method=motion, conf=0.99, ball=True)
+2026-08-17 19:41:44,185 | INFO    | app.pipeline | impact refined (task=9772150608c4): 51 -> 57 delta=+6 method=motion conf=0.99
+2026-08-17 19:41:44,231 | INFO    | app.task_store | task succeeded: 9772150608c4
+2026-08-17 19:41:44,231 | INFO    | app.pipeline | analysis done: 9772150608c4 in 0.15s (frames=120 view=face_on risks=1)
+2026-08-17 19:41:44,231 | INFO    | httpx | HTTP Request: POST http://testserver/api/v1/tasks "HTTP/1.1 201 Created"
+2026-08-17 19:41:44,231 | INFO    | httpx | HTTP Request: GET http://testserver/api/v1/tasks/9772150608c4 "HTTP/1.1 200 OK"
+2026-08-17 19:41:44,231 | INFO    | httpx | HTTP Request: GET http://testserver/api/v1/tasks/9772150608c4/result "HTTP/1.1 200 OK"
+task status: success error=None
+impact=57 follow_through=59 finish=74 warnings=['击球帧已按杆头/球位置校正', '视频在收杆后过早结束，平衡保持时长可能被低估']
+opens=1 FT==finish? False
+Traceback (most recent call last):
+  File "E:\project\golf\backend\_probe_out\qa_r2_pipeline_integration.py", line 116, in <module>
+    addr_index = next((e.array_index for e in events if e.key is PhaseKey.ADDRESS), 0)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "E:\project\golf\backend\_probe_out\qa_r2_pipeline_integration.py", line 116, in <genexpr>
+    addr_index = next((e.array_index for e in events if e.key is PhaseKey.ADDRESS), 0)
+                                                                 ^^^^^^^^
+NameError: name 'PhaseKey' is not defined
+RC=1

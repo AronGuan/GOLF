@@ -560,6 +560,89 @@ def segment_swing(
     return enforce_monotonic(events)
 
 
+def reanchor_impact(
+    frames: Sequence[FrameLandmarks],
+    signals: SwingSignals,
+    events: Sequence[SwingEvent],
+    new_impact_array_index: int,
+) -> Optional[List[SwingEvent]]:
+    """用校正后的击球帧重建 8 事件（ARCHITECTURE-v3-clublite.md §4.2）。
+
+    校正只移动 impact 事件帧本身；为保持 8 阶段语义，需要以新 impact 为边界
+    重跑 ②③⑤⑦（:func:`locate_intermediate`），再做单调性校正后重建事件。
+
+    流程：
+    1. 用新 impact 替换旧 impact（``estimated=False``，有真实杆头/球证据）；
+    2. 重跑 :func:`locate_intermediate`（②③⑤⑦ 依赖 impact 边界）→ 新中间四帧；
+    3. :func:`enforce_monotonic_indices` + :func:`_assemble` 重建事件；
+    4. 任何冲突（:class:`AnalysisError` / 下标非法）→ 返回 ``None``，
+       调用方保持原 events（保守降级，绝不因校正破坏主链路）。
+
+    Args:
+        frames: 姿态提取产出。
+        signals: 切分信号包（与 :func:`segment_swing` 同源）。
+        events: 8 事件（原 ``segment_swing`` 产出）。
+        new_impact_array_index: 校正后的 impact 数组下标（array 下标）。
+
+    Returns:
+        重建后的 8 事件；冲突时返回 ``None``。
+
+    Note:
+        本函数是**纯函数、无 IO**，且**不改动** :func:`locate_impact`
+        （349 个既有测试覆盖的粗定位保持不变，校正作为后置精修叠加）。
+    """
+    try:
+        by_key = {e.key: e for e in events}
+        addr = by_key[PhaseKey.ADDRESS]
+        top = by_key[PhaseKey.TOP]
+        impact = by_key[PhaseKey.IMPACT]
+        finish = by_key[PhaseKey.FINISH]
+
+        new_idx = int(new_impact_array_index)
+        if new_idx < 0 or new_idx >= signals.n:
+            logger.warning(
+                "reanchor_impact: new impact out of range %d (n=%d)", new_idx, signals.n
+            )
+            return None
+        # 物理边界守卫：impact 必须严格在 top 与 finish 之间
+        if new_idx <= top.array_index or new_idx >= finish.array_index:
+            logger.warning(
+                "reanchor_impact: new impact %d not in (top=%d, finish=%d)",
+                new_idx,
+                top.array_index,
+                finish.array_index,
+            )
+            return None
+        if new_idx == impact.array_index:
+            # 无实际移动：直接返回原 events（防御，正常流程不会走到）
+            return list(events)
+
+        mid = locate_intermediate(
+            signals, (addr.array_index, top.array_index, new_idx, finish.array_index)
+        )
+        ordered_pairs: List[Tuple[int, bool]] = [
+            (addr.array_index, addr.estimated),
+            mid[PhaseKey.TAKEAWAY],
+            mid[PhaseKey.BACKSWING],
+            (top.array_index, False),
+            mid[PhaseKey.DOWNSWING],
+            (new_idx, False),  # 校正后有真实杆头/球证据
+            mid[PhaseKey.FOLLOW_THROUGH],
+            (finish.array_index, finish.estimated),
+        ]
+        indices = [p[0] for p in ordered_pairs]
+        estimated = [p[1] for p in ordered_pairs]
+        indices, estimated = enforce_monotonic_indices(indices, estimated, signals.n)
+        rebuilt = _assemble(frames, indices, estimated)
+        return enforce_monotonic(rebuilt)
+    except AnalysisError:
+        logger.warning("reanchor_impact: monotonic conflict, keeping original events")
+        return None
+    except (KeyError, IndexError, TypeError, ValueError):
+        logger.warning("reanchor_impact: invalid input, keeping original events")
+        return None
+
+
 # ---------------------------------------------------------------------------
 # CLI 自测入口
 # ---------------------------------------------------------------------------

@@ -24,11 +24,12 @@ import os
 import threading
 import time
 from pathlib import Path
-from typing import Dict, List
+from typing import Dict, List, Optional
 
 from . import (
     config,
     frame_reader,
+    impact_refiner,
     metrics,
     pose_extractor,
     renderer,
@@ -140,7 +141,7 @@ def _run(task_id: str) -> None:
     task_store.set_progress(task_id, 3, _P_SEGMENT_END, "阶段识别完成")
     _check_timeout(created_at)
 
-    # ---- step 4a：机位解析 + 解码 8 个事件帧（供 renderer）---------------
+    # ---- step 4a：机位解析 + 共享解码 + 击球帧校正 + 解码 8 个事件帧 -------
     task_store.set_progress(
         task_id, 4, _P_SEGMENT_END + 2, "正在解析机位与解码事件帧...",
         step_text=config.STEP_TEXTS[4],
@@ -148,10 +149,59 @@ def _run(task_id: str) -> None:
     addr_index = next((e.array_index for e in events if e.key is PhaseKey.ADDRESS), 0)
     view, view_warning = view_detector.resolve(state.camera_view, frames, meta, addr_index)
     meta.camera_view = view
-
     event_frames = [e.frame_index for e in events]
-    # 球杆检测下线：只解码 8 个事件帧供 renderer，解码趟数锁 1 趟（共享）
-    frames_bgr = frame_reader.grab_frames(video_path, event_frames)
+
+    # 击球帧校正（CLUBLITE）：与 renderer 共享同一次第 2 趟解码。
+    # - 解码集 = 8 事件帧 ∪ 校正窗口帧（≤12 帧窗口 + 前一帧 + Address 帧）；
+    # - refine 后立即裁剪 frames_bgr 只留校正后的 8 个事件帧（内存峰值锁回 8 帧）；
+    # - G0（refine 不可用 / reanchor 冲突）→ events 保持原状，不影响主链路。
+    refine_warning: Optional[str] = None
+    refine_markers: Optional[Dict[int, Tuple[int, int]]] = None
+    if config.CLUBLITE_ENABLED:
+        _cand_frames, _decode_frames = impact_refiner.plan_refine_frames(
+            events, signals, meta, frames=frames
+        )
+        # QA P1 修复：reanchor 可能把 ⑦ 送杆移到旧事件帧之外 → 解码前预计算
+        # 全部可能的事件帧集并入解码集，保证校正后 8 事件帧必在解码集内
+        # （纯函数无 IO，解码仍为 1 趟，opens=1）。
+        _possible_frames = impact_refiner.plan_reanchor_frames(
+            events, signals, meta, frames=frames, cand_frames=_cand_frames
+        )
+        frames_bgr = frame_reader.grab_frames(
+            video_path,
+            sorted(set(event_frames) | set(_decode_frames) | set(_possible_frames)),
+        )
+        refine = impact_refiner.refine_impact(
+            video_path, frames, events, signals, view, meta, frames_bgr=frames_bgr,
+        )
+        if refine.available and (
+            config.CLUBLITE_MIN_SHIFT_FRAMES
+            <= abs(refine.delta_frames)
+            <= config.CLUBLITE_MAX_SHIFT_FRAMES
+        ):
+            new_events = segmenter.reanchor_impact(
+                frames, signals, events, refine.new_array_index
+            )
+            if new_events is not None:
+                events = new_events
+                if abs(refine.delta_frames) >= config.CLUBLITE_WARN_THRESHOLD_FRAMES:
+                    refine_warning = config.WARN_IMPACT_REFINED
+                logger.info(
+                    "impact refined (task=%s): %d -> %d delta=%+d method=%s conf=%.2f",
+                    task_id, refine.old_array_index, refine.new_array_index,
+                    refine.delta_frames, refine.method, refine.confidence,
+                )
+        if config.CLUBLITE_DRAW_MARKER and refine.ball_center_px is not None:
+            impact_event = next(
+                (e for e in events if e.key is PhaseKey.IMPACT), None
+            )
+            if impact_event is not None:
+                refine_markers = {impact_event.frame_index: refine.ball_center_px}
+        # 校正可能移动 impact / 中间帧 → 以校正后的 8 事件帧为准
+        event_frames = [e.frame_index for e in events]
+    else:
+        # 球杆检测下线：只解码 8 个事件帧供 renderer，解码趟数锁 1 趟（共享）
+        frames_bgr = frame_reader.grab_frames(video_path, event_frames)
 
     # 🔑 只保留 8 个事件帧，内存峰值锁 8 帧
     frames_bgr = {k: v for k, v in frames_bgr.items() if k in set(event_frames)}
@@ -181,6 +231,7 @@ def _run(task_id: str) -> None:
     task_store.set_progress(task_id, 4, _P_METRIC_END + 2, "正在生成阶段截图...")
     images = renderer.render_events(
         video_path, events, out_dir, frames, frames_bgr=frames_bgr, view=view,
+        markers=refine_markers,
     )
     task_store.set_progress(task_id, 4, _P_RENDER_END, "正在生成分析报告...")
 
@@ -205,6 +256,8 @@ def _run(task_id: str) -> None:
     phases.sort(key=lambda p: p.index)
 
     warnings: List[str] = list(ctx.warnings)
+    if refine_warning and refine_warning not in warnings:
+        warnings.insert(0, refine_warning)
     if view_warning and view_warning not in warnings:
         warnings.insert(0, view_warning)
     if meta.low_fps and config.WARN_LOW_FPS not in warnings:

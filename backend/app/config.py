@@ -386,6 +386,53 @@ SHOULDER_TO_HEIGHT_RATIO: Final[float] = 0.26
 
 
 # ---------------------------------------------------------------------------
+# 8b. 轻量击球帧校正（ARCHITECTURE-v3-clublite.md，2026-08 新追加）
+# ⚠️ 与 8a 归档的 CLUB_*（重球杆检测）无关；本块前缀 CLUBLITE_。
+# 目标：只做帧级时序校正（±1~2 帧），不做像素级杆头定位。
+# ---------------------------------------------------------------------------
+
+#: 击球帧校正总开关。False 时 pipeline 完全不调用 impact_refiner（一键关停）
+CLUBLITE_ENABLED: Final[bool] = True
+
+#: 校正搜索窗口（相对腕部击球估计，秒）。腕部估计天然偏早，主要靠向前探测
+CLUBLITE_SEARCH_BACK_SEC: Final[float] = 0.05
+CLUBLITE_SEARCH_FWD_SEC: Final[float] = 0.25
+
+#: 地面 ROI 上边界 = Address 帧踝关节 y + 该比例×图像身高（y 向下）。
+#: 球（半径≈12px）与杆头（贴地）均落在踝关节下方不远处
+CLUBLITE_ROI_TOP_MARGIN_RATIO: Final[float] = 0.02
+
+#: 运动峰候选最低强度 = 该比例 × 窗口内最大运动强度（低于 → 无显著运动 → 降级）
+CLUBLITE_MOTION_MIN_RATIO: Final[float] = 0.20
+
+#: 运动峰候选数（评分后取最优；M2 仅对这 K 帧做 Hough 验证）
+CLUBLITE_TOP_K: Final[int] = 3
+
+#: 帧差二值化阈值（灰度差）
+CLUBLITE_DIFF_THRESH: Final[int] = 20
+
+#: 校正最少移动帧数（< 该值不采纳，避免帧级抖动）
+CLUBLITE_MIN_SHIFT_FRAMES: Final[int] = 1
+
+#: 校正最多移动帧数（超过视为检测不可信，不采纳）
+CLUBLITE_MAX_SHIFT_FRAMES: Final[int] = 12
+
+#: 校正幅度 ≥ 该帧数时追加 warning（WARN_IMPACT_REFINED）
+CLUBLITE_WARN_THRESHOLD_FRAMES: Final[int] = 3
+
+#: 球检测：HoughCircles 半径范围（像素，按身高先验 1px≈1.75mm，球半径≈12px）
+CLUBLITE_BALL_RADIUS_PX: Final[Tuple[int, int]] = (5, 25)
+#: HoughCircles 累加器阈值（越高越保守，仅唯一高置信才采信）
+CLUBLITE_BALL_PARAM2: Final[int] = 18
+
+#: （可选 P2）渲染 impact 帧球点/杆头标记
+CLUBLITE_DRAW_MARKER: Final[bool] = False
+
+#: 校正提示文案（追加进 warnings）
+WARN_IMPACT_REFINED: Final[str] = "击球帧已按杆头/球位置校正"
+
+
+# ---------------------------------------------------------------------------
 # 9. v2 风险引擎与接口契约（架构 ARCHITECTURE-v2.md §4 / §6）
 # ---------------------------------------------------------------------------
 

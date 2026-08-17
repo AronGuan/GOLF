@@ -1,0 +1,9 @@
+正面1            event=8 window=8 possible=19 union=20 all_candidates_inside=True
+正面2            event=8 window=11 possible=18 union=19 all_candidates_inside=True
+正面3            event=8 window=9 possible=21 union=22 all_candidates_inside=True
+DTL-0bb16a97   event=8 window=11 possible=18 union=19 all_candidates_inside=True
+DTL-470057ac   event=8 window=11 possible=25 union=26 all_candidates_inside=True
+DTL-4e8d0d7e   event=8 window=11 possible=25 union=26 all_candidates_inside=True
+DTL-c6f67f38   event=8 window=11 possible=23 union=24 all_candidates_inside=True
+VID-1446d1b9   event=8 window=11 possible=23 union=24 all_candidates_inside=True
+VID-a4fba3d2   event=8 window=11 possible=20 union=21 all_candidates_inside=True

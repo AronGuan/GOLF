@@ -1,0 +1,28 @@
+INFO: Created TensorFlow Lite XNNPACK delegate for CPU.
+WARNING: All log messages before absl::InitializeLog() is called are written to STDERR
+W0000 00:00:1786966798.751778   28084 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1786966798.766296   28084 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+E:\project\golf\.tools\python312\Lib\site-packages\google\protobuf\symbol_database.py:55: UserWarning: SymbolDatabase.GetPrototype() is deprecated. Please use message_factory.GetMessageClass() instead. SymbolDatabase.GetPrototype() will be removed soon.
+  warnings.warn('SymbolDatabase.GetPrototype() is deprecated. Please '
+W0000 00:00:1786966801.432542   28120 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1786966801.454881   21552 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+
+===== 正面3 =====
+union decode frames = 22 (window=9 possible=21)
+refine available=True delta=+4 method=motion+shaft
+event frames after reanchor: [('address', 37), ('takeaway', 49), ('backswing', 57), ('top', 61), ('downswing', 65), ('impact', 74), ('follow_through', 83), ('finish', 101)]
+missing from frames_bgr: []
+FT image == render(real FT frame 83)? True
+FT image == render(finish frame 101)? False
+[PASS] 正面3: 送杆图=真帧，无 fallback
+
+===== DTL-4e8d0d7e =====
+union decode frames = 26 (window=11 possible=25)
+refine available=True delta=+8 method=motion+shaft
+event frames after reanchor: [('address', 198), ('takeaway', 213), ('backswing', 219), ('top', 228), ('downswing', 234), ('impact', 243), ('follow_through', 269), ('finish', 316)]
+missing from frames_bgr: []
+FT image == render(real FT frame 269)? True
+FT image == render(finish frame 316)? False
+[PASS] DTL-4e8d0d7e: 送杆图=真帧，无 fallback
+
+R2 FT 回归: ALL PASS

@@ -1,0 +1,1867 @@
+[
+  {
+    "name": "正面1",
+    "path": "E:\\project\\golf\\.tools\\_probe\\samples\\正面1.mp4",
+    "chosen_view": "face-on",
+    "ok": true,
+    "stage_failed": null,
+    "error_code": null,
+    "error_detail": null,
+    "meta": {
+      "fps": 26.0,
+      "duration": 2.423,
+      "width": 720,
+      "height": 1280,
+      "frame_count": 63,
+      "sample_step": 1,
+      "low_fps": true
+    },
+    "segment_ok": true,
+    "old_impact": {
+      "array_index": 37,
+      "frame_index": 37,
+      "timestamp": 1.423
+    },
+    "events_before": [
+      {
+        "key": "address",
+        "array_index": 3,
+        "frame_index": 3,
+        "estimated": false
+      },
+      {
+        "key": "takeaway",
+        "array_index": 16,
+        "frame_index": 16,
+        "estimated": false
+      },
+      {
+        "key": "backswing",
+        "array_index": 22,
+        "frame_index": 22,
+        "estimated": false
+      },
+      {
+        "key": "top",
+        "array_index": 28,
+        "frame_index": 28,
+        "estimated": false
+      },
+      {
+        "key": "downswing",
+        "array_index": 32,
+        "frame_index": 32,
+        "estimated": false
+      },
+      {
+        "key": "impact",
+        "array_index": 37,
+        "frame_index": 37,
+        "estimated": true
+      },
+      {
+        "key": "follow_through",
+        "array_index": 46,
+        "frame_index": 46,
+        "estimated": true
+      },
+      {
+        "key": "finish",
+        "array_index": 62,
+        "frame_index": 62,
+        "estimated": true
+      }
+    ],
+    "view": "face_on",
+    "view_warning": null,
+    "window": {
+      "candidate_frames": [
+        36,
+        37,
+        38,
+        39,
+        40,
+        41,
+        42,
+        43
+      ],
+      "decode_frames": [
+        3,
+        35,
+        36,
+        37,
+        38,
+        39,
+        40,
+        41,
+        42,
+        43
+      ],
+      "possible_frames": [
+        3,
+        16,
+        22,
+        28,
+        32,
+        36,
+        37,
+        38,
+        39,
+        40,
+        41,
+        42,
+        43,
+        46,
+        47,
+        48,
+        49,
+        50,
+        62
+      ],
+      "n_window_frames": 8,
+      "n_union_frames": 20
+    },
+    "refine": {
+      "available": true,
+      "method": "motion+shaft",
+      "old_array_index": 37,
+      "new_array_index": 38,
+      "delta_frames": 1,
+      "confidence": 1.0,
+      "ball_detected": false,
+      "motion_peak_index": 38,
+      "shaft_lowest_index": 38
+    },
+    "reanchor_ok": true,
+    "new_impact": {
+      "array_index": 38,
+      "frame_index": 38,
+      "timestamp": 1.462,
+      "estimated": false
+    },
+    "events_after": [
+      {
+        "key": "address",
+        "array_index": 3,
+        "frame_index": 3,
+        "estimated": false
+      },
+      {
+        "key": "takeaway",
+        "array_index": 16,
+        "frame_index": 16,
+        "estimated": false
+      },
+      {
+        "key": "backswing",
+        "array_index": 22,
+        "frame_index": 22,
+        "estimated": false
+      },
+      {
+        "key": "top",
+        "array_index": 28,
+        "frame_index": 28,
+        "estimated": false
+      },
+      {
+        "key": "downswing",
+        "array_index": 32,
+        "frame_index": 32,
+        "estimated": false
+      },
+      {
+        "key": "impact",
+        "array_index": 38,
+        "frame_index": 38,
+        "estimated": false
+      },
+      {
+        "key": "follow_through",
+        "array_index": 46,
+        "frame_index": 46,
+        "estimated": true
+      },
+      {
+        "key": "finish",
+        "array_index": 62,
+        "frame_index": 62,
+        "estimated": true
+      }
+    ],
+    "all_events_decoded": true,
+    "refine_wall_sec": 0.116,
+    "opens": 1,
+    "elapsed_sec": 2.2,
+    "monotonic_after": true
+  },
+  {
+    "name": "正面2",
+    "path": "E:\\project\\golf\\.tools\\_probe\\samples\\正面2.mp4",
+    "chosen_view": "face-on",
+    "ok": true,
+    "stage_failed": null,
+    "error_code": null,
+    "error_detail": null,
+    "meta": {
+      "fps": 30.0,
+      "duration": 12.967,
+      "width": 720,
+      "height": 1280,
+      "frame_count": 389,
+      "sample_step": 1,
+      "low_fps": false
+    },
+    "segment_ok": true,
+    "old_impact": {
+      "array_index": 284,
+      "frame_index": 284,
+      "timestamp": 9.467
+    },
+    "events_before": [
+      {
+        "key": "address",
+        "array_index": 157,
+        "frame_index": 157,
+        "estimated": false
+      },
+      {
+        "key": "takeaway",
+        "array_index": 186,
+        "frame_index": 186,
+        "estimated": false
+      },
+      {
+        "key": "backswing",
+        "array_index": 224,
+        "frame_index": 224,
+        "estimated": false
+      },
+      {
+        "key": "top",
+        "array_index": 252,
+        "frame_index": 252,
+        "estimated": false
+      },
+      {
+        "key": "downswing",
+        "array_index": 269,
+        "frame_index": 269,
+        "estimated": false
+      },
+      {
+        "key": "impact",
+        "array_index": 284,
+        "frame_index": 284,
+        "estimated": false
+      },
+      {
+        "key": "follow_through",
+        "array_index": 298,
+        "frame_index": 298,
+        "estimated": false
+      },
+      {
+        "key": "finish",
+        "array_index": 373,
+        "frame_index": 373,
+        "estimated": true
+      }
+    ],
+    "view": "face_on",
+    "view_warning": null,
+    "window": {
+      "candidate_frames": [
+        282,
+        283,
+        284,
+        285,
+        286,
+        287,
+        288,
+        289,
+        290,
+        291,
+        292
+      ],
+      "decode_frames": [
+        157,
+        281,
+        282,
+        283,
+        284,
+        285,
+        286,
+        287,
+        288,
+        289,
+        290,
+        291,
+        292
+      ],
+      "possible_frames": [
+        157,
+        186,
+        224,
+        252,
+        269,
+        282,
+        283,
+        284,
+        285,
+        286,
+        287,
+        288,
+        289,
+        290,
+        291,
+        292,
+        298,
+        373
+      ],
+      "n_window_frames": 11,
+      "n_union_frames": 19
+    },
+    "refine": {
+      "available": true,
+      "method": "motion+shaft",
+      "old_array_index": 284,
+      "new_array_index": 292,
+      "delta_frames": 8,
+      "confidence": 1.0,
+      "ball_detected": false,
+      "motion_peak_index": 292,
+      "shaft_lowest_index": 290
+    },
+    "reanchor_ok": true,
+    "new_impact": {
+      "array_index": 292,
+      "frame_index": 292,
+      "timestamp": 9.733,
+      "estimated": false
+    },
+    "events_after": [
+      {
+        "key": "address",
+        "array_index": 157,
+        "frame_index": 157,
+        "estimated": false
+      },
+      {
+        "key": "takeaway",
+        "array_index": 186,
+        "frame_index": 186,
+        "estimated": false
+      },
+      {
+        "key": "backswing",
+        "array_index": 224,
+        "frame_index": 224,
+        "estimated": false
+      },
+      {
+        "key": "top",
+        "array_index": 252,
+        "frame_index": 252,
+        "estimated": false
+      },
+      {
+        "key": "downswing",
+        "array_index": 269,
+        "frame_index": 269,
+        "estimated": false
+      },
+      {
+        "key": "impact",
+        "array_index": 292,
+        "frame_index": 292,
+        "estimated": false
+      },
+      {
+        "key": "follow_through",
+        "array_index": 298,
+        "frame_index": 298,
+        "estimated": false
+      },
+      {
+        "key": "finish",
+        "array_index": 373,
+        "frame_index": 373,
+        "estimated": true
+      }
+    ],
+    "all_events_decoded": true,
+    "refine_wall_sec": 0.365,
+    "opens": 1,
+    "elapsed_sec": 16.4,
+    "monotonic_after": true
+  },
+  {
+    "name": "正面3",
+    "path": "E:\\project\\golf\\.tools\\_probe\\samples\\正面3.mp4",
+    "chosen_view": "face-on",
+    "ok": true,
+    "stage_failed": null,
+    "error_code": null,
+    "error_detail": null,
+    "meta": {
+      "fps": 27.0,
+      "duration": 4.148,
+      "width": 720,
+      "height": 1280,
+      "frame_count": 112,
+      "sample_step": 1,
+      "low_fps": true
+    },
+    "segment_ok": true,
+    "old_impact": {
+      "array_index": 70,
+      "frame_index": 70,
+      "timestamp": 2.593
+    },
+    "events_before": [
+      {
+        "key": "address",
+        "array_index": 37,
+        "frame_index": 37,
+        "estimated": false
+      },
+      {
+        "key": "takeaway",
+        "array_index": 49,
+        "frame_index": 49,
+        "estimated": false
+      },
+      {
+        "key": "backswing",
+        "array_index": 57,
+        "frame_index": 57,
+        "estimated": false
+      },
+      {
+        "key": "top",
+        "array_index": 61,
+        "frame_index": 61,
+        "estimated": false
+      },
+      {
+        "key": "downswing",
+        "array_index": 65,
+        "frame_index": 65,
+        "estimated": false
+      },
+      {
+        "key": "impact",
+        "array_index": 70,
+        "frame_index": 70,
+        "estimated": true
+      },
+      {
+        "key": "follow_through",
+        "array_index": 81,
+        "frame_index": 81,
+        "estimated": true
+      },
+      {
+        "key": "finish",
+        "array_index": 101,
+        "frame_index": 101,
+        "estimated": false
+      }
+    ],
+    "view": "face_on",
+    "view_warning": null,
+    "window": {
+      "candidate_frames": [
+        69,
+        70,
+        71,
+        72,
+        73,
+        74,
+        75,
+        76,
+        77
+      ],
+      "decode_frames": [
+        37,
+        68,
+        69,
+        70,
+        71,
+        72,
+        73,
+        74,
+        75,
+        76,
+        77
+      ],
+      "possible_frames": [
+        37,
+        49,
+        57,
+        61,
+        65,
+        69,
+        70,
+        71,
+        72,
+        73,
+        74,
+        75,
+        76,
+        77,
+        80,
+        81,
+        82,
+        83,
+        84,
+        85,
+        101
+      ],
+      "n_window_frames": 9,
+      "n_union_frames": 22
+    },
+    "refine": {
+      "available": true,
+      "method": "motion+shaft",
+      "old_array_index": 70,
+      "new_array_index": 74,
+      "delta_frames": 4,
+      "confidence": 0.9277,
+      "ball_detected": false,
+      "motion_peak_index": 74,
+      "shaft_lowest_index": 74
+    },
+    "reanchor_ok": true,
+    "new_impact": {
+      "array_index": 74,
+      "frame_index": 74,
+      "timestamp": 2.741,
+      "estimated": false
+    },
+    "events_after": [
+      {
+        "key": "address",
+        "array_index": 37,
+        "frame_index": 37,
+        "estimated": false
+      },
+      {
+        "key": "takeaway",
+        "array_index": 49,
+        "frame_index": 49,
+        "estimated": false
+      },
+      {
+        "key": "backswing",
+        "array_index": 57,
+        "frame_index": 57,
+        "estimated": false
+      },
+      {
+        "key": "top",
+        "array_index": 61,
+        "frame_index": 61,
+        "estimated": false
+      },
+      {
+        "key": "downswing",
+        "array_index": 65,
+        "frame_index": 65,
+        "estimated": false
+      },
+      {
+        "key": "impact",
+        "array_index": 74,
+        "frame_index": 74,
+        "estimated": false
+      },
+      {
+        "key": "follow_through",
+        "array_index": 83,
+        "frame_index": 83,
+        "estimated": true
+      },
+      {
+        "key": "finish",
+        "array_index": 101,
+        "frame_index": 101,
+        "estimated": false
+      }
+    ],
+    "all_events_decoded": true,
+    "refine_wall_sec": 0.316,
+    "opens": 1,
+    "elapsed_sec": 5.93,
+    "monotonic_after": true
+  },
+  {
+    "name": "DTL-087d40a0",
+    "path": "E:\\project\\golf\\.tools\\_probe\\samples\\087d40a0e808f2c319b8097d89599780.mp4",
+    "chosen_view": "dtl",
+    "ok": false,
+    "stage_failed": "segment_swing",
+    "error_code": "NO_SWING",
+    "error_detail": "address->top too short: 4 < 14",
+    "meta": {
+      "fps": 30.0,
+      "duration": 2.733,
+      "width": 720,
+      "height": 1280,
+      "frame_count": 82,
+      "sample_step": 1,
+      "low_fps": false
+    }
+  },
+  {
+    "name": "DTL-0bb16a97",
+    "path": "E:\\project\\golf\\.tools\\_probe\\samples\\0bb16a974ef55676cc1b938d8539edfd.mp4",
+    "chosen_view": "dtl",
+    "ok": true,
+    "stage_failed": null,
+    "error_code": null,
+    "error_detail": null,
+    "meta": {
+      "fps": 30.0,
+      "duration": 7.0,
+      "width": 720,
+      "height": 1280,
+      "frame_count": 210,
+      "sample_step": 1,
+      "low_fps": false
+    },
+    "segment_ok": true,
+    "old_impact": {
+      "array_index": 189,
+      "frame_index": 189,
+      "timestamp": 6.3
+    },
+    "events_before": [
+      {
+        "key": "address",
+        "array_index": 168,
+        "frame_index": 168,
+        "estimated": false
+      },
+      {
+        "key": "takeaway",
+        "array_index": 176,
+        "frame_index": 176,
+        "estimated": false
+      },
+      {
+        "key": "backswing",
+        "array_index": 178,
+        "frame_index": 178,
+        "estimated": true
+      },
+      {
+        "key": "top",
+        "array_index": 183,
+        "frame_index": 183,
+        "estimated": false
+      },
+      {
+        "key": "downswing",
+        "array_index": 184,
+        "frame_index": 184,
+        "estimated": true
+      },
+      {
+        "key": "impact",
+        "array_index": 189,
+        "frame_index": 189,
+        "estimated": false
+      },
+      {
+        "key": "follow_through",
+        "array_index": 200,
+        "frame_index": 200,
+        "estimated": false
+      },
+      {
+        "key": "finish",
+        "array_index": 209,
+        "frame_index": 209,
+        "estimated": true
+      }
+    ],
+    "view": "down_the_line",
+    "view_warning": null,
+    "window": {
+      "candidate_frames": [
+        187,
+        188,
+        189,
+        190,
+        191,
+        192,
+        193,
+        194,
+        195,
+        196,
+        197
+      ],
+      "decode_frames": [
+        168,
+        186,
+        187,
+        188,
+        189,
+        190,
+        191,
+        192,
+        193,
+        194,
+        195,
+        196,
+        197
+      ],
+      "possible_frames": [
+        168,
+        176,
+        178,
+        183,
+        184,
+        187,
+        188,
+        189,
+        190,
+        191,
+        192,
+        193,
+        194,
+        195,
+        196,
+        197,
+        200,
+        209
+      ],
+      "n_window_frames": 11,
+      "n_union_frames": 19
+    },
+    "refine": {
+      "available": true,
+      "method": "motion+shaft",
+      "old_array_index": 189,
+      "new_array_index": 197,
+      "delta_frames": 8,
+      "confidence": 1.0,
+      "ball_detected": false,
+      "motion_peak_index": 197,
+      "shaft_lowest_index": 188
+    },
+    "reanchor_ok": true,
+    "new_impact": {
+      "array_index": 197,
+      "frame_index": 197,
+      "timestamp": 6.567,
+      "estimated": false
+    },
+    "events_after": [
+      {
+        "key": "address",
+        "array_index": 168,
+        "frame_index": 168,
+        "estimated": false
+      },
+      {
+        "key": "takeaway",
+        "array_index": 176,
+        "frame_index": 176,
+        "estimated": false
+      },
+      {
+        "key": "backswing",
+        "array_index": 178,
+        "frame_index": 178,
+        "estimated": true
+      },
+      {
+        "key": "top",
+        "array_index": 183,
+        "frame_index": 183,
+        "estimated": false
+      },
+      {
+        "key": "downswing",
+        "array_index": 184,
+        "frame_index": 184,
+        "estimated": true
+      },
+      {
+        "key": "impact",
+        "array_index": 197,
+        "frame_index": 197,
+        "estimated": false
+      },
+      {
+        "key": "follow_through",
+        "array_index": 200,
+        "frame_index": 200,
+        "estimated": false
+      },
+      {
+        "key": "finish",
+        "array_index": 209,
+        "frame_index": 209,
+        "estimated": true
+      }
+    ],
+    "all_events_decoded": true,
+    "refine_wall_sec": 0.535,
+    "opens": 1,
+    "elapsed_sec": 10.02,
+    "monotonic_after": true
+  },
+  {
+    "name": "DTL-470057ac",
+    "path": "E:\\project\\golf\\.tools\\_probe\\samples\\470057ac3dac2025eb6b0dcd390b6957.mp4",
+    "chosen_view": "dtl",
+    "ok": true,
+    "stage_failed": null,
+    "error_code": null,
+    "error_detail": null,
+    "meta": {
+      "fps": 30.0,
+      "duration": 7.2,
+      "width": 720,
+      "height": 1280,
+      "frame_count": 216,
+      "sample_step": 1,
+      "low_fps": false
+    },
+    "segment_ok": true,
+    "old_impact": {
+      "array_index": 98,
+      "frame_index": 98,
+      "timestamp": 3.267
+    },
+    "events_before": [
+      {
+        "key": "address",
+        "array_index": 73,
+        "frame_index": 73,
+        "estimated": false
+      },
+      {
+        "key": "takeaway",
+        "array_index": 82,
+        "frame_index": 82,
+        "estimated": false
+      },
+      {
+        "key": "backswing",
+        "array_index": 87,
+        "frame_index": 87,
+        "estimated": false
+      },
+      {
+        "key": "top",
+        "array_index": 92,
+        "frame_index": 92,
+        "estimated": false
+      },
+      {
+        "key": "downswing",
+        "array_index": 97,
+        "frame_index": 97,
+        "estimated": false
+      },
+      {
+        "key": "impact",
+        "array_index": 98,
+        "frame_index": 98,
+        "estimated": true
+      },
+      {
+        "key": "follow_through",
+        "array_index": 112,
+        "frame_index": 112,
+        "estimated": true
+      },
+      {
+        "key": "finish",
+        "array_index": 137,
+        "frame_index": 137,
+        "estimated": true
+      }
+    ],
+    "view": "down_the_line",
+    "view_warning": null,
+    "window": {
+      "candidate_frames": [
+        96,
+        97,
+        98,
+        99,
+        100,
+        101,
+        102,
+        103,
+        104,
+        105,
+        106
+      ],
+      "decode_frames": [
+        73,
+        95,
+        96,
+        97,
+        98,
+        99,
+        100,
+        101,
+        102,
+        103,
+        104,
+        105,
+        106
+      ],
+      "possible_frames": [
+        73,
+        82,
+        87,
+        92,
+        94,
+        96,
+        97,
+        98,
+        99,
+        100,
+        101,
+        102,
+        103,
+        104,
+        105,
+        106,
+        110,
+        111,
+        112,
+        113,
+        114,
+        115,
+        116,
+        117,
+        137
+      ],
+      "n_window_frames": 11,
+      "n_union_frames": 26
+    },
+    "refine": {
+      "available": true,
+      "method": "motion+shaft",
+      "old_array_index": 98,
+      "new_array_index": 104,
+      "delta_frames": 6,
+      "confidence": 0.9894,
+      "ball_detected": false,
+      "motion_peak_index": 104,
+      "shaft_lowest_index": 100
+    },
+    "reanchor_ok": true,
+    "new_impact": {
+      "array_index": 104,
+      "frame_index": 104,
+      "timestamp": 3.467,
+      "estimated": false
+    },
+    "events_after": [
+      {
+        "key": "address",
+        "array_index": 73,
+        "frame_index": 73,
+        "estimated": false
+      },
+      {
+        "key": "takeaway",
+        "array_index": 82,
+        "frame_index": 82,
+        "estimated": false
+      },
+      {
+        "key": "backswing",
+        "array_index": 87,
+        "frame_index": 87,
+        "estimated": false
+      },
+      {
+        "key": "top",
+        "array_index": 92,
+        "frame_index": 92,
+        "estimated": false
+      },
+      {
+        "key": "downswing",
+        "array_index": 97,
+        "frame_index": 97,
+        "estimated": false
+      },
+      {
+        "key": "impact",
+        "array_index": 104,
+        "frame_index": 104,
+        "estimated": false
+      },
+      {
+        "key": "follow_through",
+        "array_index": 116,
+        "frame_index": 116,
+        "estimated": true
+      },
+      {
+        "key": "finish",
+        "array_index": 137,
+        "frame_index": 137,
+        "estimated": true
+      }
+    ],
+    "all_events_decoded": true,
+    "refine_wall_sec": 0.483,
+    "opens": 1,
+    "elapsed_sec": 10.12,
+    "monotonic_after": true
+  },
+  {
+    "name": "DTL-4e8d0d7e",
+    "path": "E:\\project\\golf\\.tools\\_probe\\samples\\4e8d0d7e517a67a2a7698fd1536289eb.mp4",
+    "chosen_view": "dtl",
+    "ok": true,
+    "stage_failed": null,
+    "error_code": null,
+    "error_detail": null,
+    "meta": {
+      "fps": 30.0,
+      "duration": 12.067,
+      "width": 720,
+      "height": 1280,
+      "frame_count": 362,
+      "sample_step": 1,
+      "low_fps": false
+    },
+    "segment_ok": true,
+    "old_impact": {
+      "array_index": 235,
+      "frame_index": 235,
+      "timestamp": 7.833
+    },
+    "events_before": [
+      {
+        "key": "address",
+        "array_index": 198,
+        "frame_index": 198,
+        "estimated": false
+      },
+      {
+        "key": "takeaway",
+        "array_index": 213,
+        "frame_index": 213,
+        "estimated": false
+      },
+      {
+        "key": "backswing",
+        "array_index": 219,
+        "frame_index": 219,
+        "estimated": false
+      },
+      {
+        "key": "top",
+        "array_index": 228,
+        "frame_index": 228,
+        "estimated": false
+      },
+      {
+        "key": "downswing",
+        "array_index": 234,
+        "frame_index": 234,
+        "estimated": false
+      },
+      {
+        "key": "impact",
+        "array_index": 235,
+        "frame_index": 235,
+        "estimated": true
+      },
+      {
+        "key": "follow_through",
+        "array_index": 263,
+        "frame_index": 263,
+        "estimated": true
+      },
+      {
+        "key": "finish",
+        "array_index": 316,
+        "frame_index": 316,
+        "estimated": false
+      }
+    ],
+    "view": "down_the_line",
+    "view_warning": null,
+    "window": {
+      "candidate_frames": [
+        233,
+        234,
+        235,
+        236,
+        237,
+        238,
+        239,
+        240,
+        241,
+        242,
+        243
+      ],
+      "decode_frames": [
+        198,
+        232,
+        233,
+        234,
+        235,
+        236,
+        237,
+        238,
+        239,
+        240,
+        241,
+        242,
+        243
+      ],
+      "possible_frames": [
+        198,
+        213,
+        219,
+        228,
+        230,
+        233,
+        234,
+        235,
+        236,
+        237,
+        238,
+        239,
+        240,
+        241,
+        242,
+        243,
+        262,
+        263,
+        264,
+        265,
+        266,
+        267,
+        268,
+        269,
+        316
+      ],
+      "n_window_frames": 11,
+      "n_union_frames": 26
+    },
+    "refine": {
+      "available": true,
+      "method": "motion+shaft",
+      "old_array_index": 235,
+      "new_array_index": 243,
+      "delta_frames": 8,
+      "confidence": 1.0,
+      "ball_detected": false,
+      "motion_peak_index": 243,
+      "shaft_lowest_index": 243
+    },
+    "reanchor_ok": true,
+    "new_impact": {
+      "array_index": 243,
+      "frame_index": 243,
+      "timestamp": 8.1,
+      "estimated": false
+    },
+    "events_after": [
+      {
+        "key": "address",
+        "array_index": 198,
+        "frame_index": 198,
+        "estimated": false
+      },
+      {
+        "key": "takeaway",
+        "array_index": 213,
+        "frame_index": 213,
+        "estimated": false
+      },
+      {
+        "key": "backswing",
+        "array_index": 219,
+        "frame_index": 219,
+        "estimated": false
+      },
+      {
+        "key": "top",
+        "array_index": 228,
+        "frame_index": 228,
+        "estimated": false
+      },
+      {
+        "key": "downswing",
+        "array_index": 234,
+        "frame_index": 234,
+        "estimated": false
+      },
+      {
+        "key": "impact",
+        "array_index": 243,
+        "frame_index": 243,
+        "estimated": false
+      },
+      {
+        "key": "follow_through",
+        "array_index": 269,
+        "frame_index": 269,
+        "estimated": true
+      },
+      {
+        "key": "finish",
+        "array_index": 316,
+        "frame_index": 316,
+        "estimated": false
+      }
+    ],
+    "all_events_decoded": true,
+    "refine_wall_sec": 0.601,
+    "opens": 1,
+    "elapsed_sec": 15.96,
+    "monotonic_after": true
+  },
+  {
+    "name": "DTL-707fb04a",
+    "path": "E:\\project\\golf\\.tools\\_probe\\samples\\707fb04a3dbd91db19b97e0ca4aee959.mp4",
+    "chosen_view": "dtl",
+    "ok": false,
+    "stage_failed": "segment_swing",
+    "error_code": "NO_SWING",
+    "error_detail": "address->top too short: 4 < 14",
+    "meta": {
+      "fps": 30.0,
+      "duration": 4.4,
+      "width": 720,
+      "height": 1280,
+      "frame_count": 132,
+      "sample_step": 1,
+      "low_fps": false
+    }
+  },
+  {
+    "name": "DTL-c6f67f38",
+    "path": "E:\\project\\golf\\.tools\\_probe\\samples\\c6f67f38e5d293a5ce1458e5ff5a6f1b.mp4",
+    "chosen_view": "dtl",
+    "ok": true,
+    "stage_failed": null,
+    "error_code": null,
+    "error_detail": null,
+    "meta": {
+      "fps": 30.0,
+      "duration": 10.4,
+      "width": 720,
+      "height": 1280,
+      "frame_count": 312,
+      "sample_step": 1,
+      "low_fps": false
+    },
+    "segment_ok": true,
+    "old_impact": {
+      "array_index": 177,
+      "frame_index": 177,
+      "timestamp": 5.9
+    },
+    "events_before": [
+      {
+        "key": "address",
+        "array_index": 139,
+        "frame_index": 139,
+        "estimated": false
+      },
+      {
+        "key": "takeaway",
+        "array_index": 156,
+        "frame_index": 156,
+        "estimated": false
+      },
+      {
+        "key": "backswing",
+        "array_index": 163,
+        "frame_index": 163,
+        "estimated": false
+      },
+      {
+        "key": "top",
+        "array_index": 169,
+        "frame_index": 169,
+        "estimated": false
+      },
+      {
+        "key": "downswing",
+        "array_index": 176,
+        "frame_index": 176,
+        "estimated": false
+      },
+      {
+        "key": "impact",
+        "array_index": 177,
+        "frame_index": 177,
+        "estimated": true
+      },
+      {
+        "key": "follow_through",
+        "array_index": 222,
+        "frame_index": 222,
+        "estimated": true
+      },
+      {
+        "key": "finish",
+        "array_index": 308,
+        "frame_index": 308,
+        "estimated": false
+      }
+    ],
+    "view": "down_the_line",
+    "view_warning": null,
+    "window": {
+      "candidate_frames": [
+        175,
+        176,
+        177,
+        178,
+        179,
+        180,
+        181,
+        182,
+        183,
+        184,
+        185
+      ],
+      "decode_frames": [
+        139,
+        174,
+        175,
+        176,
+        177,
+        178,
+        179,
+        180,
+        181,
+        182,
+        183,
+        184,
+        185
+      ],
+      "possible_frames": [
+        139,
+        156,
+        163,
+        169,
+        172,
+        175,
+        176,
+        177,
+        178,
+        179,
+        180,
+        181,
+        182,
+        183,
+        184,
+        185,
+        222,
+        224,
+        225,
+        226,
+        227,
+        228,
+        308
+      ],
+      "n_window_frames": 11,
+      "n_union_frames": 24
+    },
+    "refine": {
+      "available": true,
+      "method": "motion+shaft",
+      "old_array_index": 177,
+      "new_array_index": 180,
+      "delta_frames": 3,
+      "confidence": 0.8754,
+      "ball_detected": false,
+      "motion_peak_index": 180,
+      "shaft_lowest_index": 180
+    },
+    "reanchor_ok": true,
+    "new_impact": {
+      "array_index": 180,
+      "frame_index": 180,
+      "timestamp": 6.0,
+      "estimated": false
+    },
+    "events_after": [
+      {
+        "key": "address",
+        "array_index": 139,
+        "frame_index": 139,
+        "estimated": false
+      },
+      {
+        "key": "takeaway",
+        "array_index": 156,
+        "frame_index": 156,
+        "estimated": false
+      },
+      {
+        "key": "backswing",
+        "array_index": 163,
+        "frame_index": 163,
+        "estimated": false
+      },
+      {
+        "key": "top",
+        "array_index": 169,
+        "frame_index": 169,
+        "estimated": false
+      },
+      {
+        "key": "downswing",
+        "array_index": 176,
+        "frame_index": 176,
+        "estimated": false
+      },
+      {
+        "key": "impact",
+        "array_index": 180,
+        "frame_index": 180,
+        "estimated": false
+      },
+      {
+        "key": "follow_through",
+        "array_index": 225,
+        "frame_index": 225,
+        "estimated": true
+      },
+      {
+        "key": "finish",
+        "array_index": 308,
+        "frame_index": 308,
+        "estimated": false
+      }
+    ],
+    "all_events_decoded": true,
+    "refine_wall_sec": 0.729,
+    "opens": 1,
+    "elapsed_sec": 14.88,
+    "monotonic_after": true
+  },
+  {
+    "name": "VID-1446d1b9",
+    "path": "E:\\project\\golf\\video\\1446d1b95c4329272f1818d6990f3c4f.mp4",
+    "chosen_view": "dtl",
+    "ok": true,
+    "stage_failed": null,
+    "error_code": null,
+    "error_detail": null,
+    "meta": {
+      "fps": 30.0,
+      "duration": 7.933,
+      "width": 1280,
+      "height": 720,
+      "frame_count": 238,
+      "sample_step": 1,
+      "low_fps": false
+    },
+    "segment_ok": true,
+    "old_impact": {
+      "array_index": 33,
+      "frame_index": 33,
+      "timestamp": 1.1
+    },
+    "events_before": [
+      {
+        "key": "address",
+        "array_index": 2,
+        "frame_index": 2,
+        "estimated": false
+      },
+      {
+        "key": "takeaway",
+        "array_index": 11,
+        "frame_index": 11,
+        "estimated": false
+      },
+      {
+        "key": "backswing",
+        "array_index": 17,
+        "frame_index": 17,
+        "estimated": false
+      },
+      {
+        "key": "top",
+        "array_index": 24,
+        "frame_index": 24,
+        "estimated": false
+      },
+      {
+        "key": "downswing",
+        "array_index": 32,
+        "frame_index": 32,
+        "estimated": false
+      },
+      {
+        "key": "impact",
+        "array_index": 33,
+        "frame_index": 33,
+        "estimated": true
+      },
+      {
+        "key": "follow_through",
+        "array_index": 53,
+        "frame_index": 53,
+        "estimated": true
+      },
+      {
+        "key": "finish",
+        "array_index": 93,
+        "frame_index": 93,
+        "estimated": false
+      }
+    ],
+    "view": "down_the_line",
+    "view_warning": null,
+    "window": {
+      "candidate_frames": [
+        31,
+        32,
+        33,
+        34,
+        35,
+        36,
+        37,
+        38,
+        39,
+        40,
+        41
+      ],
+      "decode_frames": [
+        2,
+        30,
+        31,
+        32,
+        33,
+        34,
+        35,
+        36,
+        37,
+        38,
+        39,
+        40,
+        41
+      ],
+      "possible_frames": [
+        2,
+        11,
+        17,
+        24,
+        28,
+        31,
+        32,
+        33,
+        34,
+        35,
+        36,
+        37,
+        38,
+        39,
+        40,
+        41,
+        53,
+        55,
+        56,
+        57,
+        58,
+        59,
+        93
+      ],
+      "n_window_frames": 11,
+      "n_union_frames": 24
+    },
+    "refine": {
+      "available": true,
+      "method": "motion+shaft",
+      "old_array_index": 33,
+      "new_array_index": 40,
+      "delta_frames": 7,
+      "confidence": 1.0,
+      "ball_detected": false,
+      "motion_peak_index": 40,
+      "shaft_lowest_index": 40
+    },
+    "reanchor_ok": true,
+    "new_impact": {
+      "array_index": 40,
+      "frame_index": 40,
+      "timestamp": 1.333,
+      "estimated": false
+    },
+    "events_after": [
+      {
+        "key": "address",
+        "array_index": 2,
+        "frame_index": 2,
+        "estimated": false
+      },
+      {
+        "key": "takeaway",
+        "array_index": 11,
+        "frame_index": 11,
+        "estimated": false
+      },
+      {
+        "key": "backswing",
+        "array_index": 17,
+        "frame_index": 17,
+        "estimated": false
+      },
+      {
+        "key": "top",
+        "array_index": 24,
+        "frame_index": 24,
+        "estimated": false
+      },
+      {
+        "key": "downswing",
+        "array_index": 32,
+        "frame_index": 32,
+        "estimated": false
+      },
+      {
+        "key": "impact",
+        "array_index": 40,
+        "frame_index": 40,
+        "estimated": false
+      },
+      {
+        "key": "follow_through",
+        "array_index": 59,
+        "frame_index": 59,
+        "estimated": true
+      },
+      {
+        "key": "finish",
+        "array_index": 93,
+        "frame_index": 93,
+        "estimated": false
+      }
+    ],
+    "all_events_decoded": true,
+    "refine_wall_sec": 0.404,
+    "opens": 1,
+    "elapsed_sec": 10.72,
+    "monotonic_after": true
+  },
+  {
+    "name": "VID-a4fba3d2",
+    "path": "E:\\project\\golf\\video\\a4fba3d24cf9beb59f9d3b06be26daab.mp4",
+    "chosen_view": "dtl",
+    "ok": true,
+    "stage_failed": null,
+    "error_code": null,
+    "error_detail": null,
+    "meta": {
+      "fps": 30.0,
+      "duration": 11.267,
+      "width": 720,
+      "height": 1280,
+      "frame_count": 338,
+      "sample_step": 1,
+      "low_fps": false
+    },
+    "segment_ok": true,
+    "old_impact": {
+      "array_index": 163,
+      "frame_index": 163,
+      "timestamp": 5.433
+    },
+    "events_before": [
+      {
+        "key": "address",
+        "array_index": 129,
+        "frame_index": 129,
+        "estimated": false
+      },
+      {
+        "key": "takeaway",
+        "array_index": 143,
+        "frame_index": 143,
+        "estimated": false
+      },
+      {
+        "key": "backswing",
+        "array_index": 150,
+        "frame_index": 150,
+        "estimated": false
+      },
+      {
+        "key": "top",
+        "array_index": 157,
+        "frame_index": 157,
+        "estimated": false
+      },
+      {
+        "key": "downswing",
+        "array_index": 162,
+        "frame_index": 162,
+        "estimated": false
+      },
+      {
+        "key": "impact",
+        "array_index": 163,
+        "frame_index": 163,
+        "estimated": false
+      },
+      {
+        "key": "follow_through",
+        "array_index": 169,
+        "frame_index": 169,
+        "estimated": true
+      },
+      {
+        "key": "finish",
+        "array_index": 179,
+        "frame_index": 179,
+        "estimated": false
+      }
+    ],
+    "view": "down_the_line",
+    "view_warning": null,
+    "window": {
+      "candidate_frames": [
+        161,
+        162,
+        163,
+        164,
+        165,
+        166,
+        167,
+        168,
+        169,
+        170,
+        171
+      ],
+      "decode_frames": [
+        129,
+        160,
+        161,
+        162,
+        163,
+        164,
+        165,
+        166,
+        167,
+        168,
+        169,
+        170,
+        171
+      ],
+      "possible_frames": [
+        129,
+        143,
+        150,
+        157,
+        159,
+        161,
+        162,
+        163,
+        164,
+        165,
+        166,
+        167,
+        168,
+        169,
+        170,
+        171,
+        172,
+        173,
+        174,
+        179
+      ],
+      "n_window_frames": 11,
+      "n_union_frames": 21
+    },
+    "refine": {
+      "available": true,
+      "method": "motion+shaft",
+      "old_array_index": 163,
+      "new_array_index": 168,
+      "delta_frames": 5,
+      "confidence": 0.9151,
+      "ball_detected": false,
+      "motion_peak_index": 168,
+      "shaft_lowest_index": 168
+    },
+    "reanchor_ok": true,
+    "new_impact": {
+      "array_index": 168,
+      "frame_index": 168,
+      "timestamp": 5.6,
+      "estimated": false
+    },
+    "events_after": [
+      {
+        "key": "address",
+        "array_index": 129,
+        "frame_index": 129,
+        "estimated": false
+      },
+      {
+        "key": "takeaway",
+        "array_index": 143,
+        "frame_index": 143,
+        "estimated": false
+      },
+      {
+        "key": "backswing",
+        "array_index": 150,
+        "frame_index": 150,
+        "estimated": false
+      },
+      {
+        "key": "top",
+        "array_index": 157,
+        "frame_index": 157,
+        "estimated": false
+      },
+      {
+        "key": "downswing",
+        "array_index": 162,
+        "frame_index": 162,
+        "estimated": false
+      },
+      {
+        "key": "impact",
+        "array_index": 168,
+        "frame_index": 168,
+        "estimated": false
+      },
+      {
+        "key": "follow_through",
+        "array_index": 172,
+        "frame_index": 172,
+        "estimated": true
+      },
+      {
+        "key": "finish",
+        "array_index": 179,
+        "frame_index": 179,
+        "estimated": false
+      }
+    ],
+    "all_events_decoded": true,
+    "refine_wall_sec": 0.322,
+    "opens": 1,
+    "elapsed_sec": 14.7,
+    "monotonic_after": true
+  }
+]
