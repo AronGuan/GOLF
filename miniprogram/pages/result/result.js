@@ -155,6 +155,15 @@ function decorate(m) {
   const markPct = clamp(((value - lo) / total) * 100, 0, 100);
   const status = m.status || 'normal';
   const unit = m.unit || '';
+  // 参考区间是否真实存在（后端通常恒有；防御性处理极少缺失的情况）
+  const hasRef =
+    m.ref_min !== undefined &&
+    m.ref_min !== null &&
+    m.ref_max !== undefined &&
+    m.ref_max !== null &&
+    isFinite(Number(m.ref_min)) &&
+    isFinite(Number(m.ref_max));
+  const refText = formatValue(refMin, unit) + '~' + formatValue(refMax, unit);
 
   return {
     key: m.key,
@@ -163,7 +172,9 @@ function decorate(m) {
     status: status,
     statusText: STATUS_TEXT[status] || '正常',
     valueText: formatValue(value, unit),
-    refText: formatValue(refMin, unit) + '~' + formatValue(refMax, unit),
+    refText: refText,
+    // 合成图直接可画的整串文案；无参考区间时为 ''（调用方据此不画）
+    refLabel: hasRef ? '参考 ' + refText + unit : '',
     refFrom: refFrom.toFixed(2),
     refWidth: Math.max(refTo - refFrom, 1).toFixed(2),
     markPct: markPct.toFixed(2),
@@ -583,7 +594,11 @@ Page({
         const descLines = rawDesc.slice(0, 2);
         if (rawDesc.length > 2) descLines[descLines.length - 1] += '…';
         const cardH =
-          18 + 42 + (descLines.length ? 10 + descLines.length * 30 : 0) + 18;
+          18 +
+          42 +
+          (descLines.length ? 10 + descLines.length * 30 : 0) +
+          (m.refLabel ? 10 + 22 : 0) +
+          18;
         sections.push({ type: 'metric', y: y, h: cardH, m: m, descLines: descLines });
         y += cardH + 14;
       });
@@ -614,11 +629,14 @@ Page({
         });
         const cut = suggestLines.slice(0, 6);
         if (suggestLines.length > 6) cut[cut.length - 1] += '…';
+        // 高度与 _drawRisk 绘制位置保持一致：
+        // 18 顶部留白 + 44 标题行 + 14 标题-描述间距 + 描述行 + 建议块 + 18 底部留白
         const cardH =
           18 +
           44 +
+          14 +
           reasonLines.length * 34 +
-          (cut.length ? 10 + 26 + cut.length * 30 + 12 : 0) +
+          (cut.length ? 14 + 26 + cut.length * 30 + 12 : 0) +
           18;
         sections.push({
           type: 'risk',
@@ -901,6 +919,18 @@ Page({
         ctx.fillText(ln, x + pad, y + 70 + i * 30);
       });
     }
+
+    // 参考区间（所有指标卡参考值统一居中，与数值列对齐；refLabel 为空即无参考区间，不画）
+    if (m.refLabel) {
+      // 参考值独占一行：位于主行/术语解释行之后（_composeSnapshot 已按此预留高度）
+      const descEnd = s.descLines.length ? y + 70 + s.descLines.length * 30 : y + 60;
+      const refY = descEnd + 10;
+      ctx.textBaseline = 'top';
+      ctx.textAlign = 'center';
+      ctx.font = '22px sans-serif';
+      ctx.fillStyle = SNAP_COLORS.sub;
+      ctx.fillText(m.refLabel, SNAP_W / 2, refY);
+    }
   },
 
   /** 无风险空态。 */
@@ -961,17 +991,17 @@ Page({
     ctx.fillStyle = color;
     ctx.fillText(r.levelText || '低风险', x + w - pad, y + 24);
 
-    // 触发文案
+    // 触发文案（标题行与描述之间留 14px 间距，避免粘连）
     ctx.textAlign = 'left';
     ctx.font = '24px sans-serif';
     ctx.fillStyle = SNAP_COLORS.text;
     s.reasonLines.forEach((ln, i) => {
-      ctx.fillText(ln, x + pad, y + 62 + i * 34);
+      ctx.fillText(ln, x + pad, y + 76 + i * 34);
     });
 
-    // 改进建议块
+    // 改进建议块（与触发文案之间再留 14px 间距；manual_excerpt/advice 未绘制进截图，间距规则同样适用于后续新增块）
     if (s.suggestLines.length) {
-      const blockTop = y + 62 + s.reasonLines.length * 34 + 10;
+      const blockTop = y + 76 + s.reasonLines.length * 34 + 14;
       const blockH = 26 + s.suggestLines.length * 30 + 12;
       roundRect(ctx, x + pad, blockTop, w - pad - 6, blockH, 8);
       ctx.fillStyle = 'rgba(15, 32, 48, 0.04)';
