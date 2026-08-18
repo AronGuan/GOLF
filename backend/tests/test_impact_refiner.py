@@ -15,6 +15,9 @@
     8. CLUBLITE_ENABLED=False            -> available=False 且 opens 不增长
     9. reanchor_impact 单调性冲突        -> 返回 None，原 events 不变
     10. MAX_SHIFT_FRAMES 顶盖            -> 不采纳（available=False）
+    11. CLUBLITE_IMPACT_OFFSET=-1（v2）  -> new = motion_peak - 1；0 回滚 v1
+    12. delta==0 无操作校正（v2）        -> 偏移把运动峰拉回原估计不降级
+    13. 物理下界（v2）                   -> 偏移不早于 top+min_gap（G0 兜底）
 """
 
 from __future__ import annotations
@@ -293,8 +296,81 @@ class TestRefineImpact:
         result = impact_refiner.refine_impact(
             path, frames, events, signals, CameraView.FACE_ON, video_meta,
         )
-        # delta = 57 - 51 = 6 > 2 → 拒绝（保留诊断字段）
-        assert result.delta_frames == 6
+        # v2：运动峰 = 57（peak_delta = 57-51 = 6 > MAX=2 → 拒绝）；
+        # 偏移 -1 后最终 new = 56，诊断 delta_frames = 5（保留诊断字段）
+        assert result.motion_peak_index == 57, f"运动峰应落在 57: {result}"
+        assert result.delta_frames == 5
+        assert not result.available
+        assert result.method == "none"
+
+    def test_impact_offset_applied_to_peak(self, tmp_path, video_meta):
+        """#11 v2：CLUBLITE_IMPACT_OFFSET=-1 时 new = motion_peak + offset。"""
+        path = _write_club_video(str(tmp_path / "club_offset.mp4"))
+        frames = make_swing_frames()
+        events = _swing_events()
+        signals = _swing_signals()
+        result = impact_refiner.refine_impact(
+            path, frames, events, signals, CameraView.FACE_ON, video_meta,
+        )
+        assert result.available, f"合成杆+球视频应校正成功: {result}"
+        assert result.motion_peak_index is not None
+        assert result.new_array_index == (
+            result.motion_peak_index + config.CLUBLITE_IMPACT_OFFSET
+        )
+        assert result.delta_frames == (
+            result.new_array_index - result.old_array_index
+        )
+
+    def test_impact_offset_zero_restores_v1(self, tmp_path, video_meta, monkeypatch):
+        """#11 v2：CLUBLITE_IMPACT_OFFSET=0 回滚到 v1 行为（new == motion_peak）。"""
+        monkeypatch.setattr(config, "CLUBLITE_IMPACT_OFFSET", 0)
+        path = _write_club_video(str(tmp_path / "club_off0.mp4"))
+        frames = make_swing_frames()
+        events = _swing_events()
+        signals = _swing_signals()
+        result = impact_refiner.refine_impact(
+            path, frames, events, signals, CameraView.FACE_ON, video_meta,
+        )
+        assert result.available
+        assert result.motion_peak_index is not None
+        assert result.new_array_index == result.motion_peak_index
+
+    def test_offset_zero_delta_adopted_as_noop(self, tmp_path, video_meta, monkeypatch):
+        """#12 v2：偏移把运动峰拉回原估计（delta==0）→ 合法无操作校正，不降级。
+
+        模拟真实视频"正面1"场景：运动峰 = 原估计 + 1，偏移 -1 后落回原估计
+        （delta=0）。此时算法确认原 impact 即视觉接触帧，应照常 available=True
+        （reanchor 幂等返回原 events），而不是被 MIN_SHIFT 判成 G0。
+        """
+        path = _write_club_video(str(tmp_path / "club_delta0.mp4"))
+        frames = make_swing_frames()
+        events = _swing_events()
+        signals = _swing_signals()
+        base = impact_refiner.refine_impact(
+            path, frames, events, signals, CameraView.FACE_ON, video_meta,
+        )
+        assert base.available and base.motion_peak_index is not None
+        peak = base.motion_peak_index
+        old = base.old_array_index
+        # 偏移量 = 把运动峰恰好拉回原估计
+        monkeypatch.setattr(config, "CLUBLITE_IMPACT_OFFSET", old - peak)
+        result = impact_refiner.refine_impact(
+            path, frames, events, signals, CameraView.FACE_ON, video_meta,
+        )
+        assert result.available, f"delta==0 不应因 MIN_SHIFT 降级: {result}"
+        assert result.new_array_index == old
+        assert result.delta_frames == 0
+
+    def test_offset_cannot_breach_min_gap(self, tmp_path, video_meta, monkeypatch):
+        """#13 v2：偏移把 impact 推到 top+min_gap 之前 → G0（不返回非法下标）。"""
+        monkeypatch.setattr(config, "CLUBLITE_IMPACT_OFFSET", -100)
+        path = _write_club_video(str(tmp_path / "club_lower.mp4"))
+        frames = make_swing_frames()
+        events = _swing_events()
+        signals = _swing_signals()
+        result = impact_refiner.refine_impact(
+            path, frames, events, signals, CameraView.FACE_ON, video_meta,
+        )
         assert not result.available
         assert result.method == "none"
 
@@ -473,7 +549,12 @@ class TestDecodeCoverage:
     """解码并集覆盖 reanchor 全部可能产出的事件帧（opens=1 修复）。"""
 
     def test_plan_reanchor_frames_covers_all_candidates(self, video_meta):
-        """对窗口内每个候选下标 reanchor，其 8 事件帧都应在解码并集内。"""
+        """窗口候选及其偏移调整帧（v2）reanchor 的 8 事件帧都应在解码并集内。
+
+        v2 说明：CLUBLITE_IMPACT_OFFSET=-1 让实际校正下标可能落在
+        ``cand_indices[best] - 1``（候选前 1 采样帧），plan_reanchor_frames
+        的搜索集已扩展覆盖该调整目标 —— 本用例对「候选 ∪ 候选-1」逐一验证。
+        """
         frames = make_swing_frames()
         events = _swing_events()
         signals = _swing_signals()
@@ -485,10 +566,16 @@ class TestDecodeCoverage:
         )
         union = set(decode) | set(possible)
         index_to_array = {f.frame_index: i for i, f in enumerate(frames)}
+        # 实际校正只可能落在「窗口候选」或「候选前 1 采样帧」（偏移目标）上
+        search_indices: set = set()
         for cand_frame in cand:
             array_index = index_to_array.get(cand_frame)
             if array_index is None:
                 continue
+            search_indices.add(array_index)
+            if array_index - 1 >= 0:
+                search_indices.add(array_index - 1)
+        for array_index in sorted(search_indices):
             rebuilt = segmenter.reanchor_impact(
                 frames, signals, events, array_index
             )
@@ -496,7 +583,7 @@ class TestDecodeCoverage:
                 continue
             for e in rebuilt:
                 assert e.frame_index in union, (
-                    f"候选 {array_index} 的 reanchor 事件帧 "
+                    f"下标 {array_index} 的 reanchor 事件帧 "
                     f"{e.key.value}={e.frame_index} 不在解码并集"
                 )
 

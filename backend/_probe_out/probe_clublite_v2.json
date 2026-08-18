@@ -103,6 +103,7 @@
         22,
         28,
         32,
+        35,
         36,
         37,
         38,
@@ -125,19 +126,21 @@
       "available": true,
       "method": "motion+shaft",
       "old_array_index": 37,
-      "new_array_index": 38,
-      "delta_frames": 1,
+      "new_array_index": 37,
+      "delta_frames": 0,
       "confidence": 1.0,
       "ball_detected": false,
       "motion_peak_index": 38,
-      "shaft_lowest_index": 38
+      "shaft_lowest_index": 38,
+      "peak_delta": 1,
+      "impact_offset": -1
     },
     "reanchor_ok": true,
     "new_impact": {
-      "array_index": 38,
-      "frame_index": 38,
-      "timestamp": 1.462,
-      "estimated": false
+      "array_index": 37,
+      "frame_index": 37,
+      "timestamp": 1.423,
+      "estimated": true
     },
     "events_after": [
       {
@@ -172,9 +175,9 @@
       },
       {
         "key": "impact",
-        "array_index": 38,
-        "frame_index": 38,
-        "estimated": false
+        "array_index": 37,
+        "frame_index": 37,
+        "estimated": true
       },
       {
         "key": "follow_through",
@@ -190,9 +193,9 @@
       }
     ],
     "all_events_decoded": true,
-    "refine_wall_sec": 0.133,
+    "refine_wall_sec": 0.12,
     "opens": 1,
-    "elapsed_sec": 2.19,
+    "elapsed_sec": 2.24,
     "monotonic_after": true
   },
   {
@@ -305,6 +308,7 @@
         224,
         252,
         269,
+        281,
         282,
         283,
         284,
@@ -326,18 +330,20 @@
       "available": true,
       "method": "motion+shaft",
       "old_array_index": 284,
-      "new_array_index": 292,
-      "delta_frames": 8,
+      "new_array_index": 291,
+      "delta_frames": 7,
       "confidence": 1.0,
       "ball_detected": false,
       "motion_peak_index": 292,
-      "shaft_lowest_index": 290
+      "shaft_lowest_index": 290,
+      "peak_delta": 8,
+      "impact_offset": -1
     },
     "reanchor_ok": true,
     "new_impact": {
-      "array_index": 292,
-      "frame_index": 292,
-      "timestamp": 9.733,
+      "array_index": 291,
+      "frame_index": 291,
+      "timestamp": 9.7,
       "estimated": false
     },
     "events_after": [
@@ -373,8 +379,8 @@
       },
       {
         "key": "impact",
-        "array_index": 292,
-        "frame_index": 292,
+        "array_index": 291,
+        "frame_index": 291,
         "estimated": false
       },
       {
@@ -391,9 +397,9 @@
       }
     ],
     "all_events_decoded": true,
-    "refine_wall_sec": 0.351,
+    "refine_wall_sec": 0.225,
     "opens": 1,
-    "elapsed_sec": 16.3,
+    "elapsed_sec": 8.1,
     "monotonic_after": true
   },
   {
@@ -502,6 +508,7 @@
         57,
         61,
         65,
+        68,
         69,
         70,
         71,
@@ -526,18 +533,20 @@
       "available": true,
       "method": "motion+shaft",
       "old_array_index": 70,
-      "new_array_index": 74,
-      "delta_frames": 4,
+      "new_array_index": 73,
+      "delta_frames": 3,
       "confidence": 0.9277,
       "ball_detected": false,
       "motion_peak_index": 74,
-      "shaft_lowest_index": 74
+      "shaft_lowest_index": 74,
+      "peak_delta": 4,
+      "impact_offset": -1
     },
     "reanchor_ok": true,
     "new_impact": {
-      "array_index": 74,
-      "frame_index": 74,
-      "timestamp": 2.741,
+      "array_index": 73,
+      "frame_index": 73,
+      "timestamp": 2.704,
       "estimated": false
     },
     "events_after": [
@@ -573,8 +582,8 @@
       },
       {
         "key": "impact",
-        "array_index": 74,
-        "frame_index": 74,
+        "array_index": 73,
+        "frame_index": 73,
         "estimated": false
       },
       {
@@ -591,9 +600,9 @@
       }
     ],
     "all_events_decoded": true,
-    "refine_wall_sec": 0.332,
+    "refine_wall_sec": 0.2,
     "opens": 1,
-    "elapsed_sec": 5.5,
+    "elapsed_sec": 2.72,
     "monotonic_after": true
   },
   {
@@ -724,6 +733,7 @@
         178,
         183,
         184,
+        186,
         187,
         188,
         189,
@@ -745,18 +755,20 @@
       "available": true,
       "method": "motion+shaft",
       "old_array_index": 189,
-      "new_array_index": 197,
-      "delta_frames": 8,
+      "new_array_index": 196,
+      "delta_frames": 7,
       "confidence": 1.0,
       "ball_detected": false,
       "motion_peak_index": 197,
-      "shaft_lowest_index": 188
+      "shaft_lowest_index": 188,
+      "peak_delta": 8,
+      "impact_offset": -1
     },
     "reanchor_ok": true,
     "new_impact": {
-      "array_index": 197,
-      "frame_index": 197,
-      "timestamp": 6.567,
+      "array_index": 196,
+      "frame_index": 196,
+      "timestamp": 6.533,
       "estimated": false
     },
     "events_after": [
@@ -792,8 +804,8 @@
       },
       {
         "key": "impact",
-        "array_index": 197,
-        "frame_index": 197,
+        "array_index": 196,
+        "frame_index": 196,
         "estimated": false
       },
       {
@@ -810,9 +822,9 @@
       }
     ],
     "all_events_decoded": true,
-    "refine_wall_sec": 0.642,
+    "refine_wall_sec": 0.324,
     "opens": 1,
-    "elapsed_sec": 10.18,
+    "elapsed_sec": 5.16,
     "monotonic_after": true
   },
   {
@@ -925,6 +937,7 @@
         87,
         92,
         94,
+        95,
         96,
         97,
         98,
@@ -953,18 +966,20 @@
       "available": true,
       "method": "motion+shaft",
       "old_array_index": 98,
-      "new_array_index": 104,
-      "delta_frames": 6,
+      "new_array_index": 103,
+      "delta_frames": 5,
       "confidence": 0.9894,
       "ball_detected": false,
       "motion_peak_index": 104,
-      "shaft_lowest_index": 100
+      "shaft_lowest_index": 100,
+      "peak_delta": 6,
+      "impact_offset": -1
     },
     "reanchor_ok": true,
     "new_impact": {
-      "array_index": 104,
-      "frame_index": 104,
-      "timestamp": 3.467,
+      "array_index": 103,
+      "frame_index": 103,
+      "timestamp": 3.433,
       "estimated": false
     },
     "events_after": [
@@ -1000,14 +1015,14 @@
       },
       {
         "key": "impact",
-        "array_index": 104,
-        "frame_index": 104,
+        "array_index": 103,
+        "frame_index": 103,
         "estimated": false
       },
       {
         "key": "follow_through",
-        "array_index": 116,
-        "frame_index": 116,
+        "array_index": 115,
+        "frame_index": 115,
         "estimated": true
       },
       {
@@ -1018,9 +1033,9 @@
       }
     ],
     "all_events_decoded": true,
-    "refine_wall_sec": 0.433,
+    "refine_wall_sec": 0.281,
     "opens": 1,
-    "elapsed_sec": 10.15,
+    "elapsed_sec": 5.16,
     "monotonic_after": true
   },
   {
@@ -1133,6 +1148,7 @@
         219,
         228,
         230,
+        232,
         233,
         234,
         235,
@@ -1144,6 +1160,7 @@
         241,
         242,
         243,
+        261,
         262,
         263,
         264,
@@ -1155,24 +1172,26 @@
         316
       ],
       "n_window_frames": 11,
-      "n_union_frames": 26
+      "n_union_frames": 27
     },
     "refine": {
       "available": true,
       "method": "motion+shaft",
       "old_array_index": 235,
-      "new_array_index": 243,
-      "delta_frames": 8,
+      "new_array_index": 242,
+      "delta_frames": 7,
       "confidence": 1.0,
       "ball_detected": false,
       "motion_peak_index": 243,
-      "shaft_lowest_index": 243
+      "shaft_lowest_index": 243,
+      "peak_delta": 8,
+      "impact_offset": -1
     },
     "reanchor_ok": true,
     "new_impact": {
-      "array_index": 243,
-      "frame_index": 243,
-      "timestamp": 8.1,
+      "array_index": 242,
+      "frame_index": 242,
+      "timestamp": 8.067,
       "estimated": false
     },
     "events_after": [
@@ -1208,14 +1227,14 @@
       },
       {
         "key": "impact",
-        "array_index": 243,
-        "frame_index": 243,
+        "array_index": 242,
+        "frame_index": 242,
         "estimated": false
       },
       {
         "key": "follow_through",
-        "array_index": 269,
-        "frame_index": 269,
+        "array_index": 268,
+        "frame_index": 268,
         "estimated": true
       },
       {
@@ -1226,9 +1245,9 @@
       }
     ],
     "all_events_decoded": true,
-    "refine_wall_sec": 0.458,
+    "refine_wall_sec": 0.273,
     "opens": 1,
-    "elapsed_sec": 15.53,
+    "elapsed_sec": 7.78,
     "monotonic_after": true
   },
   {
@@ -1359,6 +1378,7 @@
         163,
         169,
         172,
+        174,
         175,
         176,
         177,
@@ -1370,6 +1390,7 @@
         183,
         184,
         185,
+        221,
         222,
         224,
         225,
@@ -1379,24 +1400,26 @@
         308
       ],
       "n_window_frames": 11,
-      "n_union_frames": 24
+      "n_union_frames": 25
     },
     "refine": {
       "available": true,
       "method": "motion+shaft",
       "old_array_index": 177,
-      "new_array_index": 180,
-      "delta_frames": 3,
+      "new_array_index": 179,
+      "delta_frames": 2,
       "confidence": 0.8754,
       "ball_detected": false,
       "motion_peak_index": 180,
-      "shaft_lowest_index": 180
+      "shaft_lowest_index": 180,
+      "peak_delta": 3,
+      "impact_offset": -1
     },
     "reanchor_ok": true,
     "new_impact": {
-      "array_index": 180,
-      "frame_index": 180,
-      "timestamp": 6.0,
+      "array_index": 179,
+      "frame_index": 179,
+      "timestamp": 5.967,
       "estimated": false
     },
     "events_after": [
@@ -1432,14 +1455,14 @@
       },
       {
         "key": "impact",
-        "array_index": 180,
-        "frame_index": 180,
+        "array_index": 179,
+        "frame_index": 179,
         "estimated": false
       },
       {
         "key": "follow_through",
-        "array_index": 225,
-        "frame_index": 225,
+        "array_index": 224,
+        "frame_index": 224,
         "estimated": true
       },
       {
@@ -1450,9 +1473,9 @@
       }
     ],
     "all_events_decoded": true,
-    "refine_wall_sec": 0.783,
+    "refine_wall_sec": 0.382,
     "opens": 1,
-    "elapsed_sec": 14.48,
+    "elapsed_sec": 6.86,
     "monotonic_after": true
   },
   {
@@ -1564,7 +1587,9 @@
         11,
         17,
         24,
+        27,
         28,
+        30,
         31,
         32,
         33,
@@ -1576,6 +1601,7 @@
         39,
         40,
         41,
+        52,
         53,
         55,
         56,
@@ -1585,24 +1611,26 @@
         93
       ],
       "n_window_frames": 11,
-      "n_union_frames": 24
+      "n_union_frames": 26
     },
     "refine": {
       "available": true,
       "method": "motion+shaft",
       "old_array_index": 33,
-      "new_array_index": 40,
-      "delta_frames": 7,
+      "new_array_index": 39,
+      "delta_frames": 6,
       "confidence": 1.0,
       "ball_detected": false,
       "motion_peak_index": 40,
-      "shaft_lowest_index": 40
+      "shaft_lowest_index": 40,
+      "peak_delta": 7,
+      "impact_offset": -1
     },
     "reanchor_ok": true,
     "new_impact": {
-      "array_index": 40,
-      "frame_index": 40,
-      "timestamp": 1.333,
+      "array_index": 39,
+      "frame_index": 39,
+      "timestamp": 1.3,
       "estimated": false
     },
     "events_after": [
@@ -1638,14 +1666,14 @@
       },
       {
         "key": "impact",
-        "array_index": 40,
-        "frame_index": 40,
+        "array_index": 39,
+        "frame_index": 39,
         "estimated": false
       },
       {
         "key": "follow_through",
-        "array_index": 59,
-        "frame_index": 59,
+        "array_index": 58,
+        "frame_index": 58,
         "estimated": true
       },
       {
@@ -1656,9 +1684,9 @@
       }
     ],
     "all_events_decoded": true,
-    "refine_wall_sec": 0.412,
+    "refine_wall_sec": 0.232,
     "opens": 1,
-    "elapsed_sec": 10.82,
+    "elapsed_sec": 5.15,
     "monotonic_after": true
   },
   {
@@ -1770,7 +1798,9 @@
         143,
         150,
         157,
+        158,
         159,
+        160,
         161,
         162,
         163,
@@ -1788,24 +1818,26 @@
         179
       ],
       "n_window_frames": 11,
-      "n_union_frames": 21
+      "n_union_frames": 22
     },
     "refine": {
       "available": true,
       "method": "motion+shaft",
       "old_array_index": 163,
-      "new_array_index": 168,
-      "delta_frames": 5,
+      "new_array_index": 167,
+      "delta_frames": 4,
       "confidence": 0.9151,
       "ball_detected": false,
       "motion_peak_index": 168,
-      "shaft_lowest_index": 168
+      "shaft_lowest_index": 168,
+      "peak_delta": 5,
+      "impact_offset": -1
     },
     "reanchor_ok": true,
     "new_impact": {
-      "array_index": 168,
-      "frame_index": 168,
-      "timestamp": 5.6,
+      "array_index": 167,
+      "frame_index": 167,
+      "timestamp": 5.567,
       "estimated": false
     },
     "events_after": [
@@ -1841,14 +1873,14 @@
       },
       {
         "key": "impact",
-        "array_index": 168,
-        "frame_index": 168,
+        "array_index": 167,
+        "frame_index": 167,
         "estimated": false
       },
       {
         "key": "follow_through",
-        "array_index": 172,
-        "frame_index": 172,
+        "array_index": 171,
+        "frame_index": 171,
         "estimated": true
       },
       {
@@ -1859,9 +1891,9 @@
       }
     ],
     "all_events_decoded": true,
-    "refine_wall_sec": 0.313,
+    "refine_wall_sec": 0.165,
     "opens": 1,
-    "elapsed_sec": 14.85,
+    "elapsed_sec": 6.92,
     "monotonic_after": true
   }
 ]

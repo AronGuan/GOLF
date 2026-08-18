@@ -411,11 +411,22 @@ CLUBLITE_TOP_K: Final[int] = 3
 #: 帧差二值化阈值（灰度差）
 CLUBLITE_DIFF_THRESH: Final[int] = 20
 
-#: 校正最少移动帧数（< 该值不采纳，避免帧级抖动）
+#: 校正最少移动帧数（< 该值不采纳，避免帧级抖动）。
+#: 注意：CLUBLITE_IMPACT_OFFSET 生效后，若偏移恰好把运动峰拉回原 impact
+#: （delta==0，如正面1），视为「确认原估计正确」的合法结果，照常采纳为
+#: 无操作校正（reanchor 返回原 events），不算帧级抖动。
 CLUBLITE_MIN_SHIFT_FRAMES: Final[int] = 1
 
 #: 校正最多移动帧数（超过视为检测不可信，不采纳）
 CLUBLITE_MAX_SHIFT_FRAMES: Final[int] = 12
+
+#: 系统偏移：运动峰帧 -> 视觉接触瞬间（采样帧，array 下标空间）。
+#: 实测（2026-08 用户拍板）：算法选的"运动峰"帧是球被杆头加速后的帧，
+#: 视觉上真实击球瞬间是运动峰前 1 帧（30fps = 33ms）。最终选帧时在
+#: 最优候选上统一回退该偏移量，把"运动峰"拉近"接触瞬间"。
+#: 0 = 关闭（回滚到 v1 行为）；-1 = 回退 1 帧（当前默认）。
+#: 受物理下界守卫约束：不得早于 top + min_gap（否则 G0，避免 NO_SWING）。
+CLUBLITE_IMPACT_OFFSET: Final[int] = -1
 
 #: 校正幅度 ≥ 该帧数时追加 warning（WARN_IMPACT_REFINED）
 CLUBLITE_WARN_THRESHOLD_FRAMES: Final[int] = 3

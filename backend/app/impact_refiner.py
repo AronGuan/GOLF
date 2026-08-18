@@ -22,6 +22,12 @@
 - face-on：击球瞬间杆头可能被躯干遮挡，地面 ROI 水平方向收窄到以双踝中点
   为中心的中央带（避开画面两侧的腿部/手臂运动），并给 M2 杆身端点验证更高
   的评分权重作遮挡补偿。
+
+v2 调优（2026-08 用户拍板）：最终选帧时对最优候选统一回退
+:data:`config.CLUBLITE_IMPACT_OFFSET`（默认 -1）帧——算法选的"运动峰"帧是
+球被杆头加速后的帧，视觉真实接触瞬间在其前 1 帧（30fps = 33ms）。偏移受
+物理下界守卫（top + min_gap）约束，越界则 G0；``plan_reanchor_frames`` 的
+搜索集同步扩展覆盖偏移目标帧，保证 reanchor 事件帧仍在解码并集内。
 """
 
 from __future__ import annotations
@@ -177,6 +183,10 @@ def plan_reanchor_frames(
     跑一遍 reanchor，收集全部可能的事件帧号取并集——实际校正命中的那个候选的
     8 事件帧必在并集内。解码并集一次（opens 保持 1），校正后无需补解。
 
+    **候选集 = 窗口候选 ∪ 各候选前 1 采样帧**（v2 调优：:data:`config.CLUBLITE_IMPACT_OFFSET`
+    默认 -1 会把最终 impact 落在 ``cand_indices[best] - 1``，因此该调整目标的
+    reanchor 事件帧也必须纳入并集，否则 QA P1 会复发）。
+
     Args:
         events: 8 事件（校正前）。
         signals: 切分信号包。
@@ -191,8 +201,17 @@ def plan_reanchor_frames(
     index_to_array: Dict[int, int] = {
         f.frame_index: i for i, f in enumerate(frames)
     }
-    possible: set = set()
+    # 候选集：窗口候选 ∪ 其前 1 采样帧（CLUBLITE_IMPACT_OFFSET 的调整目标）。
+    # 用 frames 序列反查前一采样帧的原帧号，比 ``frame_index - step`` 更稳
+    # （step 可能 >1，且候选帧号由 frames 实际采样决定）。
+    search_frames: set = set(cand_frames)
     for cand_frame in cand_frames:
+        array_index = index_to_array.get(cand_frame)
+        if array_index is not None and array_index - 1 >= 0:
+            search_frames.add(frames[array_index - 1].frame_index)
+
+    possible: set = set()
+    for cand_frame in sorted(search_frames):
         array_index = index_to_array.get(cand_frame)
         if array_index is None:
             continue
@@ -779,13 +798,66 @@ def refine_impact(
                 if cand > best_offset:
                     best_offset, best_local = cand, k
 
-        new_array_index = cand_indices[best_offset]
         old_array_index = impact.array_index
-        delta = new_array_index - old_array_index
+        # 运动峰帧（未加偏移）：评分选出的最优候选，array 下标。
+        # 注意 cand_indices 与 gray_frames 一一对应，best_offset 是灰度帧偏移，
+        # 故 peak_array_index == best_offset + lo（motion_peak_index 同值）。
+        peak_array_index = cand_indices[best_offset]
 
         shaft_lowest_cand: Optional[int] = None
         if shaft_ys:
             shaft_lowest_cand = min(shaft_ys, key=lambda c: shaft_ys[c])
+
+        # 系统偏移（v2 调优）：运动峰帧 -> 视觉接触瞬间。
+        # 实测"运动峰"是球被杆头加速后的帧，视觉真实接触在其前 1 帧
+        # （CLUBLITE_IMPACT_OFFSET = -1）。0 可回滚到 v1 行为。
+        new_array_index = peak_array_index + config.CLUBLITE_IMPACT_OFFSET
+
+        # 物理下界守卫（用户拍板硬约束）：偏移后的 impact 不得早于
+        # top + min_gap（与 locate_impact 同口径），否则 reanchor 会挤压出
+        # NO_SWING —— 此时宁可 G0（保持原 events），也不返回非法下标。
+        top = next((e for e in events if e.key is PhaseKey.TOP), None)
+        fe_eff = float(signals.fps_eff)
+        if not math.isfinite(fe_eff) or fe_eff <= 0.0:
+            fe_eff = 30.0
+        min_gap = max(2, int(round(config.MIN_IMPACT_TOP_SEC * fe_eff)))
+        lower_ok = (
+            top is not None
+            and 0 <= new_array_index < signals.n
+            and new_array_index - top.array_index >= min_gap
+        )
+        if not lower_ok:
+            logger.info(
+                "impact refine rejected: offset impact %d violates top+min_gap "
+                "(%d + %d) (video=%s)",
+                new_array_index,
+                top.array_index if top is not None else -1,
+                min_gap,
+                video_path,
+            )
+            result = ImpactRefineResult(
+                available=False,
+                method="none",
+                old_array_index=old_array_index,
+                new_array_index=new_array_index,
+                delta_frames=new_array_index - old_array_index,
+                confidence=float(
+                    np.clip(float(motion[best_offset]) / m_max, 0.0, 1.0)
+                ),
+                ball_detected=ball_center is not None,
+                motion_peak_index=best_offset + lo,
+                shaft_lowest_index=(
+                    shaft_lowest_cand + lo if shaft_lowest_cand is not None else None
+                ),
+                ball_center_px=(
+                    (int(round(ball_center[0])), int(round(ball_center[1])))
+                    if ball_center is not None
+                    else None
+                ),
+            )
+            return result
+
+        delta = new_array_index - old_array_index
 
         method = "motion"
         if shaft_ys and best_offset in shaft_ys:
@@ -814,27 +886,37 @@ def refine_impact(
                 else None
             ),
         )
-        # 采纳判定：|delta| ∈ [MIN, MAX]，否则视为不可信 -> G0（保留诊断字段）
+        # 采纳判定（v2 语义）：
+        # 1) 运动峰位移（未加偏移）须在 [MIN, MAX] —— 候选本身可信，过滤弱信号抖动；
+        # 2) 偏移后的最终 delta 不超过 MAX；
+        # 3) delta==0（偏移把运动峰拉回原估计，如正面1）视为合法"无操作校正"：
+        #    算法确认原 impact 就是视觉接触帧，照常 available=True
+        #    （reanchor 对同下标幂等返回原 events，主链路无变化）。
         if not (
             config.CLUBLITE_MIN_SHIFT_FRAMES
-            <= abs(delta)
+            <= abs(peak_array_index - old_array_index)
             <= config.CLUBLITE_MAX_SHIFT_FRAMES
+            and abs(delta) <= config.CLUBLITE_MAX_SHIFT_FRAMES
         ):
             result.available = False
             result.method = "none"
             logger.info(
-                "impact refine rejected: delta=%+d out of [%d, %d] (video=%s)",
-                delta,
+                "impact refine rejected: peak_delta=%+d out of [%d, %d] "
+                "or final delta=%+d beyond MAX (video=%s)",
+                peak_array_index - old_array_index,
                 config.CLUBLITE_MIN_SHIFT_FRAMES,
                 config.CLUBLITE_MAX_SHIFT_FRAMES,
+                delta,
                 video_path,
             )
         else:
             logger.info(
-                "impact refined: %d -> %d (delta=%+d, method=%s, conf=%.2f, ball=%s)",
+                "impact refined: %d -> %d (delta=%+d, peak=%d, method=%s, "
+                "conf=%.2f, ball=%s)",
                 old_array_index,
                 new_array_index,
                 delta,
+                peak_array_index,
                 method,
                 confidence,
                 ball_center is not None,

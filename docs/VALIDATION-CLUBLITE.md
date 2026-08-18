@@ -44,6 +44,57 @@
 
 ---
 
+## 2b. v2 调优报告（CLUBLITE_IMPACT_OFFSET = -1，2026-08-18）
+
+> 任务：小调优「击球帧算法前移 1 帧」。用户实测发现：算法选"运动峰"帧（球被
+> 杆头加速的帧）比视觉真实接触瞬间晚 1 帧（30fps = 33ms），要求最终选帧时回退 1 帧。
+> 数据来源：`backend/_probe_out/probe_clublite_v2.json`（`--tag clublite_v2`）。
+
+**方案（选定 C：常量 + 一处减 1）**：新增 `config.CLUBLITE_IMPACT_OFFSET = -1`，
+在 `refine_impact` 返回最终 `new_array_index` 前对最优候选统一回退该偏移量。
+配套两处守卫/适配：
+1. **物理下界守卫**：偏移后不得早于 `top + min_gap`（与 `locate_impact` 同口径），
+   越界 → G0（保持原 events），绝不返回会触发 NO_SWING 的下标；
+2. **plan_reanchor_frames 覆盖扩展**：搜索集 = 窗口候选 ∪ 各候选前 1 采样帧，
+   保证偏移目标的 reanchor 事件帧仍在解码并集内（QA P1 不复发）。
+
+**v1 vs v2 delta 对照（11 段真实视频）**：
+
+| # | 视频 | v1 new | **v1 delta** | v2 peak | **v2 new** | **v2 delta** | 变化 | 评价 |
+|---|------|---:|---:|---:|---:|---:|---|---|
+| 1 | 正面1 | 38 | **+1** | 38 | 37 | **0（无操作）** | -1 | ✅ 落回原估计=视觉接触帧 |
+| 2 | 正面2 | 292 | **+8** | 292 | 291 | **+7** | -1 | ✅ 更接近接触 |
+| 3 | 正面3 | 74 | **+4** | 74 | 73 | **+3** | -1 | ✅ 更接近接触 |
+| 4 | DTL-087d40a0 | — | NO_SWING | — | — | — | — | 残片（同 v1） |
+| 5 | DTL-0bb16a97 | 197 | **+8** | 197 | 196 | **+7** | -1 | ✅ 更接近接触 |
+| 6 | DTL-470057ac | 104 | **+6** | 104 | 103 | **+5** | -1 | ✅ 更接近接触 |
+| 7 | DTL-4e8d0d7e | 243 | **+8** | 243 | 242 | **+7** | -1 | ✅ 更接近接触 |
+| 8 | DTL-707fb04a | — | NO_SWING | — | — | — | — | 残片（同 v1） |
+| 9 | DTL-c6f67f38 | 180 | **+3** | 180 | 179 | **+2** | -1 | ✅ 更接近接触 |
+| 10 | VID-1446d1b9 | 40 | **+7** | 40 | 39 | **+6** | -1 | ✅ 更接近接触 |
+| 11 | VID-a4fba3d2 | 168 | **+5** | 168 | 167 | **+4** | -1 | ✅ 更接近接触 |
+
+**验收核对**：
+- **9/9 仍 G1**：`切分成功 9/11；G1 校正成功 9/9`（含 正面1 delta=0 的"无操作校正"——
+  偏移把运动峰从 38 拉回 37=原估计，算法确认原 impact 即视觉接触帧，照常 available=True，
+  reanchor 幂等返回原 events）；
+- **9/9 段 delta 减 1 后更接近真实击球瞬间**（含 正面1 从 +1 到 0，即落回真实接触帧）；
+- **无 NO_SWING 引入**：2 段 NO_SWING 与 v1 相同（087d40a0 / 707fb04a 残片），
+  9 段校正段 `new - top ≥ 9`，均远大于 `min_gap=2`，物理下界守卫零触发；
+- **无 delta 变大**：9/9 全部 -1，无任何段变得更离谱；
+- **delta 分布**：min=0 / max=+7 / mean=+4.56，全部 ∈ `[-2, +12]` 容差；
+- **解码覆盖**：9/9 `all_events_decoded=True`（QA P1 无渲染 fallback），opens=1。
+
+**测试**：`pytest tests -q` → **386 passed**（v1 基线 382 + 新增 4：偏移应用 / 偏移=0 回滚 v1 /
+delta=0 无操作不降级 / 物理下界 G0；`test_plan_reanchor_frames_covers_all_candidates`
+扩展为「候选 ∪ 候选-1」覆盖验证；`test_max_shift_cap_rejects` 断言随 v2 语义更新
+delta 6→5）。
+
+**回滚**：`CLUBLITE_IMPACT_OFFSET = 0` 即完全回到 v1 行为（new == motion_peak），
+已有单测 `test_impact_offset_zero_restores_v1` 守护。
+
+---
+
 ## 3. face-on 专项验证（用户 Q1 硬要求）
 
 正面 3 段（正面1/2/3）**全部校正有效，方向正确（均后移向真实击球帧）**：
@@ -205,6 +256,7 @@ $PY backend/run.py segment <video.mp4>
 
 # ClubLite 校正探针（11 段真实视频）
 $PY backend/_probe_out/probe_clublite.py --tag clublite_v1
+$PY backend/_probe_out/probe_clublite.py --tag clublite_v2   # v2：CLUBLITE_IMPACT_OFFSET=-1
 
 # ClubLite 端到端实测（metrics + risk + render）
 $PY backend/_probe_out/probe_clublite_full.py

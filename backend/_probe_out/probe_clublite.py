@@ -208,12 +208,24 @@ def probe_one(name: str, path: str, chosen_view: str) -> Dict[str, Any]:
             "ball_detected": refine.ball_detected,
             "motion_peak_index": refine.motion_peak_index,
             "shaft_lowest_index": refine.shaft_lowest_index,
+            "peak_delta": (
+                refine.motion_peak_index - refine.old_array_index
+                if refine.motion_peak_index is not None
+                else None
+            ),
+            "impact_offset": config.CLUBLITE_IMPACT_OFFSET,
         }
         new_events: Optional[List[SwingEvent]] = None
+        # v2：CLUBLITE_IMPACT_OFFSET 生效后，偏移可能把运动峰拉回原估计
+        # （delta==0，如正面1）——这是"确认原估计正确"的合法 G1 无操作校正，
+        # reanchor 对同下标幂等返回原 events，照常计数。
         if refine.available and (
-            config.CLUBLITE_MIN_SHIFT_FRAMES
-            <= abs(refine.delta_frames)
-            <= config.CLUBLITE_MAX_SHIFT_FRAMES
+            refine.delta_frames == 0
+            or (
+                config.CLUBLITE_MIN_SHIFT_FRAMES
+                <= abs(refine.delta_frames)
+                <= config.CLUBLITE_MAX_SHIFT_FRAMES
+            )
         ):
             new_events = segmenter.reanchor_impact(
                 frames, signals, events, refine.new_array_index
@@ -300,9 +312,9 @@ def main() -> int:
         json.dump(results, fh, ensure_ascii=False, indent=2)
 
     print(f"\n{'#' * 78}")
-    print("逐段 delta 表（校正后 impact 相对校正前）:")
-    print(f"{'名称':<14s} {'机位':<6s} {'old':>4s} {'new':>4s} {'delta':>6s} "
-          f"{'method':<13s} {'conf':>6s} {'ball':>5s} {'opens':>5s}")
+    print("逐段 delta 表（校正后 impact 相对校正前，v2 含 CLUBLITE_IMPACT_OFFSET）:")
+    print(f"{'名称':<14s} {'机位':<6s} {'old':>4s} {'peak':>4s} {'new':>4s} "
+          f"{'delta':>6s} {'method':<13s} {'conf':>6s} {'ball':>5s} {'opens':>5s}")
     g1 = 0
     seg_ok = 0
     deltas: List[int] = []
@@ -314,6 +326,7 @@ def main() -> int:
         seg_ok += 1
         refine = r.get("refine") or {}
         old = (r.get("old_impact") or {}).get("array_index", -1)
+        peak = refine.get("motion_peak_index", old)
         new = (r.get("new_impact") or {}).get("array_index", old)
         delta = new - old if r.get("reanchor_ok") else 0
         if refine.get("available") and r.get("reanchor_ok"):
@@ -321,7 +334,7 @@ def main() -> int:
         if r.get("reanchor_ok"):
             deltas.append(delta)
         print(
-            f"{r['name']:<14s} {r.get('view','--'):<6s} {old:>4d} {new:>4d} "
+            f"{r['name']:<14s} {r.get('view','--'):<6s} {old:>4d} {peak:>4d} {new:>4d} "
             f"{delta:>+6d} {str(refine.get('method','none')):<13s} "
             f"{refine.get('confidence',0.0):>6.2f} "
             f"{str(refine.get('ball_detected',False)):>5s} {r.get('opens',0):>5d}"
