@@ -1,6 +1,6 @@
 # 高尔夫挥杆分析小程序 — 项目状态文档（STATUS）
 
-> 更新日期：2026-08-17 · 维护人：齐活林（交付总监）
+> 更新日期：2026-08-18 · 维护人：齐活林（交付总监）
 > 本文档是对当前进度的权威快照，与 `docs/` 下各专项文档配套使用。
 
 ---
@@ -63,9 +63,28 @@
 | 集成方式 | ✅ | **不改 `locate_impact`**（349 测试零回归）；`segmenter.reanchor_impact` 纯函数重建 8 事件；pipeline step4a 集成（opens=1、窗口 ≤12 帧、G1/G0 两级降级） |
 | 降级策略 | ✅ | G1 采纳校正 / G0 保持现状（失败=回到现状，不新增估算态、不阻断任务） |
 
+### 3.4 手动帧微调 ✅ 已完成（2026-08-17）
+
+| 模块 | 状态 | 说明 |
+|---|---|---|
+| 后端动态帧渲染接口 | ✅ | `GET /api/v1/task/{id}/frame/{idx}`（双路径），返回指定帧骨架图 PNG + `X-Frame-Index` 头；错误码 20001/20002/20003（越界，事件帧±30）/10004；clamp 到视频范围 |
+| landmark 复用 | ✅ | 分析时关键点落盘 `.npz`（<1MB），接口复用保证骨架一致（**事件渲染 vs 接口渲染 13/13 关节圆心完全匹配**） |
+| 前端 ◀/▶ 按钮 | ✅ | 每阶段缩略图下 ◀/▶ + 帧号 + amber"手动"角标；切换阶段复位；`getFrameImage`（arraybuffer → wxfile:// 本地临时文件） |
+| 视频保留 | ⚠️ | `KEEP_SOURCE_VIDEO=True`：原视频改名 `source.{ext}` 留任务目录 7 天（手动微调需原始像素）；可一键关停（关停后帧接口降级 5000） |
+| 指标联动 | 🔒 | **手动微调不重算指标**（用户拍板"先看效果"）；v2 算法前移则指标自动更新 |
+
+### 3.5 保存当前页到相册 ✅ 已完成（2026-08-18）
+
+| 模块 | 状态 | 说明 |
+|---|---|---|
+| 离屏 canvas 合成 | ✅ | 隐藏 `<canvas type="2d">` 重绘：hero 大图 + 阶段名/帧号 + 指标卡（含 description）+ 风险区 + 底部信息 |
+| 保存链路 | ✅ | `canvasToTempFilePath` → `saveImageToPhotosAlbum`；授权拒绝 → `openSetting` 引导 |
+| 所见即所得 | ✅ | 数据实时取自 `this.data`，**手动微调帧（adjCur+本地图+手动角标）正确体现** |
+| 共存 | ✅ | 与既有「保存单张骨架图」按钮并存，后端零改动 |
+
 ---
 
-## 四、本次迭代历程（2026-08-05 ~ 08-17）
+## 四、本次迭代历程（2026-08-05 ~ 08-18）
 
 ### A 任务：真实视频跑通 MVP 闭环 + 阈值校准 ✅
 - **素材到位**：`.tools/_probe/samples/` 3 段正面 + 6 段 DTL + `video/` 2 段 DTL
@@ -96,19 +115,34 @@
 - 工程师实现 → `docs/VALIDATION-CLUBLITE.md`：**11 段真实视频 9/9 校正有效、face-on 3/3、delta ∈[+1,+8]（mean +5.56）、opens=1**
 - QA 两轮 → `docs/QA-VALIDATION-CLUBLITE.md`：R1 抓出 **P1（reanchor 后⑦送杆帧不在解码集 → 送杆截图内容错帧）**→ 修复（`plan_reanchor_frames` 前置预计算，opens 保持 1）；R2 确认送杆图逐字节等于真实帧、delta 零回归 → **NoOne 交付**
 
+### F 任务：手动帧微调 ✅（2026-08-17）
+- **触发**：ClubLite 校正后仍有边界偏差（球速低视频偏后 1~8 帧），用户决定加 ◀/▶ 手动兜底
+- 后端动态帧接口 + 前端按钮 → `docs/QA-VALIDATION-FRAMEADJUST.md`：**382 测试全绿、独立 E2E 57 断言、NoOne 放行**；事件渲染 vs 接口渲染骨架 13/13 一致
+
+### G 任务：ClubLite v2 算法前移 1 帧 ✅（2026-08-18，半天）
+- **触发**：用户手动微调发现算法选 155 帧（运动峰）、视觉判断 154 帧才是接触瞬间——算法固有"运动峰 vs 接触瞬间"1 帧偏移
+- 方案 C：`config.CLUBLITE_IMPACT_OFFSET = -1`（**0 即回滚 v1**）+ 物理下界守卫（line 827）+ `plan_reanchor_frames` 覆盖扩展（候选 ∪ 候选-1）
+- **11 段真实视频 9/9 delta 各 -1 向接触瞬间靠近**（正面1 1→0 无操作校正）；386 测试全绿
+- **送杆阶段不适用偏移**：`locate_finish` 找"手腕静止段起点"，送杆无物理"准确点"、偏差方向不固定，加偏移净效果可能为负——**维持手动微调兜底**
+
+### H 任务：保存当前页到相册 ✅（2026-08-18，快速模式）
+- 离屏 canvas 2d 合成整页（hero 图+指标卡+风险区）→ `saveImageToPhotosAlbum`；授权拒绝引导 `openSetting`；手动微调帧正确体现
+- 3 文件（wxml/wxss/js），后端零改动，386 测试全绿
+
 ---
 
 ## 五、当前测试与质量状态
 
 | 项 | 值 |
 |---|---|
-| 单元测试 | **371 passed / 0 failed**（8 模块；基线 220 → 峰值 355 → 球杆下线 349 → ClubLite 371） |
+| 单元测试 | **386 passed / 0 failed**（8 模块；基线 220 → 355 → 349 → ClubLite 371 → FrameAdjust 382 → v2/保存页 386） |
 | 真实视频端到端 | 7/9 段跑通（2 段残缺 NO_SWING 确定性失败）；正面1 触发 2 条风险、DTL 段 swing_plane=51.6° |
 | 机位自动判定 | 9/9 命中 ground-truth |
-| 击球帧校正 | **9/9 校正有效（G1）**、face-on 3/3、delta ∈[+1,+8]（mean +5.56）、opens=1、墙钟增量 <0.5s |
+| 击球帧校正 | **9/9 校正有效（G1）**、face-on 3/3、**v2 delta ∈[0,+7]（mean +4.56，较 v1 各 -1 向接触瞬间靠近）**、opens=1 |
+| 手动帧微调 | 后端动态帧接口 + ◀/▶ 按钮；事件渲染 vs 接口渲染骨架 13/13 一致；错误码 20001/20002/20003 实测 |
 | 风险引擎 | 17 规则 metric_key 17/17 可解析；RISK-016 不恒真误报；RISK-014 无假阳性 |
-| 接口契约 | 双路径等价、错误码 10001/10002/10003/20001/20002/10004 实测、legacy 回滚开关验证通过 |
-| QA 终判 | **全部 NoOne 放行**（T1~T4 / T5 / 球杆下线 / ClubLite R1+R2） |
+| 接口契约 | 双路径等价、错误码 10001/10002/10003/20001/20002/20003/10004 实测、legacy 回滚开关验证通过 |
+| QA 终判 | **全部 NoOne 放行**（T1~T4 / T5 / 球杆下线 / ClubLite R1+R2 / FrameAdjust） |
 
 ---
 
@@ -145,6 +179,9 @@
 | 8 | pipeline 的 grab 调用含 possible 帧无单测守卫（若误删 `\| set(_possible_frames)` 单测仍绿），QA 集成探针建议沉淀为正式回归 |
 | 9 | 合成 fixture 上送杆帧不移动，ClubLite 新用例的 FT 专用分支是死代码，建议补强制 FT 移动 fixture |
 | 10 | `VALIDATION-CLUBLITE.md` §5 仍只断言 8 张截图文件存在、未断言内容帧正确性（P1 曾藏身于此） |
+| 11 | FrameAdjust：frame_service 每次开新 VideoCapture 无缓存；getFrameImage 临时 PNG 累积不清理；`KEEP_SOURCE_VIDEO=False` 时帧接口降级 5000；onSaveImage isLocal 判断假设绝对 URL；onPreview 混入 wxfile:// 低版本可能不支持；test_frame_adjust 覆盖度空白（独立 E2E 已补齐）；getFrameImage 多余 content-type header |
+| 12 | v2 观察项：WARN 阈值副作用（c6f67f38 v1 delta=+3 触发 → v2 +2 不触发），若要 warning 反映未偏移的运动峰位移需向 pipeline 暴露 `peak_delta` |
+| 13 | 保存当前页：远程图跨域依赖 downloadFile+域名配置（BASE_URL 裸 IP 时真机调试模式可用）；canvas 2d 需基础库 2.9+ |
 
 ---
 
@@ -180,6 +217,7 @@
 | `docs/ARCHITECTURE-v3-clublite.md` | **ClubLite 设计**：选型对比、接口设计、任务列表、测试策略、风险 |
 | `docs/VALIDATION-CLUBLITE.md` | **ClubLite 实测**：11 段真实视频逐段 delta 表、face-on 适配、阈值微调依据、P1 修复记录 |
 | `docs/QA-VALIDATION-CLUBLITE.md` | **QA 两轮**：R1 抓 P1（送杆帧错位）→ R2 确认修复（NoOne） |
+| `docs/QA-VALIDATION-FRAMEADJUST.md` | **QA 验收手动帧微调**：382 测试 + 57 独立 E2E、事件/接口渲染骨架一致性（NoOne） |
 | `docs/ADR-001-club-detection.md` | 架构决策：姿态层不迁 Tasks API（4 条理由） |
 | `docs/club-detection-design.md` | 球杆检测设计（归档，功能已下线） |
 
@@ -192,10 +230,11 @@
 | **上线前置（D 项，用户推进中）** | 备案域名 + HTTPS + 微信白名单 + BASE_URL 切换 | 用户侧商务动作，1~3 周 |
 | **M1：补齐风险文案** | 7 条缺文案规则补齐 → 翻 `enabled` 开关上线 | PM 郑天虹补文案 |
 | **M2：侧面机位打磨** | swing_plane 样本复核、spine_tilt_side 参考区间重标、DTL 标尺优化 | 真实侧面素材 + 教练/理疗师审核 |
-| **M3：球杆检测（后期）** | 击球帧已由 ClubLite 轻量校正覆盖（9/9 有效）；若要**像素级杆头定位**或 `shaft_plane_dev` 增强指标，方向是换 YOLO + 标注数据集，或等待标注飞轮成熟 | 标注数据集（≥30 段） |
+| **M3：球杆检测（后期）** | 击球帧已由 ClubLite 轻量校正覆盖（v2 9/9 有效）；若要**像素级杆头定位**或 `shaft_plane_dev` 增强指标，方向是换 YOLO + 标注数据集，或等待标注飞轮成熟 | 标注数据集（≥30 段） |
+| **M6：送杆/其他阶段精度** | `locate_finish` 等阶段若有统计性偏差（多段视频同方向偏移）再加偏移常量；当前手动微调兜底 | 多段真实视频统计 |
 | **M4：并发能力** | 外置 Redis/DB 支持多 worker | 用户量上来后 |
 | **M5：标注真值验收** | 人工标注 8 阶段真值帧，跑 AC-11 严格验收 | 标注素材 |
 
 ---
 
-*文档结尾 · 状态为 2026-08-17 快照，后续迭代请更新本文件头部日期与 §三/§五/§七 相关小节。*
+*文档结尾 · 状态为 2026-08-18 快照，后续迭代请更新本文件头部日期与 §三/§五/§七 相关小节。*

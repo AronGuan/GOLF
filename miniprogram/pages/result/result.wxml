@@ -73,6 +73,11 @@
         <view class="op op--ghost" bindtap="onNext">下一阶段</view>
         <view class="op op--ghost" bindtap="onSaveImage">保存本帧</view>
       </view>
+
+      <!-- 整页截图（v3）：把当前看到的内容合成为一张图保存相册 -->
+      <view
+        class="op op--primary op--savepage {{snapSaving ? 'op--loading' : ''}}"
+        bindtap="onSavePage">{{snapSaving ? '保存中...' : '保存当前页到相册'}}</view>
     </view>
 
     <!-- 当前阶段指标（v2：空状态优雅处理 + description 术语解释行） -->
@@ -176,6 +181,14 @@
     <view class="footer">
       <view class="btn btn--primary" bindtap="onRetake">再分析一次</view>
     </view>
+
+    <!-- 整页截图离屏 canvas（type=2d；离屏绘制后导出保存相册，v3） -->
+    <canvas
+      type="2d"
+      id="snapshotCanvas"
+      class="snapshot-canvas"
+      style="width:750px;height:{{snapH}}px;"
+    ></canvas>
 
   </block>
 

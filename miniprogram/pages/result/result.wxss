@@ -682,3 +682,25 @@
   background: #18222c;
   border: 1rpx dashed #2a323e;
 }
+
+/* ================= v3 整页保存 ================= */
+.op--primary {
+  color: #0f1720;
+  font-weight: 600;
+  background: var(--accent, #3ddc97);
+  border: 1rpx solid var(--accent, #3ddc97);
+}
+.op--savepage {
+  flex: none;
+  margin-right: 0;
+  margin-top: 16rpx;
+}
+.op--loading {
+  opacity: 0.72;
+}
+/* 离屏画布：不占布局、不影响交互 */
+.snapshot-canvas {
+  position: fixed;
+  left: -9999px;
+  top: 0;
+}
