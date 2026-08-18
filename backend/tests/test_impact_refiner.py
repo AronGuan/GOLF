@@ -15,9 +15,11 @@
     8. CLUBLITE_ENABLED=False            -> available=False 且 opens 不增长
     9. reanchor_impact 单调性冲突        -> 返回 None，原 events 不变
     10. MAX_SHIFT_FRAMES 顶盖            -> 不采纳（available=False）
-    11. CLUBLITE_IMPACT_OFFSET=-1（v2）  -> new = motion_peak - 1；0 回滚 v1
+    11. CLUBLITE_IMPACT_OFFSET（v2）     -> new = motion_peak + offset；0 回滚 v1
     12. delta==0 无操作校正（v2）        -> 偏移把运动峰拉回原估计不降级
     13. 物理下界（v2）                   -> 偏移不早于 top+min_gap（G0 兜底）
+    14. D 方案锚点邻域（v3，2026-08）    -> _anchor_neighborhood / _select_best
+        纯函数 + 合成视频不回归（横扫式运动峰偏晚修正，接口契约零变化）
 """
 
 from __future__ import annotations
@@ -296,12 +298,33 @@ class TestRefineImpact:
         result = impact_refiner.refine_impact(
             path, frames, events, signals, CameraView.FACE_ON, video_meta,
         )
-        # v2：运动峰 = 57（peak_delta = 57-51 = 6 > MAX=2 → 拒绝）；
-        # 偏移 -1 后最终 new = 56，诊断 delta_frames = 5（保留诊断字段）
+        # D 方案：运动峰 = 57（peak_delta = 57-51 = 6 > MAX=2 → 拒绝）；
+        # CLUBLITE_IMPACT_OFFSET=-1 后最终 new = 56，诊断 delta_frames = 5
         assert result.motion_peak_index == 57, f"运动峰应落在 57: {result}"
         assert result.delta_frames == 5
         assert not result.available
         assert result.method == "none"
+
+    def test_anchor_keeps_contact_frame(self, tmp_path, video_meta):
+        """#14 D 方案：合成杆+球视频锚点==运动峰，选帧不回归（仍贴近真值 t_c）。"""
+        path = _write_club_video(str(tmp_path / "club_anchor.mp4"))
+        frames = make_swing_frames()
+        events = _swing_events()
+        signals = _swing_signals()
+        result = impact_refiner.refine_impact(
+            path, frames, events, signals, CameraView.FACE_ON, video_meta,
+        )
+        assert result.available, f"应校正成功: {result}"
+        assert abs(result.new_array_index - T_CONTACT) <= 1
+        # 契约：new == 峰 + CLUBLITE_IMPACT_OFFSET（锚点法把峰拉回接触后，
+        # -1 偏移再微调到视觉接触帧）
+        assert result.new_array_index == (
+            result.motion_peak_index + config.CLUBLITE_IMPACT_OFFSET
+        )
+        # 合成视频 M2 杆身检测不稳定（骨架掩膜可能过滤杆身线），锚点存在时
+        # 须贴近真值；不存在时锚点路径由纯函数用例 + 真实视频探针覆盖
+        if result.shaft_lowest_index is not None:
+            assert abs(result.shaft_lowest_index - T_CONTACT) <= 1
 
     def test_impact_offset_applied_to_peak(self, tmp_path, video_meta):
         """#11 v2：CLUBLITE_IMPACT_OFFSET=-1 时 new = motion_peak + offset。"""
@@ -538,6 +561,143 @@ class TestShaftLowestY:
             )
             is None
         )
+
+
+# ---------------------------------------------------------------------------
+# D 方案：M2 杆身最低点先验锚点邻域（横扫式运动峰偏晚修正）
+# ---------------------------------------------------------------------------
+
+
+class TestAnchorSelection:
+    """D 方案（2026-08 用户拍板）：锚点邻域选帧 + 回退路径。"""
+
+    def test_anchor_neighborhood_restricts_to_window(self):
+        """横扫帧（远离锚点）被排除在邻域外。"""
+        # 候选偏移 [0,1,2,4] -> array [10,11,12,13,20]；20 为横扫帧（远离锚点）
+        candidates = [0, 1, 2, 4]
+        cand_indices = [10, 11, 12, 13, 20]
+        # 锚点 = 偏移 2（array 12，杆头端点 y 最大 340）
+        shaft_ys = {1: 300.0, 2: 340.0, 4: 200.0}
+        nb = impact_refiner._anchor_neighborhood(
+            candidates, cand_indices, shaft_ys, 8, 22, 3
+        )
+        assert nb is not None
+        sel, anchor_array, win_lo, win_hi = nb
+        assert anchor_array == 12
+        assert win_lo == 9 and win_hi == 15
+        assert sel == [0, 1, 2]  # 横扫帧（array 20）不在邻域 [9,15] 内
+
+    def test_anchor_window_clamped_to_search_bounds(self):
+        """邻域 clamp 到搜索区间 [lo, hi]。"""
+        candidates = [0, 1, 2]
+        cand_indices = [9, 10, 11]
+        shaft_ys = {1: 300.0}
+        nb = impact_refiner._anchor_neighborhood(
+            candidates, cand_indices, shaft_ys, 9, 11, 3
+        )
+        assert nb is not None
+        sel, anchor_array, win_lo, win_hi = nb
+        assert anchor_array == 10
+        assert win_lo == 9 and win_hi == 11
+        assert sel == [0, 1, 2]
+
+    def test_anchor_neighborhood_none_without_shaft(self):
+        """M2 不可用（shaft_ys 为空）-> None（调用方回退全窗口）。"""
+        assert (
+            impact_refiner._anchor_neighborhood([0, 1], [10, 11], {}, 8, 12, 3)
+            is None
+        )
+
+    def test_anchor_uses_offset_indexed_cand_indices(self):
+        """回归：cand_indices 按灰度帧偏移索引（修复 cand_indices[k] -> [c]）。"""
+        candidates = [5, 10]  # 灰度帧偏移
+        cand_indices = [111, 112, 113, 114, 115, 116, 117, 118, 119, 120, 121]
+        shaft_ys = {5: 1279.0, 10: 1279.0}  # 平票取先者 = 偏移 5（array 116）
+        nb = impact_refiner._anchor_neighborhood(
+            candidates, cand_indices, shaft_ys, 111, 121, 3
+        )
+        assert nb is not None
+        sel, anchor_array, win_lo, win_hi = nb
+        assert anchor_array == 116
+        assert win_lo == 113 and win_hi == 119
+        assert sel == [0]  # 只有偏移 5（array 116）在邻域内，横扫帧 121 出局
+
+    def test_select_best_prefers_anchor_window_over_far_sweep(self):
+        """锚点邻域内选帧：全局横扫帧 score 最高也被邻域排除。"""
+        candidates = [0, 1, 2, 4]
+        cand_indices = [10, 11, 12, 13, 20]
+        scores = [0.5, 0.6, 0.7, 1.0]  # 横扫帧（array 20）全局最高
+        shaft_ys = {1: 300.0, 2: 340.0, 4: 200.0}
+        nb = impact_refiner._anchor_neighborhood(
+            candidates, cand_indices, shaft_ys, 8, 22, 3
+        )
+        assert nb is not None
+        sel, _, _, _ = nb
+        best_offset, _best_k, best_score = impact_refiner._select_best(
+            candidates, scores, shaft_ys, sel
+        )
+        assert best_offset == 2  # 邻域内最优（array 12），非全局横扫帧 20
+        assert best_score == 0.7
+
+    def test_select_best_full_window_without_anchor(self):
+        """回退路径：M2 不可用 / 开关关闭 -> 全候选集按 score 选（横扫帧胜出）。"""
+        candidates = [0, 1, 2, 4]
+        scores = [0.5, 0.6, 0.7, 1.0]
+        best_offset, _best_k, best_score = impact_refiner._select_best(
+            candidates, scores, {}, list(range(len(candidates)))
+        )
+        assert best_offset == 4
+        assert best_score == 1.0
+
+    def test_select_best_tie_breaker_prefers_lower_shaft(self):
+        """平票 tie-breaker：都有杆身时优先杆头更贴地（y 更大）。"""
+        candidates = [0, 1]
+        scores = [0.5, 0.5]
+        shaft_ys = {0: 300.0, 1: 350.0}
+        best_offset, _best_k, _best_score = impact_refiner._select_best(
+            candidates, scores, shaft_ys, [0, 1]
+        )
+        assert best_offset == 1  # y 350 > 300，更贴地
+
+    def test_select_best_empty_selection(self):
+        """空 selection -> (-1, -1, 0.0)（调用方 G0）。"""
+        assert impact_refiner._select_best([0, 1], [0.5, 0.6], {}, []) == (
+            -1, -1, 0.0,
+        )
+
+    def test_refine_anchor_switch_off_falls_back(self, tmp_path, video_meta, monkeypatch):
+        """CLUBLITE_USE_ANCHOR=False 时走全窗口逻辑（合成视频仍校正成功）。"""
+        monkeypatch.setattr(config, "CLUBLITE_USE_ANCHOR", False)
+        path = _write_club_video(str(tmp_path / "club_noanchor.mp4"))
+        frames = make_swing_frames()
+        events = _swing_events()
+        signals = _swing_signals()
+        result = impact_refiner.refine_impact(
+            path, frames, events, signals, CameraView.FACE_ON, video_meta,
+        )
+        assert result.available
+        assert abs(result.new_array_index - T_CONTACT) <= 1
+
+    def test_anchor_window_credible_accepts_competitive_window(self):
+        """锚点邻域最优与全窗口最优相当 -> 可信（新样本 22030124 场景）。"""
+        scores = [0.6063, 0.6437]
+        assert impact_refiner._anchor_window_credible(scores, [0], 0.7)
+        # 邻域含全窗口最优 -> ratio=1.0，必然可信（no-op 样本）
+        assert impact_refiner._anchor_window_credible(scores, [0, 1], 0.7)
+
+    def test_anchor_window_credible_rejects_weak_anchor(self):
+        """锚点邻域最优远低于全窗口最优 -> 不可信，回退（假锚点守卫）。"""
+        # 0bb16a97: 邻域 0.07 vs 全窗口 0.618（ratio 0.11）
+        assert not impact_refiner._anchor_window_credible([0.0698, 0.6179], [0], 0.7)
+        # a4fba3d2: 邻域 0.013 vs 全窗口 0.035（ratio 0.36）
+        assert not impact_refiner._anchor_window_credible([0.0126, 0.0348], [0], 0.7)
+        # 1446d1b9: 邻域 0.27 vs 全窗口 0.49（ratio 0.55）
+        assert not impact_refiner._anchor_window_credible([0.2702, 0.4897], [0], 0.7)
+
+    def test_anchor_window_credible_empty_or_zero(self):
+        """空邻域 / 全零得分 -> 不可信。"""
+        assert not impact_refiner._anchor_window_credible([0.5], [], 0.7)
+        assert not impact_refiner._anchor_window_credible([0.0, 0.0], [0], 0.7)
 
 
 # ---------------------------------------------------------------------------

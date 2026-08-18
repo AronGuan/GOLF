@@ -1,6 +1,6 @@
 """ClubLite 击球帧校正真实视频实测（ARCHITECTURE-v3-clublite.md §5 T04）。
 
-对 11 段真实视频（3 正面 + 6 DTL + 2 DTL 补充）跑完整 pipeline（含校正），
+对 12 段真实视频（3 正面 + 7 DTL + 2 DTL 补充）跑完整 pipeline（含校正），
 输出逐段 delta 表，供 VALIDATION-CLUBLITE.md 校准。
 
 用法::
@@ -70,6 +70,7 @@ CASES: List[tuple] = [
     ("DTL-4e8d0d7e", os.path.join(SAMPLE_DIR, "4e8d0d7e517a67a2a7698fd1536289eb.mp4"), "dtl"),
     ("DTL-707fb04a", os.path.join(SAMPLE_DIR, "707fb04a3dbd91db19b97e0ca4aee959.mp4"), "dtl"),
     ("DTL-c6f67f38", os.path.join(SAMPLE_DIR, "c6f67f38e5d293a5ce1458e5ff5a6f1b.mp4"), "dtl"),
+    ("DTL-22030124", os.path.join(SAMPLE_DIR, "22030124ed3bce12cdec7c629d0c6cc8.mp4"), "dtl"),
     ("VID-1446d1b9", os.path.join(VIDEO_DIR, "1446d1b95c4329272f1818d6990f3c4f.mp4"), "dtl"),
     ("VID-a4fba3d2", os.path.join(VIDEO_DIR, "a4fba3d24cf9beb59f9d3b06be26daab.mp4"), "dtl"),
 ]
@@ -208,6 +209,19 @@ def probe_one(name: str, path: str, chosen_view: str) -> Dict[str, Any]:
             "ball_detected": refine.ball_detected,
             "motion_peak_index": refine.motion_peak_index,
             "shaft_lowest_index": refine.shaft_lowest_index,
+            # D 方案诊断：shaft_lowest_index == 锚点（杆头最贴地帧）array 下标。
+            # anchor_window_hit = 最终采纳帧落在锚点 ±CLUBLITE_ANCHOR_WINDOW
+            # 邻域内（M2 可用且锚点生效/确认的近似；决策级 anchor_used 见
+            # impact_refiner 日志）。anchor_min_ratio = 假锚点守卫阈值。
+            "anchor_window_hit": bool(
+                config.CLUBLITE_USE_ANCHOR
+                and refine.shaft_lowest_index is not None
+                and refine.new_array_index is not None
+                and abs(refine.new_array_index - refine.shaft_lowest_index)
+                <= int(config.CLUBLITE_ANCHOR_WINDOW)
+            ),
+            "anchor_window": int(config.CLUBLITE_ANCHOR_WINDOW),
+            "anchor_min_ratio": float(config.CLUBLITE_ANCHOR_MIN_SCORE_RATIO),
             "peak_delta": (
                 refine.motion_peak_index - refine.old_array_index
                 if refine.motion_peak_index is not None
@@ -312,9 +326,9 @@ def main() -> int:
         json.dump(results, fh, ensure_ascii=False, indent=2)
 
     print(f"\n{'#' * 78}")
-    print("逐段 delta 表（校正后 impact 相对校正前，v2 含 CLUBLITE_IMPACT_OFFSET）:")
-    print(f"{'名称':<14s} {'机位':<6s} {'old':>4s} {'peak':>4s} {'new':>4s} "
-          f"{'delta':>6s} {'method':<13s} {'conf':>6s} {'ball':>5s} {'opens':>5s}")
+    print("逐段 delta 表（校正后 impact 相对校正前；shaft=锚点/杆头最低点 array 下标）:")
+    print(f"{'名称':<14s} {'机位':<6s} {'old':>4s} {'peak':>4s} {'shaft':>5s} "
+          f"{'new':>4s} {'delta':>6s} {'method':<13s} {'conf':>6s} {'ball':>5s} {'opens':>5s}")
     g1 = 0
     seg_ok = 0
     deltas: List[int] = []
@@ -327,6 +341,7 @@ def main() -> int:
         refine = r.get("refine") or {}
         old = (r.get("old_impact") or {}).get("array_index", -1)
         peak = refine.get("motion_peak_index", old)
+        shaft = refine.get("shaft_lowest_index")
         new = (r.get("new_impact") or {}).get("array_index", old)
         delta = new - old if r.get("reanchor_ok") else 0
         if refine.get("available") and r.get("reanchor_ok"):
@@ -334,7 +349,8 @@ def main() -> int:
         if r.get("reanchor_ok"):
             deltas.append(delta)
         print(
-            f"{r['name']:<14s} {r.get('view','--'):<6s} {old:>4d} {peak:>4d} {new:>4d} "
+            f"{r['name']:<14s} {r.get('view','--'):<6s} {old:>4d} {peak:>4d} "
+            f"{str(shaft) if shaft is not None else '--':>5s} {new:>4d} "
             f"{delta:>+6d} {str(refine.get('method','none')):<13s} "
             f"{refine.get('confidence',0.0):>6.2f} "
             f"{str(refine.get('ball_detected',False)):>5s} {r.get('opens',0):>5d}"

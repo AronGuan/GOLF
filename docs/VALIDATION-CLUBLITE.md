@@ -95,7 +95,104 @@ delta 6→5）。
 
 ---
 
-## 3. face-on 专项验证（用户 Q1 硬要求）
+## 3. D 方案实验记录（横扫式运动峰偏晚修正，2026-08）
+
+> 任务：解决"横扫式运动峰偏晚"问题。用户实测真实视频
+> `22030124ed3bce12cdec7c629d0c6cc8.mp4`（新样本，已入探针 CASES）：
+> 真实击球在 **f115**（用户视觉确认：f114 杆头刚要击球、f115 球被打飞），
+> 旧 `locate_impact` 选 113（手腕速度峰，偏早 2 帧）、M1 运动峰 121（杆身
+> 水平横扫跨越像素最多、帧差最强，偏晚 6 帧）、M2 杆身最低点 116（只偏 1 帧，
+> **最准**），但旧算法最终采纳 120（motion 主导，shaft_bonus 权重不够压过横扫帧）。
+> 根因：**全窗口找最优时横扫帧 motion 优势压过杆身最低点**。
+> 数据来源：`backend/_probe_out/probe_d_offset-1.json`（最终配置）。
+
+### 3.1 方案（D：杆身最低点先验锚点）
+
+把 M2 杆身最低点（`_shaft_lowest_y` y 值最大的候选帧）作为**先验锚点**，只在锚点
+±`CLUBLITE_ANCHOR_WINDOW`(=3) 邻域内按综合 score 选帧；横扫帧（远离锚点）被
+排除在候选集外。三个回退条件（任一满足 -> 回退 v2 全窗口，原行为不变）：
+1. M2 不可用（`shaft_ys` 为空 / `_shaft_lowest_y` 全 None）；
+2. 锚点邻域内全部 score≈0；
+3. **假锚点守卫（校准新增）**：邻域最优得分 < `CLUBLITE_ANCHOR_MIN_SCORE_RATIO`(=0.7)
+   × 全窗口最优得分。
+
+配套常量：`CLUBLITE_USE_ANCHOR`（默认 True，False 即回旧逻辑）、
+`CLUBLITE_ANCHOR_WINDOW`（默认 3）、`CLUBLITE_ANCHOR_MIN_SCORE_RATIO`（默认 0.7）。
+实现：`impact_refiner._anchor_neighborhood`（锚点邻域）+ `_anchor_window_credible`
+（可信度守卫）+ `_select_best`（邻域内选帧，含 M2 tie-breaker）；`refine_impact`
+Step6b/7 接入。**接口契约零变化**（`ImpactRefineResult` 字段、`refine_impact` /
+`plan_*` 签名均不变），`locate_impact` / `segmenter.py` **零改动**。
+
+### 3.2 假锚点守卫的必要性（校准过程）
+
+首版按"锚点邻域硬收缩"实现后，12 段探针发现 3 段过校正（0bb16a97 +7→-1、
+1446d1b9 +6→+1、a4fba3d2 +4→0）：`_shaft_lowest_y` 在 DTL 机位常饱和在图像
+底边（y=1279），多个候选的"杆头端点 y"打平，平票取**最早**候选 = 下杆早期/
+弱运动帧（Hough 假阳性）。逐段 ratio（锚点邻域最优得分 / 全窗口最优得分）：
+
+| 视频 | 锚点 | 邻域最优 / 全窗口最优 | ratio | 处置 |
+|---|---|---|---:|---|
+| 0bb16a97 | 188 | 0.07 / 0.62 | 0.11 | 回退 ✅ |
+| a4fba3d2 | 162 | 0.013 / 0.035 | 0.36 | 回退 ✅ |
+| 1446d1b9 | 34 | 0.27 / 0.49 | 0.55 | 回退 ✅ |
+| **22030124（新）** | **116** | **0.606 / 0.644** | **0.94** | **锚点生效 ✅** |
+| 其余 6 段 | == 峰 | 1.0 | 1.0 | 锚点 no-op ✅ |
+
+0.7 干净分隔"真锚点（横扫假设成立）"与"假锚点（Hough 假阳性/弱运动帧）"两类
+→ `CLUBLITE_ANCHOR_MIN_SCORE_RATIO=0.7`。
+
+### 3.3 12 段 delta 表（最终配置：锚点法 + CLUBLITE_IMPACT_OFFSET=-1）
+
+| # | 视频 | 机位 | 切分 | old | peak | shaft(锚点) | new | **delta** | v2 delta | 变化 |
+|---|------|------|------|---:|---:|---:|---:|---:|---:|---|
+| 1 | 正面1 | face-on | ✅ | 37 | 38 | 38 | 37 | **0** | 0 | 0 |
+| 2 | 正面2 | face-on | ✅ | 284 | 292 | 292 | 291 | **+7** | +7 | 0 |
+| 3 | 正面3 | face-on | ✅ | 70 | 74 | 77 | 73 | **+3** | +3 | 0 |
+| 4 | DTL-087d40a0 | dtl | ❌ NO_SWING | — | — | — | — | — | — | — |
+| 5 | DTL-0bb16a97 | dtl | ✅ | 189 | 197 | 188 | 196 | **+7** | +7 | 0 |
+| 6 | DTL-470057ac | dtl | ✅ | 98 | 104 | 104 | 103 | **+5** | +5 | 0 |
+| 7 | DTL-4e8d0d7e | dtl | ✅ | 235 | 243 | 243 | 242 | **+7** | +7 | 0 |
+| 8 | DTL-707fb04a | dtl | ❌ NO_SWING | — | — | — | — | — | — | — |
+| 9 | DTL-c6f67f38 | dtl | ✅ | 177 | 180 | 180 | 179 | **+2** | +2 | 0 |
+| 10 | **DTL-22030124（新）** | dtl | ✅ | **113** | **116** | **116** | **115** | **+2** | 旧 120 | **-5（120→115）** |
+| 11 | VID-1446d1b9 | dtl | ✅ | 33 | 40 | 34 | 39 | **+6** | +6 | 0 |
+| 12 | VID-a4fba3d2 | dtl | ✅ | 163 | 168 | 162 | 167 | **+4** | +4 | 0 |
+
+**验收核对**：
+- **新样本修正**：算法最终采纳帧 120 → **115**（真实击球 f115，用户视觉确认；
+  delta 相对旧 locate_impact 113 为 +2，∈ 期望 [-1, +3]）；锚点法把运动峰从
+  横扫帧 121 拉回杆头最低点 116，-1 偏移微调到 115；
+- **无回归**：其余 9 段 delta 与 v2 基线**完全一致（变化 0，≤ ±2）**；2 段残片
+  （087d40a0 / 707fb04a）仍 NO_SWING；
+- **10/10 G1**：切分成功 10/12，校正有效 10/10，method 全 motion+shaft；
+- **解码覆盖**：10/10 `all_events_decoded=True`（QA P1 无渲染 fallback），opens=1；
+- **墙钟**：refine 块 ≤ 0.31s/段（新样本 0.31s），增量预算 0.5s 内。
+
+### 3.4 CLUBLITE_IMPACT_OFFSET 实验结论（用实验决定，勿拍脑袋）
+
+按用户指示先设 0 跑 12 段，再对比 -1：
+
+| offset | 新样本 new | 新样本 delta | 其余 9 段 vs v2 | 结论 |
+|---|---|---|---|---|
+| 0 | 116 | +3 | 全部 +1（≤ ±2 内） | 新样本仍偏晚 1 帧（真实 115） |
+| **-1** | **115** | **+2** | **全部 0（完全一致）** | **命中真实接触，采用** |
+
+**结论：保持 -1**。用户预判"锚点已向真实击球靠拢，-1 偏移可能不再需要"被数据
+否决：锚点负责把**峰位**从横扫帧 121 拉回杆头最低点 116（这是 D 方案的核心
+修复），-1 偏移负责把"杆头最低点"微调到"视觉接触"（116→115，与 v2 同向）。
+两者分工：锚点修正"选哪个峰"，偏移修正"峰与接触的固定 1 帧差"。
+
+### 3.5 回退路径
+
+- 改动前 git HEAD：`d9034ae`；
+- 一键回退：`git checkout -- backend/app/impact_refiner.py backend/app/config.py`
+  （D 方案代码改动全部集中在这两个文件；探针/测试/文档改动可保留或一并回退）；
+- 常量开关：`CLUBLITE_USE_ANCHOR=False` 即回 v2 全窗口逻辑（无需回退代码）；
+  `CLUBLITE_ANCHOR_WINDOW=0` 邻域退化为单点锚点。
+
+---
+
+## 3b. face-on 专项验证（用户 Q1 硬要求）
 
 正面 3 段（正面1/2/3）**全部校正有效，方向正确（均后移向真实击球帧）**：
 
@@ -257,6 +354,7 @@ $PY backend/run.py segment <video.mp4>
 # ClubLite 校正探针（11 段真实视频）
 $PY backend/_probe_out/probe_clublite.py --tag clublite_v1
 $PY backend/_probe_out/probe_clublite.py --tag clublite_v2   # v2：CLUBLITE_IMPACT_OFFSET=-1
+$PY backend/_probe_out/probe_clublite.py --tag d_offset-1    # D 方案：锚点法（12 段，含新样本 22030124）
 
 # ClubLite 端到端实测（metrics + risk + render）
 $PY backend/_probe_out/probe_clublite_full.py

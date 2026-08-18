@@ -28,6 +28,20 @@ v2 调优（2026-08 用户拍板）：最终选帧时对最优候选统一回退
 球被杆头加速后的帧，视觉真实接触瞬间在其前 1 帧（30fps = 33ms）。偏移受
 物理下界守卫（top + min_gap）约束，越界则 G0；``plan_reanchor_frames`` 的
 搜索集同步扩展覆盖偏移目标帧，保证 reanchor 事件帧仍在解码并集内。
+
+D 方案（2026-08 用户拍板）：横扫式运动峰偏晚问题。真实视频
+22030124ed3bce12cdec7c629d0c6cc8 中，M1 运动峰落在 121（杆身水平横扫跨越
+像素最多、帧差最强），但真实击球在 115、M2 杆身最低点在 116。根因：全窗口
+找最优时横扫帧 motion 优势压过杆身最低点。改动：把 M2 杆身最低点
+（``_shaft_lowest_y`` y 值最大的候选帧）作为**先验锚点**，只在锚点
+±:data:`config.CLUBLITE_ANCHOR_WINDOW` 邻域内按综合 score 选帧。回退条件：
+M2 不可用 / 邻域内全部 score≈0 / 邻域最优远低于全窗口最优
+（:data:`config.CLUBLITE_ANCHOR_MIN_SCORE_RATIO`=0.7，假锚点守卫——实测
+0bb16a97/1446d1b9/a4fba3d2 的"杆身最低点"是 Hough 假阳性/弱运动帧，ratio
+仅 0.11/0.55/0.36，必须回退 v2 全窗口）。配套
+:data:`config.CLUBLITE_USE_ANCHOR` 一键开关（False 即回旧逻辑），
+:data:`config.CLUBLITE_IMPACT_OFFSET` 实验定为 0（锚点已向真实接触靠拢，
+结论见 docs/VALIDATION-CLUBLITE.md §3）。
 """
 
 from __future__ import annotations
@@ -582,6 +596,135 @@ def _diff_centroid(
     )
 
 
+def _anchor_neighborhood(
+    candidates: Sequence[int],
+    cand_indices: Sequence[int],
+    shaft_ys: Dict[int, float],
+    lo: int,
+    hi: int,
+    window: int,
+) -> Optional[Tuple[List[int], int, int, int]]:
+    """D 方案：M2 杆身最低点先验锚点，返回其 ±window 邻域内的候选下标。
+
+    锚点 = ``shaft_ys`` 中杆头端点 y 最大的候选（y 越大越接近地面线/图像底部，
+    即"杆头最贴地"——真实击球信号）。横扫式运动峰（杆身水平横扫跨越像素
+    最多、帧差最强）常晚于真实击球数帧，因此只在锚点邻域内选帧，把横扫帧
+    排除在候选集外（CLUBLITE_ANCHOR_WINDOW 默认 3）。
+
+    Args:
+        candidates: 候选（灰度帧偏移，升序，与 ``scores`` 平行）。
+        cand_indices: 灰度帧偏移 -> array 下标（``cand_indices[offset]``，
+            与 ``cand_frames`` / ``gray_frames`` 平行）。
+        shaft_ys: 候选偏移 -> 杆头端点 y（:func:`_shaft_lowest_y` 结果）。
+        lo / hi: 搜索窗口 array 下标闭区间（邻域 clamp 到该区间）。
+        window: 锚点邻域半窗（采样帧，>= 0）。
+
+    Returns:
+        ``(selection, anchor_array, win_lo, win_hi)``：``selection`` 为邻域内
+        候选在 ``candidates`` 中的下标（升序）；``anchor_array`` 为锚点 array
+        下标；``win_lo`` / ``win_hi`` 为 clamp 后的邻域闭区间。
+        M2 不可用（``shaft_ys`` 为空）或 ``window < 0`` 时返回 ``None``
+        （调用方回退全窗口逻辑）。
+    """
+    if not shaft_ys or window < 0:
+        return None
+    anchor_cand = max(shaft_ys, key=lambda c: float(shaft_ys[c]))
+    anchor_array = int(cand_indices[anchor_cand])
+    w = int(window)
+    win_lo = max(int(lo), anchor_array - w)
+    win_hi = min(int(hi), anchor_array + w)
+    # 注意：cand_indices 按下标（灰度帧偏移）索引，故用候选偏移 c 取 array 下标
+    selection = [
+        k
+        for k, c in enumerate(candidates)
+        if win_lo <= int(cand_indices[c]) <= win_hi
+    ]
+    if not selection:
+        return None
+    return selection, anchor_array, win_lo, win_hi
+
+
+def _anchor_window_credible(
+    scores: Sequence[float],
+    selection: Sequence[int],
+    min_ratio: float,
+) -> bool:
+    """锚点邻域可信度：邻域内最优得分须 ≥ ``min_ratio`` × 全窗口最优得分。
+
+    D 方案校准（12 段真实视频，见 docs/VALIDATION-CLUBLITE.md §3）：横扫式
+    运动峰偏晚只在该假设成立时可信——锚点邻域内要有与全窗口最优相当的候选
+    （即"横扫帧之外、接触附近的候选仍然可信"）。若邻域最优远低于全窗口最优
+    （实测 0bb16a97 邻域最优 0.07 vs 全窗口 0.62；a4fba3d2 0.013 vs 0.035；
+    1446d1b9 0.27 vs 0.49），说明锚点是 Hough 假阳性/弱运动帧，应回退全窗口
+    （v2 行为）。新样本 22030124 邻域最优 0.606 vs 全窗口 0.644（ratio 0.94）
+    通过，锚点生效 -> 116。
+
+    Args:
+        scores: 与 ``candidates`` 平行的综合得分。
+        selection: 锚点邻域内候选在 ``candidates`` 中的下标（升序）。
+        min_ratio: 可信度下限（:data:`config.CLUBLITE_ANCHOR_MIN_SCORE_RATIO`）。
+
+    Returns:
+        ``True`` = 邻域可信，可把候选集收缩到锚点邻域；``False`` = 回退全窗口。
+    """
+    if not selection:
+        return False
+    best_full = max(float(s) for s in scores)
+    if best_full <= 1e-9:
+        return False
+    best_window = max(float(scores[k]) for k in selection)
+    return best_window >= float(min_ratio) * best_full
+
+
+def _select_best(
+    candidates: Sequence[int],
+    scores: Sequence[float],
+    shaft_ys: Dict[int, float],
+    selection: Sequence[int],
+) -> Tuple[int, int, float]:
+    """在候选下标 ``selection`` 内按综合 score 选最优（含 M2 tie-breaker）。
+
+    平票时按 tie-breaker（与评分一致）：
+    1. 优先有 M2 杆身端点验证的候选；
+    2. 都有杆身时，优先杆头端点更贴地（``shaft_ys`` 的 y 值越大越接近图像
+       底部/地面线 —— 与 :func:`_shaft_lowest_y` 的语义一致）；
+    3. 都无杆身时，优先更靠后的帧（腕部估计偏早，靠后更接近真实击球）。
+
+    Args:
+        candidates: 候选（灰度帧偏移，升序，与 ``scores`` 平行）。
+        scores: 与 ``candidates`` 平行的综合得分。
+        shaft_ys: 候选偏移 -> 杆头端点 y（M2 结果；可能为空）。
+        selection: 参与选帧的候选在 ``candidates`` 中的下标（升序）。
+
+    Returns:
+        ``(best_offset, best_k, best_score)``：``best_offset`` 为最优候选
+        （灰度帧偏移）；``best_k`` 为其在 ``candidates`` 中的下标；
+        ``best_score`` 为其得分。``selection`` 为空时返回 ``(-1, -1, 0.0)``。
+    """
+    if not selection:
+        return -1, -1, 0.0
+    best_k = max(selection, key=lambda k: float(scores[k]))
+    best_offset = int(candidates[best_k])
+    best_score = float(scores[best_k])
+    for k in selection:
+        if abs(float(scores[k]) - best_score) > 1e-9:
+            continue
+        if k == best_k:
+            continue
+        cand = int(candidates[k])
+        cand_has_shaft = cand in shaft_ys
+        best_has_shaft = best_offset in shaft_ys
+        if cand_has_shaft and not best_has_shaft:
+            best_offset, best_k = cand, k
+        elif cand_has_shaft and best_has_shaft:
+            if float(shaft_ys[cand]) > float(shaft_ys[best_offset]):
+                best_offset, best_k = cand, k
+        elif not cand_has_shaft and not best_has_shaft:
+            if cand > best_offset:
+                best_offset, best_k = cand, k
+    return best_offset, best_k, best_score
+
+
 def refine_impact(
     video_path: str,
     frames: Sequence[FrameLandmarks],
@@ -773,30 +916,48 @@ def refine_impact(
         if max(scores) <= 1e-9:
             return ImpactRefineResult()
 
+        # ---- Step 6b：D 方案先验锚点邻域（CLUBLITE_USE_ANCHOR）------------
+        # 横扫式运动峰偏晚的根因：全窗口找最优时，横扫帧（杆身水平横扫跨越
+        # 像素最多、帧差最强）motion 优势压过杆身最低点。真实击球信号是"杆头
+        # 最贴地"（M2 ``_shaft_lowest_y`` y 值最大的候选帧 = 锚点），因此只在
+        # 锚点 ±CLUBLITE_ANCHOR_WINDOW 邻域内按综合 score 选帧；回退条件：
+        # M2 不可用 / 邻域内全部 score≈0 / 邻域最优远低于全窗口最优
+        # （CLUBLITE_ANCHOR_MIN_SCORE_RATIO，假锚点守卫）-> 回退全窗口
+        # （v2 行为，原逻辑不变）。
+        anchor_array: Optional[int] = None
+        anchor_used = False
+        selection: List[int] = list(range(len(candidates)))
+        if config.CLUBLITE_USE_ANCHOR:
+            neighborhood = _anchor_neighborhood(
+                candidates,
+                cand_indices,
+                shaft_ys,
+                lo,
+                hi,
+                int(config.CLUBLITE_ANCHOR_WINDOW),
+            )
+            if neighborhood is not None:
+                window_sel, anchor_array, win_lo, win_hi = neighborhood
+                if _anchor_window_credible(
+                    scores,
+                    window_sel,
+                    float(config.CLUBLITE_ANCHOR_MIN_SCORE_RATIO),
+                ):
+                    selection = window_sel
+                    anchor_used = True
+
         # ---- Step 7：采纳判定 ---------------------------------------------
-        # 先取分数最高的候选；平票时按 tie-breaker（与评分一致）：
+        # 在 selection（锚点邻域或全候选集）内取分数最高的候选；平票时按
+        # tie-breaker（与评分一致，见 _select_best）：
         #   1) 优先有 M2 杆身端点验证的候选；
         #   2) 都有杆身时，优先杆头端点更贴地（shaft_lowest_y 的 y 值越大越
         #      接近图像底部/地面线 —— 与 _shaft_lowest_y 的语义一致）；
         #   3) 都无杆身时，优先更靠后的帧（腕部估计偏早，靠后更接近真实击球）。
-        best_local = max(range(len(candidates)), key=lambda k: scores[k])
-        best_offset = candidates[best_local]
-        best_score = scores[best_local]
-        for k, cand in enumerate(candidates):
-            if abs(scores[k] - best_score) > 1e-9:
-                continue
-            if cand == best_offset:
-                continue
-            cand_has_shaft = cand in shaft_ys
-            best_has_shaft = best_offset in shaft_ys
-            if cand_has_shaft and not best_has_shaft:
-                best_offset, best_local = cand, k
-            elif cand_has_shaft and best_has_shaft:
-                if shaft_ys[cand] > shaft_ys[best_offset]:
-                    best_offset, best_local = cand, k
-            elif not cand_has_shaft and not best_has_shaft:
-                if cand > best_offset:
-                    best_offset, best_local = cand, k
+        best_offset, _best_k, _best_score = _select_best(
+            candidates, scores, shaft_ys, selection
+        )
+        if best_offset < 0:
+            return ImpactRefineResult()
 
         old_array_index = impact.array_index
         # 运动峰帧（未加偏移）：评分选出的最优候选，array 下标。
@@ -806,11 +967,13 @@ def refine_impact(
 
         shaft_lowest_cand: Optional[int] = None
         if shaft_ys:
-            shaft_lowest_cand = min(shaft_ys, key=lambda c: shaft_ys[c])
+            # 杆头最低点 = shaft_lowest_y 的 y 值最大的候选（y 越大越贴地），
+            # 与 D 方案锚点同口径（历史实现误用 min，2026-08 修正）。
+            shaft_lowest_cand = max(shaft_ys, key=lambda c: float(shaft_ys[c]))
 
-        # 系统偏移（v2 调优）：运动峰帧 -> 视觉接触瞬间。
-        # 实测"运动峰"是球被杆头加速后的帧，视觉真实接触在其前 1 帧
-        # （CLUBLITE_IMPACT_OFFSET = -1）。0 可回滚到 v1 行为。
+        # 系统偏移（v2 调优 -> D 方案）：运动峰帧 -> 视觉接触瞬间。
+        # D 方案（2026-08 实验结论）：锚点法已把选帧拉向真实接触，偏移不再
+        # 需要，CLUBLITE_IMPACT_OFFSET = 0（见 docs/VALIDATION-CLUBLITE.md §3）。
         new_array_index = peak_array_index + config.CLUBLITE_IMPACT_OFFSET
 
         # 物理下界守卫（用户拍板硬约束）：偏移后的 impact 不得早于
@@ -911,12 +1074,14 @@ def refine_impact(
             )
         else:
             logger.info(
-                "impact refined: %d -> %d (delta=%+d, peak=%d, method=%s, "
-                "conf=%.2f, ball=%s)",
+                "impact refined: %d -> %d (delta=%+d, peak=%d, anchor=%s, "
+                "anchor_used=%s, method=%s, conf=%.2f, ball=%s)",
                 old_array_index,
                 new_array_index,
                 delta,
                 peak_array_index,
+                anchor_array if anchor_array is not None else "n/a",
+                anchor_used,
                 method,
                 confidence,
                 ball_center is not None,
