@@ -1,0 +1,616 @@
+[
+  {
+    "name": "正面1",
+    "path": "E:\\project\\golf\\.tools\\_probe\\samples\\正面1.mp4",
+    "chosen_view": "face-on",
+    "ok": true,
+    "stage_failed": null,
+    "error_code": null,
+    "error_detail": null,
+    "meta": {
+      "fps": 26.0,
+      "width": 720,
+      "height": 1280,
+      "frame_count": 63,
+      "sample_step": 1
+    },
+    "signals": {
+      "n": 63,
+      "S": 0.08116,
+      "aspect": 1.7778
+    },
+    "segment_ok": true,
+    "view": "face_on",
+    "refine": {
+      "available": true,
+      "method": "motion+shaft",
+      "old_array_index": 37,
+      "new_array_index": 37,
+      "delta_frames": 0,
+      "motion_peak_index": 38,
+      "shaft_lowest_index": 38
+    },
+    "reanchor_ok": false,
+    "anchors": {
+      "top": 28,
+      "impact_raw": 37,
+      "impact_final": 37,
+      "addr": 3,
+      "finish": 62
+    },
+    "follow_through": {
+      "pipeline_raw": 38,
+      "pipeline_final": 38,
+      "pipeline_final_estimated": false,
+      "old": 46,
+      "old_estimated": true,
+      "new": 38,
+      "new_estimated": false
+    },
+    "checks": {
+      "final": {
+        "monotonic": true,
+        "in_range": true
+      },
+      "final_in_range_vs_pipe_impact": true,
+      "replicated_matches_pipeline": true
+    },
+    "elapsed_sec": 2.34
+  },
+  {
+    "name": "正面2",
+    "path": "E:\\project\\golf\\.tools\\_probe\\samples\\正面2.mp4",
+    "chosen_view": "face-on",
+    "ok": true,
+    "stage_failed": null,
+    "error_code": null,
+    "error_detail": null,
+    "meta": {
+      "fps": 30.0,
+      "width": 720,
+      "height": 1280,
+      "frame_count": 389,
+      "sample_step": 1
+    },
+    "signals": {
+      "n": 389,
+      "S": 0.10244,
+      "aspect": 1.7778
+    },
+    "segment_ok": true,
+    "view": "face_on",
+    "refine": {
+      "available": true,
+      "method": "motion+shaft",
+      "old_array_index": 284,
+      "new_array_index": 291,
+      "delta_frames": 7,
+      "motion_peak_index": 292,
+      "shaft_lowest_index": 292
+    },
+    "reanchor_ok": true,
+    "anchors": {
+      "top": 252,
+      "impact_raw": 284,
+      "impact_final": 291,
+      "addr": 157,
+      "finish": 373
+    },
+    "follow_through": {
+      "pipeline_raw": 288,
+      "pipeline_final": 292,
+      "pipeline_final_estimated": false,
+      "old": 298,
+      "old_estimated": false,
+      "new": 292,
+      "new_estimated": false
+    },
+    "checks": {
+      "final": {
+        "monotonic": true,
+        "in_range": true
+      },
+      "final_in_range_vs_pipe_impact": true,
+      "replicated_matches_pipeline": true
+    },
+    "elapsed_sec": 8.6
+  },
+  {
+    "name": "正面3",
+    "path": "E:\\project\\golf\\.tools\\_probe\\samples\\正面3.mp4",
+    "chosen_view": "face-on",
+    "ok": true,
+    "stage_failed": null,
+    "error_code": null,
+    "error_detail": null,
+    "meta": {
+      "fps": 27.0,
+      "width": 720,
+      "height": 1280,
+      "frame_count": 112,
+      "sample_step": 1
+    },
+    "signals": {
+      "n": 112,
+      "S": 0.10723,
+      "aspect": 1.7778
+    },
+    "segment_ok": true,
+    "view": "face_on",
+    "refine": {
+      "available": true,
+      "method": "motion+shaft",
+      "old_array_index": 70,
+      "new_array_index": 73,
+      "delta_frames": 3,
+      "motion_peak_index": 74,
+      "shaft_lowest_index": 77
+    },
+    "reanchor_ok": true,
+    "anchors": {
+      "top": 61,
+      "impact_raw": 70,
+      "impact_final": 73,
+      "addr": 37,
+      "finish": 101
+    },
+    "follow_through": {
+      "pipeline_raw": 71,
+      "pipeline_final": 74,
+      "pipeline_final_estimated": false,
+      "old": 83,
+      "old_estimated": true,
+      "new": 74,
+      "new_estimated": false
+    },
+    "checks": {
+      "final": {
+        "monotonic": true,
+        "in_range": true
+      },
+      "final_in_range_vs_pipe_impact": true,
+      "replicated_matches_pipeline": true
+    },
+    "elapsed_sec": 2.81
+  },
+  {
+    "name": "DTL-087d40a0",
+    "path": "E:\\project\\golf\\.tools\\_probe\\samples\\087d40a0e808f2c319b8097d89599780.mp4",
+    "chosen_view": "dtl",
+    "ok": true,
+    "stage_failed": "segment_swing",
+    "error_code": "NO_SWING",
+    "error_detail": "address->top too short: 4 < 14",
+    "meta": {
+      "fps": 30.0,
+      "width": 720,
+      "height": 1280,
+      "frame_count": 82,
+      "sample_step": 1
+    },
+    "elapsed_sec": 2.2
+  },
+  {
+    "name": "DTL-0bb16a97",
+    "path": "E:\\project\\golf\\.tools\\_probe\\samples\\0bb16a974ef55676cc1b938d8539edfd.mp4",
+    "chosen_view": "dtl",
+    "ok": true,
+    "stage_failed": null,
+    "error_code": null,
+    "error_detail": null,
+    "meta": {
+      "fps": 30.0,
+      "width": 720,
+      "height": 1280,
+      "frame_count": 210,
+      "sample_step": 1
+    },
+    "signals": {
+      "n": 210,
+      "S": 0.04881,
+      "aspect": 1.7778
+    },
+    "segment_ok": true,
+    "view": "down_the_line",
+    "refine": {
+      "available": true,
+      "method": "motion+shaft",
+      "old_array_index": 189,
+      "new_array_index": 196,
+      "delta_frames": 7,
+      "motion_peak_index": 197,
+      "shaft_lowest_index": 188
+    },
+    "reanchor_ok": true,
+    "anchors": {
+      "top": 183,
+      "impact_raw": 189,
+      "impact_final": 196,
+      "addr": 168,
+      "finish": 209
+    },
+    "follow_through": {
+      "pipeline_raw": 192,
+      "pipeline_final": 197,
+      "pipeline_final_estimated": false,
+      "old": 200,
+      "old_estimated": false,
+      "new": 197,
+      "new_estimated": false
+    },
+    "checks": {
+      "final": {
+        "monotonic": true,
+        "in_range": true
+      },
+      "final_in_range_vs_pipe_impact": true,
+      "replicated_matches_pipeline": true
+    },
+    "elapsed_sec": 5.67
+  },
+  {
+    "name": "DTL-470057ac",
+    "path": "E:\\project\\golf\\.tools\\_probe\\samples\\470057ac3dac2025eb6b0dcd390b6957.mp4",
+    "chosen_view": "dtl",
+    "ok": true,
+    "stage_failed": null,
+    "error_code": null,
+    "error_detail": null,
+    "meta": {
+      "fps": 30.0,
+      "width": 720,
+      "height": 1280,
+      "frame_count": 216,
+      "sample_step": 1
+    },
+    "signals": {
+      "n": 216,
+      "S": 0.06783,
+      "aspect": 1.7778
+    },
+    "segment_ok": true,
+    "view": "down_the_line",
+    "refine": {
+      "available": true,
+      "method": "motion+shaft",
+      "old_array_index": 98,
+      "new_array_index": 103,
+      "delta_frames": 5,
+      "motion_peak_index": 104,
+      "shaft_lowest_index": 104
+    },
+    "reanchor_ok": true,
+    "anchors": {
+      "top": 92,
+      "impact_raw": 98,
+      "impact_final": 103,
+      "addr": 73,
+      "finish": 137
+    },
+    "follow_through": {
+      "pipeline_raw": 100,
+      "pipeline_final": 104,
+      "pipeline_final_estimated": false,
+      "old": 115,
+      "old_estimated": true,
+      "new": 104,
+      "new_estimated": false
+    },
+    "checks": {
+      "final": {
+        "monotonic": true,
+        "in_range": true
+      },
+      "final_in_range_vs_pipe_impact": true,
+      "replicated_matches_pipeline": true
+    },
+    "elapsed_sec": 6.11
+  },
+  {
+    "name": "DTL-4e8d0d7e",
+    "path": "E:\\project\\golf\\.tools\\_probe\\samples\\4e8d0d7e517a67a2a7698fd1536289eb.mp4",
+    "chosen_view": "dtl",
+    "ok": true,
+    "stage_failed": null,
+    "error_code": null,
+    "error_detail": null,
+    "meta": {
+      "fps": 30.0,
+      "width": 720,
+      "height": 1280,
+      "frame_count": 362,
+      "sample_step": 1
+    },
+    "signals": {
+      "n": 362,
+      "S": 0.05258,
+      "aspect": 1.7778
+    },
+    "segment_ok": true,
+    "view": "down_the_line",
+    "refine": {
+      "available": true,
+      "method": "motion+shaft",
+      "old_array_index": 234,
+      "new_array_index": 241,
+      "delta_frames": 7,
+      "motion_peak_index": 242,
+      "shaft_lowest_index": 242
+    },
+    "reanchor_ok": true,
+    "anchors": {
+      "top": 228,
+      "impact_raw": 234,
+      "impact_final": 241,
+      "addr": 198,
+      "finish": 316
+    },
+    "follow_through": {
+      "pipeline_raw": 237,
+      "pipeline_final": 245,
+      "pipeline_final_estimated": false,
+      "old": 267,
+      "old_estimated": true,
+      "new": 245,
+      "new_estimated": false
+    },
+    "checks": {
+      "final": {
+        "monotonic": true,
+        "in_range": true
+      },
+      "final_in_range_vs_pipe_impact": true,
+      "replicated_matches_pipeline": true
+    },
+    "elapsed_sec": 8.86
+  },
+  {
+    "name": "DTL-707fb04a",
+    "path": "E:\\project\\golf\\.tools\\_probe\\samples\\707fb04a3dbd91db19b97e0ca4aee959.mp4",
+    "chosen_view": "dtl",
+    "ok": true,
+    "stage_failed": "segment_swing",
+    "error_code": "NO_SWING",
+    "error_detail": "address->top too short: 4 < 14",
+    "meta": {
+      "fps": 30.0,
+      "width": 720,
+      "height": 1280,
+      "frame_count": 132,
+      "sample_step": 1
+    },
+    "elapsed_sec": 3.48
+  },
+  {
+    "name": "DTL-c6f67f38",
+    "path": "E:\\project\\golf\\.tools\\_probe\\samples\\c6f67f38e5d293a5ce1458e5ff5a6f1b.mp4",
+    "chosen_view": "dtl",
+    "ok": true,
+    "stage_failed": null,
+    "error_code": null,
+    "error_detail": null,
+    "meta": {
+      "fps": 30.0,
+      "width": 720,
+      "height": 1280,
+      "frame_count": 312,
+      "sample_step": 1
+    },
+    "signals": {
+      "n": 312,
+      "S": 0.06733,
+      "aspect": 1.7778
+    },
+    "segment_ok": true,
+    "view": "down_the_line",
+    "refine": {
+      "available": true,
+      "method": "motion+shaft",
+      "old_array_index": 176,
+      "new_array_index": 179,
+      "delta_frames": 3,
+      "motion_peak_index": 180,
+      "shaft_lowest_index": 180
+    },
+    "reanchor_ok": true,
+    "anchors": {
+      "top": 169,
+      "impact_raw": 176,
+      "impact_final": 179,
+      "addr": 139,
+      "finish": 308
+    },
+    "follow_through": {
+      "pipeline_raw": 179,
+      "pipeline_final": 180,
+      "pipeline_final_estimated": false,
+      "old": 224,
+      "old_estimated": true,
+      "new": 180,
+      "new_estimated": false
+    },
+    "checks": {
+      "final": {
+        "monotonic": true,
+        "in_range": true
+      },
+      "final_in_range_vs_pipe_impact": true,
+      "replicated_matches_pipeline": true
+    },
+    "elapsed_sec": 8.11
+  },
+  {
+    "name": "DTL-22030124",
+    "path": "E:\\project\\golf\\.tools\\_probe\\samples\\22030124ed3bce12cdec7c629d0c6cc8.mp4",
+    "chosen_view": "dtl",
+    "ok": true,
+    "stage_failed": null,
+    "error_code": null,
+    "error_detail": null,
+    "meta": {
+      "fps": 30.0,
+      "width": 720,
+      "height": 1280,
+      "frame_count": 212,
+      "sample_step": 1
+    },
+    "signals": {
+      "n": 212,
+      "S": 0.08381,
+      "aspect": 1.7778
+    },
+    "segment_ok": true,
+    "view": "down_the_line",
+    "refine": {
+      "available": true,
+      "method": "motion+shaft",
+      "old_array_index": 113,
+      "new_array_index": 115,
+      "delta_frames": 2,
+      "motion_peak_index": 116,
+      "shaft_lowest_index": 116
+    },
+    "reanchor_ok": true,
+    "anchors": {
+      "top": 106,
+      "impact_raw": 113,
+      "impact_final": 115,
+      "addr": 84,
+      "finish": 146
+    },
+    "follow_through": {
+      "pipeline_raw": 115,
+      "pipeline_final": 116,
+      "pipeline_final_estimated": false,
+      "old": 116,
+      "old_estimated": false,
+      "new": 116,
+      "new_estimated": false
+    },
+    "checks": {
+      "final": {
+        "monotonic": true,
+        "in_range": true
+      },
+      "final_in_range_vs_pipe_impact": true,
+      "replicated_matches_pipeline": true
+    },
+    "elapsed_sec": 4.76
+  },
+  {
+    "name": "VID-1446d1b9",
+    "path": "E:\\project\\golf\\video\\1446d1b95c4329272f1818d6990f3c4f.mp4",
+    "chosen_view": "dtl",
+    "ok": true,
+    "stage_failed": null,
+    "error_code": null,
+    "error_detail": null,
+    "meta": {
+      "fps": 30.0,
+      "width": 1280,
+      "height": 720,
+      "frame_count": 238,
+      "sample_step": 1
+    },
+    "signals": {
+      "n": 238,
+      "S": 0.05965,
+      "aspect": 0.5625
+    },
+    "segment_ok": true,
+    "view": "down_the_line",
+    "refine": {
+      "available": true,
+      "method": "motion+shaft",
+      "old_array_index": 32,
+      "new_array_index": 39,
+      "delta_frames": 7,
+      "motion_peak_index": 40,
+      "shaft_lowest_index": 40
+    },
+    "reanchor_ok": true,
+    "anchors": {
+      "top": 24,
+      "impact_raw": 32,
+      "impact_final": 39,
+      "addr": 2,
+      "finish": 93
+    },
+    "follow_through": {
+      "pipeline_raw": 34,
+      "pipeline_final": 42,
+      "pipeline_final_estimated": false,
+      "old": 58,
+      "old_estimated": true,
+      "new": 42,
+      "new_estimated": false
+    },
+    "checks": {
+      "final": {
+        "monotonic": true,
+        "in_range": true
+      },
+      "final_in_range_vs_pipe_impact": true,
+      "replicated_matches_pipeline": true
+    },
+    "elapsed_sec": 5.33
+  },
+  {
+    "name": "VID-a4fba3d2",
+    "path": "E:\\project\\golf\\video\\a4fba3d24cf9beb59f9d3b06be26daab.mp4",
+    "chosen_view": "dtl",
+    "ok": true,
+    "stage_failed": null,
+    "error_code": null,
+    "error_detail": null,
+    "meta": {
+      "fps": 30.0,
+      "width": 720,
+      "height": 1280,
+      "frame_count": 338,
+      "sample_step": 1
+    },
+    "signals": {
+      "n": 338,
+      "S": 0.0645,
+      "aspect": 1.7778
+    },
+    "segment_ok": true,
+    "view": "down_the_line",
+    "refine": {
+      "available": true,
+      "method": "motion+shaft",
+      "old_array_index": 163,
+      "new_array_index": 167,
+      "delta_frames": 4,
+      "motion_peak_index": 168,
+      "shaft_lowest_index": 162
+    },
+    "reanchor_ok": true,
+    "anchors": {
+      "top": 157,
+      "impact_raw": 163,
+      "impact_final": 167,
+      "addr": 129,
+      "finish": 179
+    },
+    "follow_through": {
+      "pipeline_raw": 165,
+      "pipeline_final": 168,
+      "pipeline_final_estimated": false,
+      "old": 171,
+      "old_estimated": true,
+      "new": 168,
+      "new_estimated": false
+    },
+    "checks": {
+      "final": {
+        "monotonic": true,
+        "in_range": true
+      },
+      "final_in_range_vs_pipe_impact": true,
+      "replicated_matches_pipeline": true
+    },
+    "elapsed_sec": 6.96
+  }
+]

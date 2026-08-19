@@ -1,0 +1,105 @@
+
+==============================================================================
+[正面1] face-on  E:\project\golf\.tools\_probe\samples\正面1.mp4
+==============================================================================
+INFO: Created TensorFlow Lite XNNPACK delegate for CPU.
+WARNING: All log messages before absl::InitializeLog() is called are written to STDERR
+W0000 00:00:1787157814.608217   34276 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1787157814.627107   34276 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+E:\project\golf\.tools\python312\Lib\site-packages\google\protobuf\symbol_database.py:55: UserWarning: SymbolDatabase.GetPrototype() is deprecated. Please use message_factory.GetMessageClass() instead. SymbolDatabase.GetPrototype() will be removed soon.
+  warnings.warn('SymbolDatabase.GetPrototype() is deprecated. Please '
+  top=28 imp_raw=37 imp_final=37 (reanchor=False) | ⑦ raw=38 final=38 | 复刻旧=46(est=True) 新=38(est=False)
+
+==============================================================================
+[正面2] face-on  E:\project\golf\.tools\_probe\samples\正面2.mp4
+==============================================================================
+W0000 00:00:1787157816.308591   29092 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1787157816.330530   46224 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+  top=252 imp_raw=284 imp_final=291 (reanchor=True) | ⑦ raw=288 final=292 | 复刻旧=298(est=False) 新=292(est=False)
+
+==============================================================================
+[正面3] face-on  E:\project\golf\.tools\_probe\samples\正面3.mp4
+==============================================================================
+W0000 00:00:1787157824.918689   48536 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1787157824.933710   36312 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+  top=61 imp_raw=70 imp_final=73 (reanchor=True) | ⑦ raw=71 final=74 | 复刻旧=83(est=True) 新=74(est=False)
+
+==============================================================================
+[DTL-087d40a0] dtl  E:\project\golf\.tools\_probe\samples\087d40a0e808f2c319b8097d89599780.mp4
+==============================================================================
+W0000 00:00:1787157827.838475   39500 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1787157827.853993   39500 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+  >>> FAILED at segment_swing: NO_SWING - address->top too short: 4 < 14
+
+==============================================================================
+[DTL-0bb16a97] dtl  E:\project\golf\.tools\_probe\samples\0bb16a974ef55676cc1b938d8539edfd.mp4
+==============================================================================
+W0000 00:00:1787157830.147901   17412 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1787157830.162562   28052 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+  top=183 imp_raw=189 imp_final=196 (reanchor=True) | ⑦ raw=192 final=197 | 复刻旧=200(est=False) 新=197(est=False)
+
+==============================================================================
+[DTL-470057ac] dtl  E:\project\golf\.tools\_probe\samples\470057ac3dac2025eb6b0dcd390b6957.mp4
+==============================================================================
+W0000 00:00:1787157835.856019   18096 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1787157835.875464   18096 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+  top=92 imp_raw=98 imp_final=103 (reanchor=True) | ⑦ raw=100 final=104 | 复刻旧=115(est=True) 新=104(est=False)
+
+==============================================================================
+[DTL-4e8d0d7e] dtl  E:\project\golf\.tools\_probe\samples\4e8d0d7e517a67a2a7698fd1536289eb.mp4
+==============================================================================
+W0000 00:00:1787157841.951398    9940 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1787157841.968493   35464 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+  top=228 imp_raw=234 imp_final=241 (reanchor=True) | ⑦ raw=237 final=245 | 复刻旧=267(est=True) 新=245(est=False)
+
+==============================================================================
+[DTL-707fb04a] dtl  E:\project\golf\.tools\_probe\samples\707fb04a3dbd91db19b97e0ca4aee959.mp4
+==============================================================================
+W0000 00:00:1787157850.735447   25388 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1787157850.750944   25388 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+  >>> FAILED at segment_swing: NO_SWING - address->top too short: 4 < 14
+
+==============================================================================
+[DTL-c6f67f38] dtl  E:\project\golf\.tools\_probe\samples\c6f67f38e5d293a5ce1458e5ff5a6f1b.mp4
+==============================================================================
+W0000 00:00:1787157854.333278   22848 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1787157854.347540   35812 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+  top=169 imp_raw=176 imp_final=179 (reanchor=True) | ⑦ raw=179 final=180 | 复刻旧=224(est=True) 新=180(est=False)
+
+==============================================================================
+[DTL-22030124] dtl  E:\project\golf\.tools\_probe\samples\22030124ed3bce12cdec7c629d0c6cc8.mp4
+==============================================================================
+W0000 00:00:1787157862.281466   41648 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1787157862.295684   28268 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+  top=106 imp_raw=113 imp_final=115 (reanchor=True) | ⑦ raw=115 final=116 | 复刻旧=116(est=False) 新=116(est=False)
+
+==============================================================================
+[VID-1446d1b9] dtl  E:\project\golf\video\1446d1b95c4329272f1818d6990f3c4f.mp4
+==============================================================================
+W0000 00:00:1787157867.002871   14996 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1787157867.017005   14996 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+  top=24 imp_raw=32 imp_final=39 (reanchor=True) | ⑦ raw=34 final=42 | 复刻旧=58(est=True) 新=42(est=False)
+
+==============================================================================
+[VID-a4fba3d2] dtl  E:\project\golf\video\a4fba3d24cf9beb59f9d3b06be26daab.mp4
+==============================================================================
+W0000 00:00:1787157872.246422   10904 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1787157872.260580   47456 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+  top=157 imp_raw=163 imp_final=167 (reanchor=True) | ⑦ raw=165 final=168 | 复刻旧=171(est=True) 新=168(est=False)
+
+##############################################################################
+改前/改后 ⑦送杆 对照表（array 下标 = 原始帧号，step=1 样本）
+名称             imp_f  fin   ⑦旧   ⑦新    Δ pipe旧 pipe新  新-imp   单调   范围   复核
+正面1               37   62   46   38   -8    38    38     +1 True True True
+正面2              291  373  298  292   -6   288   292     +1 True True True
+正面3               73  101   83   74   -9    71    74     +1 True True True
+DTL-087d40a0      --   --   --   --   --    --    --     -- FAIL segment_swing/NO_SWING
+DTL-0bb16a97     196  209  200  197   -3   192   197     +1 True True True
+DTL-470057ac     103  137  115  104  -11   100   104     +1 True True True
+DTL-4e8d0d7e     241  316  267  245  -22   237   245     +4 True True True
+DTL-707fb04a      --   --   --   --   --    --    --     -- FAIL segment_swing/NO_SWING
+DTL-c6f67f38     179  308  224  180  -44   179   180     +1 True True True
+DTL-22030124     115  146  116  116   +0   115   116     +1 True True True
+VID-1446d1b9      39   93   58   42  -16    34    42     +3 True True True
+VID-a4fba3d2     167  179  171  168   -3   165   168     +1 True True True
+JSON -> E:\project\golf\backend\_probe_out\probe_ft_after.json
