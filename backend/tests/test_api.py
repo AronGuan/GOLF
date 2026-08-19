@@ -154,13 +154,13 @@ class TestCreateTask:
         assert "空" in body["message"]
 
     def test_reject_oversize(self, api_client):
-        """> 20MB 必须 10001（PDD 文件过大）。"""
+        """> 40MB 必须 10001（PDD 文件过大）。"""
         oversize = b"\x00" * (config.MAX_UPLOAD_BYTES + 1024 * 1024)
         resp = create_task(api_client, oversize)
         assert resp.status_code == 400
         body = resp.json()
         assert body["code"] == config.PDD_CODE_FILE_TOO_LARGE  # 10001
-        assert "20MB" in body["message"]
+        assert "40MB" in body["message"]
 
     def test_rejected_upload_leaves_no_task(self, api_client, probe_bytes):
         """校验失败必须回滚任务目录，不留垃圾。"""

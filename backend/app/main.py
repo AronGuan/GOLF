@@ -229,7 +229,7 @@ async def create_task(
                 written += len(chunk)
                 if written > config.MAX_UPLOAD_BYTES:
                     raise ApiError(
-                        4001, "视频大小超过 20MB", config.PDD_CODE_FILE_TOO_LARGE
+                        4001, "视频大小超过 40MB", config.PDD_CODE_FILE_TOO_LARGE
                     )
                 handle.write(chunk)
     except ApiError:

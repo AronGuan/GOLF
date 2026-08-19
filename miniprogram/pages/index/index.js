@@ -9,9 +9,9 @@ const api = require('../../utils/api.js');
 /** 时长下限（秒） */
 const MIN_DURATION = 2;
 /** 时长上限（秒） */
-const MAX_DURATION = 15;
+const MAX_DURATION = 20;
 /** 大小上限（字节） */
-const MAX_SIZE = 20 * 1024 * 1024;
+const MAX_SIZE = 40 * 1024 * 1024;
 
 /** 机位定义（互斥二选一，v2） */
 const VIEWS = {
@@ -25,7 +25,7 @@ const VIEWS = {
       '手机竖持固定，不要手持晃动',
       '全身入镜，头顶与球杆均不出画',
       '距离 2~3 米',
-      '时长 2~15 秒，只拍一次挥杆',
+      '时长 2~20 秒，只拍一次挥杆',
       '建议 60fps 以上（拍摄设置）'
     ]
   },
@@ -40,7 +40,7 @@ const VIEWS = {
       '手机横持固定，保持水平不倾斜',
       '球杆与目标线在画面中清晰可见',
       '全身入镜，距离 2~3 米',
-      '时长 2~15 秒，只拍一次挥杆'
+      '时长 2~20 秒，只拍一次挥杆'
     ]
   }
 };
@@ -174,13 +174,13 @@ Page({
       return { ok: false, reason: '只支持 mp4 / mov 格式的视频，请重新选择' };
     }
     if (!duration || duration < MIN_DURATION) {
-      return { ok: false, reason: '视频太短了，请拍摄 2~15 秒的完整挥杆' };
+      return { ok: false, reason: '视频太短了，请拍摄 2~20 秒的完整挥杆' };
     }
     if (duration > MAX_DURATION) {
-      return { ok: false, reason: '视频超过 15 秒，请重新拍摄一段更短的挥杆' };
+      return { ok: false, reason: '视频超过 20 秒，请重新拍摄一段更短的挥杆' };
     }
     if (size > MAX_SIZE) {
-      return { ok: false, reason: '视频大小超过 20MB，请降低画质后重试' };
+      return { ok: false, reason: '视频大小超过 40MB，请降低画质后重试' };
     }
     return { ok: true, reason: '' };
   },

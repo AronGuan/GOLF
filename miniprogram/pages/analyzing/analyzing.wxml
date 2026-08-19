@@ -32,7 +32,7 @@
       <view class="fail-reason">{{errorText}}</view>
     </view>
 
-    <button class="btn btn-primary retry" bindtap="onRetake">重新拍摄</button>
+    <button class="btn btn-primary retry" bindtap="{{isBusy ? 'onBackHome' : 'onRetake'}}">{{isBusy ? '稍后重试' : '重新拍摄'}}</button>
   </block>
 
 </view>

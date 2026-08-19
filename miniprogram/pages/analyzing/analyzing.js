@@ -28,7 +28,8 @@ Page({
     steps: [],
     etaText: '',
     failed: false,
-    errorText: ''
+    errorText: '',
+    isBusy: false
   },
 
   /** @type {number} 定时器 id @private */
@@ -98,7 +99,7 @@ Page({
     }
     this._polls += 1;
     if (this._polls > MAX_POLLS) {
-      this._fail(api.messageOf('TIMEOUT'));
+      this._fail(api.messageOf('TIMEOUT'), true);
       return;
     }
 
@@ -125,7 +126,10 @@ Page({
     }
 
     if (state.status === 'failed') {
-      this._fail(api.messageOf(state.error_code, state.error_message));
+      this._fail(
+        api.messageOf(state.error_code, state.error_message),
+        state.error_code === 'TIMEOUT'
+      );
       return;
     }
 
@@ -176,16 +180,26 @@ Page({
 
   /**
    * 进入失败态。
-   * @param {string} text
+   * @param {string} text 失败文案
+   * @param {boolean} [isBusy] 是否系统繁忙（true 时按钮显示「稍后重试」并返回首页）
    * @private
    */
-  _fail(text) {
+  _fail(text, isBusy) {
     this._clear();
-    this.setData({ failed: true, errorText: text || api.messageOf('INTERNAL') });
+    this.setData({
+      failed: true,
+      errorText: text || api.messageOf('INTERNAL'),
+      isBusy: !!isBusy
+    });
   },
 
   /** 重新拍摄 */
   onRetake() {
     wx.redirectTo({ url: '/pages/index/index' });
+  },
+
+  /** 系统繁忙时返回首页 */
+  onBackHome() {
+    wx.reLaunch({ url: '/pages/index/index' });
   }
 });

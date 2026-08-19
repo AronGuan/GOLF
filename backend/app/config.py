@@ -48,8 +48,8 @@ LOG_LEVEL: Final[str] = os.getenv("GOLF_LOG_LEVEL", "INFO")
 # 2. 上传与任务约束
 # ---------------------------------------------------------------------------
 
-#: 上传文件大小上限（20MB）
-MAX_UPLOAD_BYTES: Final[int] = 20 * 1024 * 1024
+#: 上传文件大小上限（40MB）
+MAX_UPLOAD_BYTES: Final[int] = 40 * 1024 * 1024
 
 #: 允许的扩展名（PDD 要求放开 .mov）
 ALLOWED_VIDEO_EXTS: Final[FrozenSet[str]] = frozenset({".mp4", ".mov"})
@@ -96,7 +96,7 @@ DELETE_UPLOAD_AFTER_SUCCESS: Final[bool] = True
 # 3. 视频探测 / 姿态提取
 # ---------------------------------------------------------------------------
 
-#: 服务端放宽后的时长边界（前端已按 2~15s 拦截）
+#: 服务端放宽后的时长边界（前端已按 2~20s 拦截）
 MIN_DURATION_SEC: Final[float] = 1.5
 MAX_DURATION_SEC: Final[float] = 20.0
 
@@ -283,7 +283,7 @@ ERROR_MESSAGES: Final[Dict[str, str]] = {
     "TOO_DARK": "画面过暗，建议在光线充足的环境下拍摄",
     "LOW_QUALITY": "人物识别不稳定，请固定手机、避免遮挡后重拍",
     "BAD_VIDEO": "视频无法解析，请换一段 mp4 视频重试",
-    "TIMEOUT": "分析超时了，请稍后重试",
+    "TIMEOUT": "当前系统比较繁忙，请稍后再试",
     "INTERNAL": "分析失败了，请稍后重试",
 }
 
