@@ -178,6 +178,7 @@ def _run(task_id: str) -> None:
         frames_bgr = frame_reader.grab_frames(
             video_path,
             sorted(set(event_frames) | set(_decode_frames) | set(_possible_frames)),
+            orientation=meta.orientation,
         )
         refine = impact_refiner.refine_impact(
             video_path, frames, events, signals, view, meta, frames_bgr=frames_bgr,
@@ -209,7 +210,9 @@ def _run(task_id: str) -> None:
         event_frames = [e.frame_index for e in events]
     else:
         # 球杆检测下线：只解码 8 个事件帧供 renderer，解码趟数锁 1 趟（共享）
-        frames_bgr = frame_reader.grab_frames(video_path, event_frames)
+        frames_bgr = frame_reader.grab_frames(
+            video_path, event_frames, orientation=meta.orientation
+        )
 
     # 🔑 只保留 8 个事件帧，内存峰值锁 8 帧
     frames_bgr = {k: v for k, v in frames_bgr.items() if k in set(event_frames)}

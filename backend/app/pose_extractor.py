@@ -14,6 +14,7 @@ import cv2
 import numpy as np
 
 from . import config, geometry
+from .frame_reader import normalize_orientation, read_orientation, rotate_frame
 from .schemas import AnalysisError, ErrorCode, FrameLandmarks, VideoMeta
 
 logger = logging.getLogger(__name__)
@@ -42,6 +43,11 @@ def _pose_module():
 def probe_video(path: str) -> VideoMeta:
     """读取视频元信息并做合法性校验。
 
+    同时读取 ``cv2.CAP_PROP_ORIENTATION_META``（EXIF 旋转标记），归一化后存入
+    :attr:`VideoMeta.orientation`；若 ``orientation ∈ {90, 270}``，把 ``width``
+    与 ``height`` 互换为**转正后**尺寸，保证下游 ``computeVideoAspect`` /
+    机位判定 / 渲染 / MediaPipe 关键点全部用「人在画面中站直」后的宽高。
+
     Raises:
         AnalysisError: ``BAD_VIDEO`` —— 无法打开 / fps 或帧数非法 / 时长越界。
     """
@@ -54,6 +60,7 @@ def probe_video(path: str) -> VideoMeta:
     frame_count = int(cap.get(cv2.CAP_PROP_FRAME_COUNT) or 0)
     width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH) or 0)
     height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT) or 0)
+    orientation = read_orientation(cap)
     cap.release()
 
     if fps <= 0.0 or not math.isfinite(fps):
@@ -63,6 +70,10 @@ def probe_video(path: str) -> VideoMeta:
             ErrorCode.BAD_VIDEO,
             f"illegal geometry: frames={frame_count} size={width}x{height}",
         )
+
+    # EXIF 旋转贯穿：90/270 时把 width/height 互换为转正后尺寸
+    if orientation in (90, 270):
+        width, height = height, width
 
     duration = frame_count / fps
     if duration < config.MIN_DURATION_SEC or duration > config.MAX_DURATION_SEC:
@@ -81,6 +92,7 @@ def probe_video(path: str) -> VideoMeta:
         frame_count=frame_count,
         sample_step=sample_step,
         low_fps=fps < config.LOW_FPS_THRESHOLD,
+        orientation=orientation,
     )
 
 
@@ -235,6 +247,9 @@ def extract(
     missing = 0
     low_vis_frames = 0
     last_reported = -1.0
+    # EXIF 旋转贯穿：抽帧后立即按 meta.orientation 转正，保证 MediaPipe 看到的
+    # 帧就是「人在画面中站直」的方向，norm 关键点坐标系与转正后的 width/height 对齐。
+    effective_orientation = normalize_orientation(getattr(meta, "orientation", 0))
 
     try:
         with pose_module.Pose(**config.POSE_KW) as pose:
@@ -251,6 +266,8 @@ def extract(
                     raw_index += 1
                     continue
 
+                if effective_orientation != 0:
+                    bgr = rotate_frame(bgr, effective_orientation)
                 small = _resize_short_side(bgr, config.INFER_SHORT_SIDE)
                 rgb = cv2.cvtColor(small, cv2.COLOR_BGR2RGB)
                 rgb.flags.writeable = False

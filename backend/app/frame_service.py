@@ -124,7 +124,10 @@ def render_frame(task_id: str, frame_index: int) -> Tuple[bytes, int]:
         raise FrameError(
             5000, "缺少源视频，任务数据不完整", config.PDD_CODE_INTERNAL
         )
-    decoded = frame_reader.grab_frames(str(source), [lm.frame_index])
+    # EXIF 旋转贯穿：与 pipeline 主链路共享 meta.orientation，保证手动帧微调
+    # 渲染的像素方向与事件帧图、MediaPipe 关键点完全一致。
+    orientation = int(getattr(result.video_meta, "orientation", 0) or 0)
+    decoded = frame_reader.grab_frames(str(source), [lm.frame_index], orientation=orientation)
     bgr = decoded.get(lm.frame_index)
     if bgr is None:
         raise FrameError(5000, "帧解码失败，请重试", config.PDD_CODE_INTERNAL)

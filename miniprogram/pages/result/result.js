@@ -23,6 +23,13 @@ const VIEW_LABEL = { face_on: '正面机位', down_the_line: '侧面机位' };
 /** 手动帧微调：事件帧 ± 可调帧数（与后端 config.FRAME_ADJUST_RANGE 对齐）。 */
 const FRAME_RANGE = 30;
 
+// ---------------- 缩略图动态宽高比（方案 A）常量 ----------------
+/** 视频宽高比（width/height）缺省/非法时兜底为 9:16 竖屏。 */
+const DEFAULT_ASPECT = 9 / 16;
+/** 极端宽高比保护：超宽全景 / 超窄竖屏时 clamp，防止缩略图过度压扁/拉长。 */
+const MIN_ASPECT = 0.3;
+const MAX_ASPECT = 3.0;
+
 // ---------------- 整页截图（v3，canvas 2d 离屏合成）常量 ----------------
 /** 截图逻辑宽度（与 rpx 基准一致），高度按内容动态计算。 */
 const SNAP_W = 750;
@@ -134,6 +141,24 @@ function clamp(v, lo, hi) {
 }
 
 /**
+ * 由视频分辨率计算展示宽高比（width / height）。
+ *
+ * 方案 A：缩略图容器随视频宽高比动态自适应，图片完整显示不裁剪。
+ * 0 / NaN / 缺失 -> 回退 9:16 竖屏；极端值 clamp 到 [0.3, 3.0]。
+ * @param {number|string|undefined} width 视频宽
+ * @param {number|string|undefined} height 视频高
+ * @returns {number} 归一化后的宽高比
+ */
+function computeVideoAspect(width, height) {
+  const w = Number(width) || 0;
+  const h = Number(height) || 0;
+  if (w <= 0 || h <= 0) return DEFAULT_ASPECT;
+  const raw = w / h;
+  if (!isFinite(raw) || raw <= 0) return DEFAULT_ASPECT;
+  return clamp(raw, MIN_ASPECT, MAX_ASPECT);
+}
+
+/**
  * 为一个指标计算迷你区间条的几何量。
  *
  * 显示域 = 参考区间向两侧各外扩 60%，保证参考带居中、越界值仍可见。
@@ -221,7 +246,9 @@ Page({
     manual: null, // 手册原文弹窗内容
     // ---- v3 整页截图 ----
     snapSaving: false, // 保存中（按钮 loading，防重入）
-    snapH: 1000 // 离屏 canvas 高度（先算内容高度再 setData）
+    snapH: 1000, // 离屏 canvas 高度（先算内容高度再 setData）
+    // ---- 缩略图动态宽高比（方案 A）----
+    videoAspect: DEFAULT_ASPECT // width/height，缺省兜底 9:16 竖屏
   },
 
   onLoad(options) {
@@ -314,6 +341,10 @@ Page({
       durationText: (Number(vm.duration) || 0).toFixed(1)
     };
 
+    // 方案 A：缩略图容器宽高比随视频自适应（后端 video_meta 已下发 width/height，
+    // 前端直接推导；所有阶段图同一视频、同一 aspect）
+    const videoAspect = computeVideoAspect(meta.width, meta.height);
+
     // v2：机位标签（顶层 camera_view 优先，回落 video_meta）
     const rawView = result.camera_view || vm.camera_view || 'face_on';
     const viewLabel = VIEW_LABEL[rawView] || '正面机位';
@@ -330,6 +361,7 @@ Page({
       scrollInto: 'thumb-' + current,
       globals: globals,
       meta: meta,
+      videoAspect: videoAspect,
       warnings: result.warnings || [],
       disclaimer: result.disclaimer || '',
       viewLabel: viewLabel,

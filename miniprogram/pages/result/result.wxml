@@ -28,8 +28,8 @@
         id="thumb-{{index}}"
         data-index="{{index}}"
         bindtap="onSelect">
-        <view class="thumb__imgbox">
-          <image class="thumb__img" src="{{item.image_url}}" mode="aspectFill" lazy-load="true" />
+        <view class="thumb__imgbox" style="width:160rpx;height:{{160 / videoAspect}}rpx">
+          <image class="thumb__img" src="{{item.image_url}}" mode="aspectFit" lazy-load="true" />
           <view class="thumb__no">{{item.index}}</view>
           <view class="thumb__est" wx:if="{{item.estimated}}">估</view>
           <view class="thumb__adjtag" wx:if="{{item.adjActive}}">手动</view>

@@ -770,7 +770,7 @@ def refine_impact(
             return ImpactRefineResult()
 
         if frames_bgr is None:
-            frames_bgr = grab_frames(video_path, decode_frames)
+            frames_bgr = grab_frames(video_path, decode_frames, orientation=meta.orientation)
         elif not isinstance(frames_bgr, dict):
             return ImpactRefineResult()
 

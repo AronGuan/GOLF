@@ -37,6 +37,8 @@
 .thumb:last-child {
   margin-right: 20rpx;
 }
+/* 缩略图容器：高度由 wxml 内联样式按视频宽高比动态计算（方案 A），
+   此处固定 height 仅作兜底（videoAspect 缺失/非法时避免容器塌陷） */
 .thumb__imgbox {
   position: relative;
   width: 160rpx;

@@ -35,6 +35,8 @@ class TestProbeVideo:
         assert (meta.width, meta.height) == (480, 854)
         assert meta.sample_step == 1
         assert meta.low_fps is False
+        # cv2.VideoWriter 不会写 EXIF orientation 标签，synth_video 期望默认 0
+        assert meta.orientation == 0
 
     def test_missing_file_raises_bad_video(self, tmp_path):
         with pytest.raises(AnalysisError) as exc:
@@ -54,6 +56,27 @@ class TestProbeVideo:
             pose_extractor.probe_video(PROBE_MP4)
         assert exc.value.code is ErrorCode.BAD_VIDEO
         assert "duration" in exc.value.detail
+
+    @pytest.mark.skipif(
+        not __import__("os").path.exists(
+            r"C:\Users\98025\Desktop\视频\2026-08-19_125638_118.mp4"
+        ),
+        reason="真实 iPhone 横拍视频不存在（CI 环境跳过）",
+    )
+    def test_real_iphone_landscape_video_orientation(self):
+        """iPhone 横拍视频：orientation=90 + width/height 互换为转正后 1080×1920。
+
+        该文件是用户报 bug 的真机素材（cv2 验证 orientation=90）。probe_video 必须
+        读到 EXIF 旋转并把 width/height 交换为「人在画面中站直」的转正尺寸 —— 这是
+        前端 ``computeVideoAspect`` 与下游所有像素坐标正确性的根基。
+        """
+        path = r"C:\Users\98025\Desktop\视频\2026-08-19_125638_118.mp4"
+        meta = pose_extractor.probe_video(path)
+        assert meta.orientation == 90
+        # encoded W×H = 1920×1080，旋转 90° 后转正尺寸 = 1080×1920（人站直）
+        assert (meta.width, meta.height) == (1080, 1920)
+        # 时长 426/60 ≈ 7.1s，应在 [MIN_DURATION_SEC, MAX_DURATION_SEC] 区间内
+        assert meta.duration == pytest.approx(426 / 60.014, rel=0.02)
 
 
 class TestBrightness:

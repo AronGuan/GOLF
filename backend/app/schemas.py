@@ -317,7 +317,18 @@ class ClubTrack:
 
 
 class VideoMeta(BaseModel):
-    """视频元信息。"""
+    """视频元信息。
+
+    Attributes:
+        fps / duration / width / height / frame_count / total_frames / sample_step /
+        low_fps / camera_view: 既有字段。
+        orientation: EXIF 旋转角度（0/90/180/270）—— iPhone 横拍视频的元数据旋转标记。
+            ``probe_video`` 从 ``cv2.CAP_PROP_ORIENTATION_META`` 读取（FFmpeg 后端不
+            支持时回退 0）。当 ``orientation ∈ {90, 270}`` 时 ``width`` / ``height``
+            已被交换为**转正后**的尺寸（即人在画面中站直后的 w×h），保证下游
+            ``computeVideoAspect`` / 机位判定 / 渲染 / MediaPipe 关键点全部用转正后
+            的宽高。抽帧后用 ``frame_reader.rotate_frame`` 把解码帧旋转到转正方向。
+    """
 
     fps: float
     duration: float
@@ -330,6 +341,8 @@ class VideoMeta(BaseModel):
     low_fps: bool = False
     #: 拍摄机位；默认 face-on，保持既有行为不变
     camera_view: CameraView = CameraView.FACE_ON
+    #: EXIF 旋转角度（0/90/180/270）。0 = 不旋转；90/270 时 width/height 已互换为转正尺寸
+    orientation: int = 0
 
 
 class StageMetric(BaseModel):
