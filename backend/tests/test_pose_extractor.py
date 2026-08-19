@@ -5,6 +5,8 @@
 
 from __future__ import annotations
 
+import os
+
 import cv2
 import numpy as np
 import pytest
@@ -13,6 +15,9 @@ from app import config, pose_extractor
 from app.schemas import AnalysisError, ErrorCode
 
 PROBE_MP4 = r"E:\project\golf\.tools\_probe\t.mp4"
+
+#: 真实 iPhone 横拍视频（orientation=90），用户报 bug 的真机素材（仅本地存在）
+_REAL_ORIENT_90 = r"C:\Users\98025\Desktop\视频\2026-08-19_125638_118.mp4"
 
 
 def _write_black_mp4(path: str, w: int = 320, h: int = 240, frames: int = 24) -> None:
@@ -58,25 +63,46 @@ class TestProbeVideo:
         assert "duration" in exc.value.detail
 
     @pytest.mark.skipif(
-        not __import__("os").path.exists(
-            r"C:\Users\98025\Desktop\视频\2026-08-19_125638_118.mp4"
-        ),
+        not os.path.exists(_REAL_ORIENT_90),
         reason="真实 iPhone 横拍视频不存在（CI 环境跳过）",
     )
-    def test_real_iphone_landscape_video_orientation(self):
-        """iPhone 横拍视频：orientation=90 + width/height 互换为转正后 1080×1920。
+    def test_real_iphone_landscape_video_rejected(self):
+        """iPhone 横拍视频（orientation=90）→ probe 阶段直接拒绝 BAD_ORIENTATION。
 
-        该文件是用户报 bug 的真机素材（cv2 验证 orientation=90）。probe_video 必须
-        读到 EXIF 旋转并把 width/height 交换为「人在画面中站直」的转正尺寸 —— 这是
-        前端 ``computeVideoAspect`` 与下游所有像素坐标正确性的根基。
+        产品决策（2026-08）：放弃 EXIF 自动旋转（cv2 跨平台行为不一致），
+        orientation ≠ 0 一律拒绝并提示竖拍。该文件是用户报 bug 的真机素材
+        （此前 cv2 验证 orientation=90），probe_video 必须抛 BAD_ORIENTATION
+        且携带对外码 10005，不得再返回转正尺寸。
         """
-        path = r"C:\Users\98025\Desktop\视频\2026-08-19_125638_118.mp4"
-        meta = pose_extractor.probe_video(path)
-        assert meta.orientation == 90
-        # encoded W×H = 1920×1080，旋转 90° 后转正尺寸 = 1080×1920（人站直）
-        assert (meta.width, meta.height) == (1080, 1920)
-        # 时长 426/60 ≈ 7.1s，应在 [MIN_DURATION_SEC, MAX_DURATION_SEC] 区间内
-        assert meta.duration == pytest.approx(426 / 60.014, rel=0.02)
+        with pytest.raises(AnalysisError) as exc:
+            pose_extractor.probe_video(_REAL_ORIENT_90)
+        assert exc.value.code is ErrorCode.BAD_ORIENTATION
+        assert exc.value.pdd_code == config.PDD_CODE_BAD_ORIENTATION  # 10005
+        assert "orientation" in exc.value.detail
+
+    @pytest.mark.parametrize("orientation", [90, 180, 270])
+    def test_rejects_nonzero_orientation(self, synth_video, monkeypatch, orientation):
+        """orientation ∈ {90,180,270} → probe 拒绝（不依赖真实 90° 视频）。
+
+        用 monkeypatch 直接改 ``read_orientation`` 的返回值，测 probe 的拒绝逻辑：
+        任何非 0 的 EXIF 旋转标记都必须抛 BAD_ORIENTATION + pdd_code=10005。
+        """
+        monkeypatch.setattr(pose_extractor, "read_orientation", lambda cap: orientation)
+        with pytest.raises(AnalysisError) as exc:
+            pose_extractor.probe_video(synth_video)
+        assert exc.value.code is ErrorCode.BAD_ORIENTATION
+        assert exc.value.pdd_code == config.PDD_CODE_BAD_ORIENTATION  # 10005
+        assert str(orientation) in exc.value.detail
+
+    def test_orientation_zero_passes(self, synth_video, monkeypatch):
+        """orientation=0（竖拍/无旋转标记）→ 正常通过，不抛 BAD_ORIENTATION。
+
+        显式把 ``read_orientation`` 钉在 0，确保拒绝逻辑只拦非 0，不影响竖拍视频。
+        """
+        monkeypatch.setattr(pose_extractor, "read_orientation", lambda cap: 0)
+        meta = pose_extractor.probe_video(synth_video)
+        assert meta.orientation == 0
+        assert (meta.width, meta.height) == (480, 854)
 
 
 class TestBrightness:

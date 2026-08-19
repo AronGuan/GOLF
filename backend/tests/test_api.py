@@ -4,7 +4,7 @@
 它会在后台流水线里被 ``probe_video`` 判为 ``BAD_VIDEO``（时长 < 1.5s），
 既能覆盖失败链路，又不会加载 MediaPipe 模型、执行很快。
 
-v2 覆盖：PDD 双路径注册、错误码映射（10001/10002/10003/20001/20002）、
+v2 覆盖：PDD 双路径注册、错误码映射（10001/10002/10003/10005/20001/20002）、
 ``video``/``file`` 双字段名、``camera_view`` 缺省与非法值、legacy 码回滚开关。
 """
 
@@ -282,6 +282,24 @@ class TestTaskStatus:
         assert data["error_message"] == config.ERROR_MESSAGES[data["error_code"]]
         assert re.search(r"[\u4e00-\u9fa5]", data["error_message"]), "文案必须是中文"
 
+    def test_orientation_video_reports_chinese_error(
+        self, api_client, probe_bytes, monkeypatch
+    ):
+        """模拟 90° 横拍视频上传 -> 任务 FAILED + BAD_ORIENTATION + 中文文案。
+
+        monkeypatch ``pose_extractor.read_orientation`` 恒返回 90（不依赖真实 90°
+        视频素材），确认上传后 probe 阶段即拒绝、前端轮询能看到竖拍提示文案。
+        """
+        from app import pose_extractor
+
+        monkeypatch.setattr(pose_extractor, "read_orientation", lambda cap: 90)
+        task_id = create_task(api_client, probe_bytes).json()["data"]["task_id"]
+        data = wait_terminal(api_client, task_id)
+        assert data["status"] == TaskStatus.FAILED.value
+        assert data["error_code"] == ErrorCode.BAD_ORIENTATION.value
+        assert data["error_message"] == config.ERROR_MESSAGES["BAD_ORIENTATION"]
+        assert re.search(r"[\u4e00-\u9fa5]", data["error_message"]), "文案必须是中文"
+
 
 class TestDualPath:
     """PDD 主路径与旧路径行为等价。"""
@@ -355,6 +373,18 @@ class TestErrorCodeMapping:
         response = err(4001, "时长超范围", config.PDD_CODE_BAD_DURATION)
         body = response.body.decode("utf-8")
         assert '"code":10003' in body
+        assert response.status_code == 400
+
+    def test_orientation_10005_via_handler(self):
+        """10005（方向异常）只在 AnalysisError 显式携带时可达；直接测响应层映射。"""
+        from app.main import err
+
+        response = err(
+            4001, config.ERROR_MESSAGES["BAD_ORIENTATION"],
+            config.PDD_CODE_BAD_ORIENTATION,
+        )
+        body = response.body.decode("utf-8")
+        assert '"code":10005' in body
         assert response.status_code == 400
 
     def test_task_not_found_20001(self, api_client):

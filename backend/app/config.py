@@ -283,6 +283,7 @@ ERROR_MESSAGES: Final[Dict[str, str]] = {
     "TOO_DARK": "画面过暗，建议在光线充足的环境下拍摄",
     "LOW_QUALITY": "人物识别不稳定，请固定手机、避免遮挡后重拍",
     "BAD_VIDEO": "视频无法解析，请换一段 mp4 视频重试",
+    "BAD_ORIENTATION": "检测到视频方向异常，请将手机竖向拍摄后重试",
     "TIMEOUT": "当前系统比较繁忙，请稍后再试",
     "INTERNAL": "分析失败了，请稍后重试",
 }
@@ -495,6 +496,9 @@ PDD_CODE_FILE_TOO_LARGE: Final[int] = 10001
 PDD_CODE_BAD_FORMAT: Final[int] = 10002
 PDD_CODE_BAD_DURATION: Final[int] = 10003
 PDD_CODE_INTERNAL: Final[int] = 10004
+#: 视频方向异常（orientation ≠ 0，横拍）。PDD 未定义，我方在 1000x 校验域内顺延。
+#: 产品决策：放弃 EXIF 自动旋转（跨平台 cv2 行为不一致），直接拒绝并提示竖拍。
+PDD_CODE_BAD_ORIENTATION: Final[int] = 10005
 PDD_CODE_TASK_NOT_FOUND: Final[int] = 20001
 #: 「任务尚未完成」PDD 未定义，我方在结果域内顺延的暂定值（架构 §10 #1）
 PDD_CODE_TASK_PENDING: Final[int] = 20002

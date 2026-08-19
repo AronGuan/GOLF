@@ -44,12 +44,16 @@ def probe_video(path: str) -> VideoMeta:
     """读取视频元信息并做合法性校验。
 
     同时读取 ``cv2.CAP_PROP_ORIENTATION_META``（EXIF 旋转标记），归一化后存入
-    :attr:`VideoMeta.orientation`；若 ``orientation ∈ {90, 270}``，把 ``width``
-    与 ``height`` 互换为**转正后**尺寸，保证下游 ``computeVideoAspect`` /
-    机位判定 / 渲染 / MediaPipe 关键点全部用「人在画面中站直」后的宽高。
+    :attr:`VideoMeta.orientation`。**产品决策（2026-08）**：放弃 EXIF 自动旋转
+    （cv2 跨平台行为不一致、双重旋转/侧躺难以根治），``orientation ≠ 0`` 的视频
+    一律在 probe 阶段直接拒绝并提示竖拍 —— 竖拍是高尔夫挥杆视频标准姿势，且
+    竖拍视频 orientation 恒为 0，``width`` / ``height`` 即「人在画面中站直」的
+    实际尺寸，下游 ``computeVideoAspect`` / 机位判定 / 渲染 / MediaPipe 关键点
+    全部直接用原始宽高，无需任何旋转补偿。
 
     Raises:
         AnalysisError: ``BAD_VIDEO`` —— 无法打开 / fps 或帧数非法 / 时长越界。
+        AnalysisError: ``BAD_ORIENTATION`` —— orientation ≠ 0（横拍/带旋转标记）。
     """
     cap = cv2.VideoCapture(str(path))
     if not cap.isOpened():
@@ -63,6 +67,16 @@ def probe_video(path: str) -> VideoMeta:
     orientation = read_orientation(cap)
     cap.release()
 
+    # 产品决策：orientation ≠ 0 直接拒绝（probe 阶段立刻失败，不跑提取/切分/渲染）。
+    # 不做 EXIF 自动旋转 —— cv2 在 Windows 自动应用、Linux FFmpeg 不自动，
+    # ``detect_backend_applied`` 启发式不可靠，多次修复仍出现双重旋转/侧躺。
+    if orientation not in (0,):
+        raise AnalysisError(
+            ErrorCode.BAD_ORIENTATION,
+            f"video orientation not supported: {orientation}",
+            pdd_code=config.PDD_CODE_BAD_ORIENTATION,  # 对外 10005（方向异常，请竖拍）
+        )
+
     if fps <= 0.0 or not math.isfinite(fps):
         raise AnalysisError(ErrorCode.BAD_VIDEO, f"illegal fps: {fps}")
     if frame_count <= 0 or width <= 0 or height <= 0:
@@ -70,10 +84,6 @@ def probe_video(path: str) -> VideoMeta:
             ErrorCode.BAD_VIDEO,
             f"illegal geometry: frames={frame_count} size={width}x{height}",
         )
-
-    # EXIF 旋转贯穿：90/270 时把 width/height 互换为转正后尺寸
-    if orientation in (90, 270):
-        width, height = height, width
 
     duration = frame_count / fps
     if duration < config.MIN_DURATION_SEC or duration > config.MAX_DURATION_SEC:

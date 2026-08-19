@@ -95,6 +95,9 @@ class ErrorCode(str, Enum):
     TOO_DARK = "TOO_DARK"
     LOW_QUALITY = "LOW_QUALITY"
     BAD_VIDEO = "BAD_VIDEO"
+    #: EXIF 方向异常（orientation ≠ 0，即横拍视频）。产品决策：不做自动旋转，
+    #: 直接拒绝并提示竖拍（高尔夫挥杆视频标准姿势）。
+    BAD_ORIENTATION = "BAD_ORIENTATION"
     TIMEOUT = "TIMEOUT"
     INTERNAL = "INTERNAL"
 
@@ -322,12 +325,10 @@ class VideoMeta(BaseModel):
     Attributes:
         fps / duration / width / height / frame_count / total_frames / sample_step /
         low_fps / camera_view: 既有字段。
-        orientation: EXIF 旋转角度（0/90/180/270）—— iPhone 横拍视频的元数据旋转标记。
-            ``probe_video`` 从 ``cv2.CAP_PROP_ORIENTATION_META`` 读取（FFmpeg 后端不
-            支持时回退 0）。当 ``orientation ∈ {90, 270}`` 时 ``width`` / ``height``
-            已被交换为**转正后**的尺寸（即人在画面中站直后的 w×h），保证下游
-            ``computeVideoAspect`` / 机位判定 / 渲染 / MediaPipe 关键点全部用转正后
-            的宽高。抽帧后用 ``frame_reader.rotate_frame`` 把解码帧旋转到转正方向。
+        orientation: EXIF 旋转角度。**产品决策（2026-08）**：放弃 EXIF 自动旋转，
+            ``probe_video`` 读到 ``orientation ≠ 0`` 时直接拒绝（``BAD_ORIENTATION``，
+            提示竖拍），因此本字段在正常流水线中恒为 0，``width`` / ``height``
+            始终是「人在画面中站直」的实际尺寸，下游无需任何旋转补偿。
     """
 
     fps: float
@@ -341,7 +342,8 @@ class VideoMeta(BaseModel):
     low_fps: bool = False
     #: 拍摄机位；默认 face-on，保持既有行为不变
     camera_view: CameraView = CameraView.FACE_ON
-    #: EXIF 旋转角度（0/90/180/270）。0 = 不旋转；90/270 时 width/height 已互换为转正尺寸
+    #: EXIF 旋转角度。产品决策（2026-08）：orientation ≠ 0 在 probe 阶段直接拒绝
+    #: （BAD_ORIENTATION），正常流水线恒为 0；0 = 不旋转，width/height 即实际尺寸
     orientation: int = 0
 
 
