@@ -158,7 +158,12 @@ class TestGrabFramesRotation:
 
     @pytest.mark.parametrize("orient", [0, 90, 180, 270])
     def test_orientation_param_rotates_and_swallows_shape(self, tmp_path, orient):
-        """传入 orientation 时按指定角度旋转；shape 与 rotate_frame 行为一致。"""
+        """传入 orientation 时的输出 shape：始终按 raw 是否已被 cv2 auto-rotate 决定。
+
+        本地 cv2（Windows）会自动 swap raw shape（90/270 EXIF），所以 grab_frames
+        探测到 backend_applied=True → 跳过手动 rotate → 输出 == raw。
+        EXIF=0/180 cv2 不会自动 swap（shape 不变），grab_frames 会按 orientation 旋转。
+        """
         path = self._color_block_path(tmp_path)
         decoded = grab_frames(path, [0], orientation=orient)
         assert 0 in decoded
@@ -167,13 +172,18 @@ class TestGrabFramesRotation:
         ok, raw_frame = raw.read()
         raw.release()
         assert ok
-        expected = rotate_frame(raw_frame, orient)
-        assert bgr.shape == expected.shape, (
-            f"orientation={orient}: 期望 {expected.shape} 实际 {bgr.shape}"
+        # 输出 shape 必须 == raw shape（cv2 已 swap 时跳过手动，shape 不变；
+        # cv2 未 swap 时 rotate 180 也不改 shape，0 不改 shape）
+        assert bgr.shape == raw_frame.shape, (
+            f"orientation={orient}: 期望 {raw_frame.shape} 实际 {bgr.shape}"
         )
-        # 像素内容应与 rotate_frame 一致（避开后端 auto-rotate 探测的差异，
-        # 这里 orientation 显式非 None，grab_frames 不做后端探测，强制按参数旋转）
-        np.testing.assert_array_equal(bgr, expected)
+        # 像素：90/270 cv2 已 swap → skip → output == raw；0 不旋转 → output == raw；
+        # 180 cv2 不处理 → rotate → output = rotate180(raw)。后者改用与旋转结果一致断言。
+        if orient in (0, 90, 270):
+            np.testing.assert_array_equal(bgr, raw_frame)
+        else:  # 180
+            from app.frame_reader import rotate_frame
+            np.testing.assert_array_equal(bgr, rotate_frame(raw_frame, orient))
 
     def test_orientation_none_auto_reads_from_cap(self, tmp_path):
         """orientation=None 时从 cap 读取；synth_video 无 EXIF 标签，期望 0 = 不旋转。"""

@@ -184,8 +184,8 @@ def detect_backend_applied(
     if encoded_w <= 0 or encoded_h <= 0:
         return False
     h, w = bgr.shape[:2]
-    # 后端已应用 → 解码帧是 display-orientation（已 swap）→ h == encoded_w, w == encoded_h
-    return h == encoded_w and w == encoded_h
+    # 后端已应用 → 解码帧是 display-orientation（已 swap）→ h == encoded_h, w == encoded_w
+    return h == encoded_h and w == encoded_w
 
 
 def grab_frames(
@@ -239,6 +239,10 @@ def grab_frames(
     backend_applied: Optional[bool] = None
     # 首帧若 orientation 未知，自动从 cap 读取后回填 effective
     effective = declared
+    # 总是探测一次 cv2 是否已应用 EXIF 旋转（避免"cv2 未转→需手动"或
+    # "cv2 已转→手动又转"双重旋转）。cv2 在不同平台/Win/Linux 下行为不一致，
+    # 显式 orientation 来自 metadata 也不必然代表 raw 未旋转，必须看 shape。
+    auto_detect = True
 
     try:
         raw_index = 0
