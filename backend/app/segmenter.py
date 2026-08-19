@@ -365,6 +365,26 @@ def _first_rising_cross(
     return None
 
 
+def _first_falling_cross(
+    values: np.ndarray, threshold: float, offset: int
+) -> Optional[int]:
+    """首个「先高于阈值、再下穿阈值」的全局下标；未发生真实下穿则返回 None。
+
+    与 :func:`_first_rising_cross` 方向相反：用于下杆等**从上方降到阈值以下**
+    的穿越（方案 A ⑤ 判据）。返回的是**首个满足 ``value <= threshold`` 且此前
+    出现过 ``value > threshold``** 的下标（含恰好等于阈值的帧）。
+    """
+    above_seen = False
+    for i, value in enumerate(values):
+        if not np.isfinite(value):
+            continue
+        if value > threshold:
+            above_seen = True
+        elif above_seen:
+            return offset + i
+    return None
+
+
 def _ratio_frame(start: int, end: int, ratio: float) -> int:
     """按比例在 ``[start, end]`` 内取帧。"""
     return int(round(start + ratio * (end - start)))
@@ -374,6 +394,13 @@ def locate_intermediate(
     sig: SwingSignals, anchors: Tuple[int, int, int, int]
 ) -> Dict[PhaseKey, Tuple[int, bool]]:
     """②③⑤⑦：统一用解剖高度穿越判据，未命中走兜底比例。
+
+    - ② 起杆 / ⑦ 送杆：手腕上穿髋线（:func:`_first_rising_cross`，阈值
+      :data:`config.H_HIP`）。
+    - ③ 上杆：手腕首次升过肩线（``wrist_y <= shoulder_mid_y``）。
+    - ⑤ 下杆（方案 A，2026-08 用户拍板）：手腕高度 ``h`` 首次**下穿**髋线
+      （:func:`_first_falling_cross`，阈值 :data:`config.H_HIP`）；相对旧判据
+      「腕降肩」更靠后，且带 ⑤/⑥ 间距守卫（⑤ 必须严格早于 ⑥）。
 
     Args:
         sig: 信号包。
@@ -405,11 +432,20 @@ def locate_intermediate(
     else:
         out[PhaseKey.BACKSWING] = (idx, False)
 
-    # ⑤ 下杆：手腕首次回落穿过肩线
+    # ⑤ 下杆：手腕首次回落到髋线（方案 A，2026-08 用户拍板；原判据为
+    # 「手腕回落穿过肩线」——实测偏早 2 帧，如 22030124 得 111 而视觉为 113）。
+    # 语义：``h = (hip_mid_y - wrist_y)/S`` 向上为正；顶点时腕在髋上
+    # （``h≈2``），下杆期 ``h`` 单调递减，**首次下穿 ``H_HIP``** 即「腕降到髋」。
+    # 相比旧判据（``wrist_y`` 下穿肩线）更靠后，更接近击球。
+    # ⚠️ ⑤/⑥ 间距守卫：⑤ 必须严格早于 ⑥（间隔 ≥ 1 帧），否则说明判据未在
+    # 击球前真正命中（窗口内 ``h`` 未降到髋线），回退兜底比例——避免 ⑤≥⑥
+    # 触发 :func:`enforce_monotonic_indices` 把 impact 锚点向前挤（降级污染）。
     idx = None
     if not anchor_only and i_impact > i_top:
         window = slice(i_top, i_impact + 1)
-        idx = _first_true(sig.wrist_y[window] >= sig.shoulder_mid_y[window], i_top)
+        idx = _first_falling_cross(sig.h[window], config.H_HIP, i_top)
+        if idx is not None and idx >= i_impact:
+            idx = None
     if idx is None:
         out[PhaseKey.DOWNSWING] = (_ratio_frame(i_top, i_impact, r5), True)
     else:
