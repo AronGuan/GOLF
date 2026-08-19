@@ -149,19 +149,29 @@ class TestEndToEnd:
             assert isinstance(phase["risks"], list)
 
     def test_risks_produced_on_synthetic_swing(self, finished):
-        """合成挥杆应触发 RISK-016（⑦ 开放角 28.1° < 30）。
+        """合成挥杆应触发 RISK-016（⑦ 开放角 < 30）。
 
-        这同时是 RISK-016 符号回归的端到端验证：值必须是**正的开放角**（28.1），
-        而不是负的带符号肩转（否则 `< 30` 恒真、100% 误报）。"""
+        这同时是 RISK-016 数据流的端到端验证：触发值必须等于 ⑦ 的
+        ``shoulder_turn`` 阶段指标（引擎按对外 key 查表，零特判）。
+
+        ⚠️ 2026-08 ⑦ 判据改为「h 局部最小点」（送杆刚启动，impact+3）后，
+        合成挥杆在 ⑦ 处肩部尚未打开，开放角为**负**（-6.0）——物理真实
+        （杆身水平前一刻肩还没转过来），RISK-016 的 ``< 30`` 条件仍命中。
+        fn_key（shoulder_open = -肩转）映射的符号正确性由
+        :meth:`TestSignConventions.test_follow_through_shoulder_turn_via_open_maps_to_open_angle`
+        与收杆符号测试（``test_open_angles_are_negated_turn_at_finish``）覆盖。"""
         _task_id, _status, result = finished
         by_phase = {p["key"]: p for p in result["phases"]}
         ft_rules = {r["rule_id"] for r in by_phase["follow_through"]["risks"]}
         assert "RISK-016" in ft_rules, f"合成挥杆 FOLLOW_THROUGH 应触发 RISK-016, got {ft_rules}"
-        # 触发值必须是正的开放角（fn_key=shoulder_open 生效）
+        # 触发值 = ⑦ 开放角（fn_key=shoulder_open 生效）；新语义下可为负但仍 < 30
+        ft_metric = {m["key"]: m["value"] for m in by_phase["follow_through"]["metrics"]}
         for r in by_phase["follow_through"]["risks"]:
             if r["rule_id"] == "RISK-016":
-                assert r["value"] > 0, f"RISK-016 的取值应为正开放角，got {r['value']}"
-                assert 0 < r["value"] < 30, f"RISK-016 触发值应在 (0,30)，got {r['value']}"
+                assert r["value"] == ft_metric["shoulder_turn"], (
+                    f"RISK-016 取值应等于 ⑦ shoulder_turn 指标，got {r['value']}"
+                )
+                assert r["value"] < 30, f"RISK-016 触发值应在 <30，got {r['value']}"
 
     def test_risk_item_schema(self, finished):
         _task_id, _status, result = finished

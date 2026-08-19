@@ -407,11 +407,22 @@ class TestSignConventions:
         assert by_key["hip_toward_target"] > 0, "收杆髋部未朝向目标，符号可能反了"
         assert by_key["shoulder_total_open"] > 0, "收杆肩部未打开，符号可能反了"
 
-    def test_follow_through_shoulder_turn_positive_via_open(self, ctx):
-        """⑦ shoulder_turn 走 shoulder_open 实现，值应为正（开放角）。"""
+    def test_follow_through_shoulder_turn_via_open_maps_to_open_angle(self, ctx):
+        """⑦ shoulder_turn 走 shoulder_open 实现：值恒等于 −肩转（fn_key 映射）。
+
+        ⚠️ 2026-08 ⑦ 判据改为「h 局部最小点」（送杆刚启动，impact+1~3 帧）后，
+        合成挥杆在 ⑦ 处肩部尚未打开，开放角为 **负**（-6.0）——物理真实
+        （杆身水平前一刻肩还没转过来），不代表映射失效。映射是否生效只看
+        ``shoulder_turn == -m_shoulder_turn`` 是否成立。
+        """
         ctx.phase = PhaseKey.FOLLOW_THROUGH
-        value = {m.key: m.value for m in metrics.compute_phase_metrics(ctx)}["shoulder_turn"]
-        assert value > 0, f"⑦ 开放角为负({value})，fn_key 映射失效"
+        by_key = {m.key: m.value for m in metrics.compute_phase_metrics(ctx)}
+        value = by_key["shoulder_turn"]
+        raw_turn = metrics.m_shoulder_turn(ctx)
+        assert value == pytest.approx(-raw_turn, abs=0.2), (
+            f"⑦ shoulder_turn 未走 shoulder_open(-肩转)，fn_key 映射失效: "
+            f"value={value} raw={raw_turn}"
+        )
 
     def test_pelvis_shift_positive_toward_target(self, ctx):
         """合成序列骨盆整体向 +x（目标方向）移动，收杆位移应为正。"""
