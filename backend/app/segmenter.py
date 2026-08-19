@@ -37,10 +37,14 @@ logger = logging.getLogger(__name__)
 #: 四锚点在 PHASE_ORDER 中的 key
 _ANCHOR_KEYS = (PhaseKey.ADDRESS, PhaseKey.TOP, PhaseKey.IMPACT, PhaseKey.FINISH)
 
-#: ⑦送杆局部最小搜索窗（秒）。击球后紧邻的腕最低点 = 送杆刚启动（30fps 下
-#: ≈5 帧）。不取全窗 ``[i_impact, i_finish]`` 全局 argmin：送杆/收杆后期腕位
-#: 会再次下探（实测 4e8d0d7e 全局最小在 impact+51、c6f67f38 在 +90、
-#: 1446d1b9 在 +42），全局最小会把 ⑦ 甩到收杆前；短窗限在「杆身水平前一刻」。
+#: ⑦送杆旧实现（h 局部最小短窗）的搜索窗（秒）。**已废弃**：2026-08 方案 B
+#: 改用「全窗 ``h`` 最小点 + :data:`config.FOLLOWTHROUGH_RISE` 上升阈值」后，
+#: 本常量不再被算法引用。保留仅为兼容已归档探针脚本
+#: ``backend/_probe_out/probe_follow_through.py``，勿在算法中使用。
+#: 历史背景：击球后紧邻的腕最低点 = 送杆刚启动（30fps 下 ≈5 帧）。不取全窗
+#: ``[i_impact, i_finish]`` 全局 argmin：送杆/收杆后期腕位会再次下探（实测
+#: 4e8d0d7e 全局最小在 impact+51、c6f67f38 在 +90、1446d1b9 在 +42），全局
+#: 最小会把 ⑦ 甩到收杆前；短窗限在「杆身水平前一刻」。
 _FOLLOW_MIN_WIN_SEC: float = 0.15
 
 
@@ -359,7 +363,8 @@ def _first_rising_cross(
 
     为什么不直接用 ``values >= threshold``：站位帧手腕本就在髋线附近，
     直接取「首个不低于阈值」会让 ② 起杆退化成 ``i_addr + 1``（旧 ⑦ 送杆
-    判据同理；2026-08 起 ⑦ 已改用 ``h`` 局部最小点，不再调用本函数）。
+    判据同理；2026-08 起 ⑦ 已改用 ``h`` 局部最小点 + :data:`config.FOLLOWTHROUGH_RISE`
+    上升阈值（方案 B），不再调用本函数）。
     """
     below_seen = False
     for i, value in enumerate(values):
@@ -408,10 +413,11 @@ def locate_intermediate(
     - ⑤ 下杆（方案 A，2026-08 用户拍板）：手腕高度 ``h`` 首次**下穿**髋线
       （:func:`_first_falling_cross`，阈值 :data:`config.H_HIP`）；相对旧判据
       「腕降肩」更靠后，且带 ⑤/⑥ 间距守卫（⑤ 必须严格早于 ⑥）。
-    - ⑦ 送杆（2026-08 用户拍板）：``h`` 在击球后短窗 ``(i_impact, i_impact+W]``
-      内的**局部最小值**（``h`` 最小 = 杆头最低 = 杆身水平前一刻 = 送杆刚启动，
-      ``W`` 见 :data:`_FOLLOW_MIN_WIN_SEC`）；窗口从 ``i_impact + 1`` 起搜，
-      天然保证 ``⑦ >= impact + 1``，未命中走兜底比例。
+    - ⑦ 送杆（方案 B，2026-08 用户拍板）：``h`` 局部最小值 + **DELTA 偏移**。
+      上一版「h 局部最小点」（送杆刚启动）用户实测偏早，本版在 ``h`` 最小点
+      基础上加 :data:`config.FOLLOWTHROUGH_RISE` 上升阈值：全窗
+      ``[i_impact, i_finish]`` 内 ``h`` 最小点（杆头最低）之后**第一个**
+      ``h >= 最小点 + 阈值`` 的帧 = 杆身略上扬时刻 = ⑦ 送杆；未命中走兜底比例。
 
     Args:
         sig: 信号包。
@@ -462,26 +468,35 @@ def locate_intermediate(
     else:
         out[PhaseKey.DOWNSWING] = (idx, False)
 
-    # ⑦ 送杆（2026-08 用户拍板）：杆身刚到水平时。旧判据「腕升髋线」
-    # （``_first_rising_cross``）在多数 DTL 样本上腕位始终高于髋线、命中不了
-    # 真实上穿，退化成兜底比例（实测 4e8d0d7e=267、c6f67f38=224、1446d1b9=58，
-    # 远离击球）；新判据取 ``h`` 在击球后短窗 ``(i_impact, i_impact + W]`` 内的
-    # **局部最小值**——``h`` 最小 = 杆头最低 = 击球瞬间 ~ 杆身水平**前一刻** =
-    # 送杆刚启动。
-    # ⚠️ 为什么是短窗而非全窗 ``[i_impact, i_finish]`` 全局 argmin：
-    #  1. 窗口从 ``i_impact + 1`` 开始——``h`` 全局最小值恰在击球帧（腕最低 =
-    #     击球瞬间；实测 22030124 的 ``h`` 最小值就在 refined impact 115），若包含
-    #     ``i_impact`` 会命中 ⑦=⑥ 破坏单调性；从击球后一帧起搜保证
-    #     ``⑦ >= impact + 1``（无需 :func:`enforce_monotonic_indices` 强排）。
-    #  2. 不上限收尾——送杆/收杆后期腕位会再次下探（实测 4e8d0d7e 全局最小在
-    #     impact+51、c6f67f38 在 +90、1446d1b9 在 +42），全局 argmin 会把 ⑦
-    #     甩到收杆前；短窗把搜索限制在「击球后紧邻的腕最低点」= 送杆刚启动。
+    # ⑦ 送杆（方案 B，2026-08 用户拍板）：h 局部最小点 + DELTA 偏移。
+    # 上一版（h 局部最小）定位到「杆刚过最低点」= 送杆刚启动，用户实测
+    # 22030124 得 116 帧偏早，视觉上 118~119 帧（腕部超过髋部一些、杆身
+    # 略上扬）更好。方案 B 在 h 最小点基础上加上升阈值：
+    #   - ``h_min_idx`` = ``[i_impact, i_finish]`` 全窗 ``h`` 最小点
+    #     （杆头最低 = 腕部过底点，送杆启动的真实基线）；
+    #   - 阈值 = ``h_min_val + config.FOLLOWTHROUGH_RISE``（肩宽制）；
+    #   - 从 ``h_min_idx`` **之后**找第一个 ``h >= 阈值`` 的帧 = 杆身略上扬
+    #     时刻 = ⑦ 送杆。
+    # 守卫：⑦ 必须严格在击球后（``> i_impact``）且严格在收杆前
+    # （``< i_finish``）；未命中走兜底比例 :data:`config.FALLBACK_RATIO`。
+    # ⚠️ 全窗 argmin 只作基线、不直接作 ⑦：送杆/收杆后期腕位会再次下探
+    # （实测 4e8d0d7e 全局最小在 impact+51、c6f67f38 在 +90、1446d1b9 在
+    # +42），但本判据取「最小点之后第一次上穿阈值」，天然锚定在最小点后的
+    # 上升沿，不会被后续二次下探甩到收杆前（这正是旧版改短窗的原因；
+    # 方案 B 用上升沿替代短窗，同时消除了「短窗可能不含最低点」的窗口敏感）。
     idx = None
     if not anchor_only and i_finish > i_impact:
-        w = max(2, int(round(_FOLLOW_MIN_WIN_SEC * sig.fps_eff)))
-        window_h = sig.h[i_impact + 1 : min(i_finish + 1, i_impact + 1 + w)]
-        if len(window_h) > 0:
-            idx = i_impact + 1 + int(np.argmin(window_h))
+        seg_h = sig.h[i_impact:i_finish + 1]
+        if len(seg_h) > 0:
+            k_min = int(np.argmin(seg_h))
+            h_min_val = float(seg_h[k_min])
+            threshold = h_min_val + config.FOLLOWTHROUGH_RISE
+            after = seg_h[k_min + 1:]
+            hits = np.where(after >= threshold)[0]
+            if hits.size > 0:
+                cand = i_impact + k_min + 1 + int(hits[0])
+                if i_impact < cand < i_finish:
+                    idx = cand
     if idx is None:
         out[PhaseKey.FOLLOW_THROUGH] = (_ratio_frame(i_impact, i_finish, r7), True)
     else:

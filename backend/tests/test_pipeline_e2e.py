@@ -154,10 +154,11 @@ class TestEndToEnd:
         这同时是 RISK-016 数据流的端到端验证：触发值必须等于 ⑦ 的
         ``shoulder_turn`` 阶段指标（引擎按对外 key 查表，零特判）。
 
-        ⚠️ 2026-08 ⑦ 判据改为「h 局部最小点」（送杆刚启动，impact+3）后，
-        合成挥杆在 ⑦ 处肩部尚未打开，开放角为**负**（-6.0）——物理真实
-        （杆身水平前一刻肩还没转过来），RISK-016 的 ``< 30`` 条件仍命中。
-        fn_key（shoulder_open = -肩转）映射的符号正确性由
+        ⚠️ 2026-08 ⑦ 判据为「h 局部最小点 + FOLLOWTHROUGH_RISE 上升阈值」
+        （方案 B；合成挥杆下 ⑦ ≈ impact+8）后，合成挥杆在 ⑦ 处肩部尚未充分
+        打开，开放角 ≈ +28°（肩转 -28°）——物理真实（杆身刚略上扬肩还没转完），
+        RISK-016 的 ``< 30`` 条件仍命中。fn_key（shoulder_open = -肩转）
+        映射的符号正确性由
         :meth:`TestSignConventions.test_follow_through_shoulder_turn_via_open_maps_to_open_angle`
         与收杆符号测试（``test_open_angles_are_negated_turn_at_finish``）覆盖。"""
         _task_id, _status, result = finished

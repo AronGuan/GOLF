@@ -410,10 +410,11 @@ class TestSignConventions:
     def test_follow_through_shoulder_turn_via_open_maps_to_open_angle(self, ctx):
         """⑦ shoulder_turn 走 shoulder_open 实现：值恒等于 −肩转（fn_key 映射）。
 
-        ⚠️ 2026-08 ⑦ 判据改为「h 局部最小点」（送杆刚启动，impact+1~3 帧）后，
-        合成挥杆在 ⑦ 处肩部尚未打开，开放角为 **负**（-6.0）——物理真实
-        （杆身水平前一刻肩还没转过来），不代表映射失效。映射是否生效只看
-        ``shoulder_turn == -m_shoulder_turn`` 是否成立。
+        ⚠️ 2026-08 ⑦ 判据为「h 局部最小点 + FOLLOWTHROUGH_RISE 上升阈值」
+        （方案 B；合成挥杆下 ⑦ ≈ impact+8）后，合成挥杆在 ⑦ 处肩部尚未充分
+        打开，开放角 ≈ +28°——物理真实（杆身刚略上扬肩还没转完），不代表
+        映射失效。映射是否生效只看 ``shoulder_turn == -m_shoulder_turn``
+        是否成立。
         """
         ctx.phase = PhaseKey.FOLLOW_THROUGH
         by_key = {m.key: m.value for m in metrics.compute_phase_metrics(ctx)}
