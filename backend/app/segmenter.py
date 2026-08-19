@@ -411,8 +411,9 @@ def locate_intermediate(
       :data:`config.H_HIP`）。
     - ③ 上杆：手腕首次升过肩线（``wrist_y <= shoulder_mid_y``）。
     - ⑤ 下杆（方案 A，2026-08 用户拍板）：手腕高度 ``h`` 首次**下穿**髋线
-      （:func:`_first_falling_cross`，阈值 :data:`config.H_HIP`）；相对旧判据
-      「腕降肩」更靠后，且带 ⑤/⑥ 间距守卫（⑤ 必须严格早于 ⑥）。
+      （:func:`_first_falling_cross`，阈值 :data:`config.H_DOWNSWING`，⑤ 专用，
+      与 ②/⑦ 共享的 ``H_HIP`` 无关）；相对旧判据「腕降肩」更靠后，
+      且带 ⑤/⑥ 间距守卫（⑤ 必须严格早于 ⑥）。
     - ⑦ 送杆（方案 B，2026-08 用户拍板）：``h`` 局部最小值 + **DELTA 偏移**。
       上一版「h 局部最小点」（送杆刚启动）用户实测偏早，本版在 ``h`` 最小点
       基础上加 :data:`config.FOLLOWTHROUGH_RISE` 上升阈值：全窗
@@ -449,10 +450,15 @@ def locate_intermediate(
     else:
         out[PhaseKey.BACKSWING] = (idx, False)
 
-    # ⑤ 下杆：手腕首次回落到髋线（方案 A，2026-08 用户拍板；原判据为
+    # ⑤ 下杆：手腕首次回落到髋线附近（方案 A，2026-08 用户拍板；原判据为
     # 「手腕回落穿过肩线」——实测偏早 2 帧，如 22030124 得 111 而视觉为 113）。
     # 语义：``h = (hip_mid_y - wrist_y)/S`` 向上为正；顶点时腕在髋上
-    # （``h≈2``），下杆期 ``h`` 单调递减，**首次下穿 ``H_HIP``** 即「腕降到髋」。
+    # （``h≈2``），下杆期 ``h`` 单调递减，**首次下穿 ``H_DOWNSWING``** 即「腕接近髋」。
+    # ⚠️ ⑤ 专用阈值 :data:`config.H_DOWNSWING`（≠ ②/⑦ 共享的 ``H_HIP``）：
+    # 2026-08 用户最后一次判据微调——旧值 ``H_HIP=0.18`` 在 22030124 上命中 114，
+    # 紧贴 ⑥击球 115（仅 1 帧间隔，下杆指标退化为「击球前一帧」）；⑤ 专用阈值
+    # 0.50 让 ⑤ 提前到 113（顶点 106 → 击球 115 区间的中段），且因下杆期 ``h``
+    # 递减、阈值越高越早触发（0.05 草案反而命中击球当帧触发兜底，见 config 注释）。
     # 相比旧判据（``wrist_y`` 下穿肩线）更靠后，更接近击球。
     # ⚠️ ⑤/⑥ 间距守卫：⑤ 必须严格早于 ⑥（间隔 ≥ 1 帧），否则说明判据未在
     # 击球前真正命中（窗口内 ``h`` 未降到髋线），回退兜底比例——避免 ⑤≥⑥
@@ -460,7 +466,7 @@ def locate_intermediate(
     idx = None
     if not anchor_only and i_impact > i_top:
         window = slice(i_top, i_impact + 1)
-        idx = _first_falling_cross(sig.h[window], config.H_HIP, i_top)
+        idx = _first_falling_cross(sig.h[window], config.H_DOWNSWING, i_top)
         if idx is not None and idx >= i_impact:
             idx = None
     if idx is None:
