@@ -505,6 +505,16 @@
   color: var(--text-dim, #6b7686);
 }
 
+/* ---------------- 手动微调时指标重算提示（v3 增量） ---------------- */
+.metric-note {
+  margin: -4rpx 0 12rpx;
+  font-size: 22rpx;
+  color: var(--text-dim, #6b7686);
+}
+.metric-note--err {
+  color: #f0ad4e;
+}
+
 /* ---------------- 指标空状态（用户决策 2） ---------------- */
 .empty-metric {
   padding: 56rpx 20rpx;

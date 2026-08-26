@@ -41,7 +41,8 @@ const PDD_ERROR_MESSAGES = {
   10005: '检测到视频方向异常，请将手机竖向拍摄后重试',
   20001: '任务不存在或已过期',
   20002: '任务尚未完成，请稍后再试',
-  20003: '帧号超出可调整范围'
+  20003: '帧号超出可调整范围',
+  20004: '阶段参数不合法'
 };
 
 /**
@@ -254,6 +255,24 @@ function getFrameImage(taskId, frameIndex) {
   });
 }
 
+/**
+ * 手动微调时实时重算目标阶段指标（v3 新增，纯增量）。
+ *
+ * 走统一 JSON 包 ``request()`` 封装；后端返回
+ * ``{phase, frame_index, metrics}``，其中 ``metrics`` 为当前帧下重算出的
+ * ``StageMetric`` 数组（字段与结果页一致，可直接交给 ``decorate()``）。
+ *
+ * @param {string} taskId 任务 ID
+ * @param {string} phase PhaseKey 值（如 'downswing'）
+ * @param {number} frameIndex 原视频帧号
+ * @return {Promise<{phase:string, frame_index:number, metrics:Array}>}
+ */
+function getPhaseMetrics(taskId, phase, frameIndex) {
+  return request({
+    url: '/task/' + taskId + '/phase_metrics/' + phase + '/' + frameIndex
+  });
+}
+
 module.exports = {
   BASE_URL,
   API_PREFIX,
@@ -265,5 +284,6 @@ module.exports = {
   getTaskStatus,
   getResult,
   getFrameImage,
+  getPhaseMetrics,
   health
 };

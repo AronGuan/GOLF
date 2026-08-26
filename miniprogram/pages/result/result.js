@@ -317,6 +317,9 @@ Page({
         adjFrame: null, // 非空 = 已手动调整过
         adjActive: false, // 手动微调视觉标识
         adjLoading: false,
+        // ---- 手动微调时指标重算（v3 增量）----
+        metricLoading: false, // 重算中 -> wxml 显示「指标计算中...」
+        metricError: '', // 重算失败 -> 「指标刷新失败，保留原值」
         adjMin: Math.max(0, eventFrame - FRAME_RANGE),
         adjMax:
           totalFrames > 0
@@ -387,7 +390,9 @@ Page({
       adjCur: phase.eventFrame,
       adjFrame: null,
       adjActive: false,
-      adjLoading: false
+      adjLoading: false,
+      metricLoading: false,
+      metricError: ''
     });
     const nextPhases = phases.slice();
     nextPhases[i] = reset;
@@ -434,7 +439,11 @@ Page({
     const phase = this.data.phases[i];
     const taskId = this.data.taskId;
     if (!phase || !taskId) return;
-    this.setData({ ['phases[' + i + '].adjLoading']: true });
+    this.setData({
+      ['phases[' + i + '].adjLoading']: true,
+      ['phases[' + i + '].metricLoading']: true,
+      ['phases[' + i + '].metricError']: ''
+    });
     api
       .getFrameImage(taskId, target)
       .then((res) => {
@@ -451,10 +460,50 @@ Page({
         const patch = { ['phases[' + i + ']']: updated };
         if (i === this.data.current) patch.cur = updated;
         this.setData(patch);
+        // 换图后实时重算当前阶段指标（v3 增量：只覆盖当前 phase）
+        this._loadPhaseMetrics(i, phase.key, res.frameIndex);
       })
       .catch((err) => {
-        this.setData({ ['phases[' + i + '].adjLoading']: false });
+        this.setData({
+          ['phases[' + i + '].adjLoading']: false,
+          ['phases[' + i + '].metricLoading']: false
+        });
         wx.showToast({ title: err.message || '帧加载失败', icon: 'none' });
+      });
+  },
+
+  /**
+   * 手动微调后重算目标阶段指标，并只覆盖该阶段的指标卡。
+   * @param {number} i 阶段下标
+   * @param {string} phaseKey 后端 PhaseKey 值（如 'downswing'）
+   * @param {number} frameIndex 实际渲染帧号（采样对齐后）
+   */
+  _loadPhaseMetrics(i, phaseKey, frameIndex) {
+    const taskId = this.data.taskId;
+    const phase = this.data.phases[i];
+    if (!phase || !taskId) return;
+    api
+      .getPhaseMetrics(taskId, phaseKey, frameIndex)
+      .then((res) => {
+        const metrics = (res.metrics || []).map(decorate);
+        const updated = Object.assign({}, phase, {
+          metrics: metrics,
+          emptyMetrics: metrics.length === 0,
+          metricLoading: false,
+          metricError: ''
+        });
+        const patch = { ['phases[' + i + ']']: updated };
+        if (i === this.data.current) patch.cur = updated;
+        this.setData(patch);
+      })
+      .catch(() => {
+        const updated = Object.assign({}, phase, {
+          metricLoading: false,
+          metricError: '指标刷新失败，保留原值'
+        });
+        const patch = { ['phases[' + i + ']']: updated };
+        if (i === this.data.current) patch.cur = updated;
+        this.setData(patch);
       });
   },
 

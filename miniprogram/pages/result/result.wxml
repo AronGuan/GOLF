@@ -87,6 +87,10 @@
         <text class="section__sub" wx:if="{{cur.metrics.length > 0}}">共 {{cur.metrics.length}} 项</text>
       </view>
 
+      <!-- 手动微调时指标重算提示（v3 增量：loading / 失败降级） -->
+      <view class="metric-note" wx:if="{{cur.metricLoading}}">指标计算中...</view>
+      <view class="metric-note metric-note--err" wx:elif="{{cur.metricError}}">{{cur.metricError}}</view>
+
       <!-- 0 项指标：占位卡（用户决策 2：侧面机位部分阶段允许 0~1 项） -->
       <view class="empty-metric" wx:if="{{cur.emptyMetrics}}">
         <view class="empty-metric__icon">📊</view>

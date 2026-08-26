@@ -28,7 +28,7 @@ from fastapi.staticfiles import StaticFiles
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from . import config
-from .frame_service import FrameError, render_frame
+from .frame_service import FrameError, phase_metrics, render_frame
 from .pipeline import run_analysis
 from .schemas import AnalysisError, CameraView, TaskStatus
 from .task_store import task_store
@@ -301,7 +301,8 @@ async def get_frame(task_id: str, frame_index: int) -> Response:
     - 失败返回统一错误包：任务不存在 20001、任务未完成 20002、
       帧号越界/超出调整范围 20003。
 
-    说明：只做**展示级**微调（换图），本期不重算指标（指标卡保持原值）。
+    说明：本接口只负责**换图**；指标卡实时重算由前端额外调用
+    ``GET /api/v1/task/{id}/phase_metrics/{phase}/{idx}`` 完成。
     """
     try:
         png, actual = render_frame(task_id, frame_index)
@@ -311,4 +312,30 @@ async def get_frame(task_id: str, frame_index: int) -> Response:
         content=png,
         media_type="image/png",
         headers={"X-Frame-Index": str(actual)},
+    )
+
+
+@app.get(f"{API_PREFIX}/task/{{task_id}}/phase_metrics/{{phase}}/{{frame_index}}")
+@app.get(f"{API_PREFIX}/tasks/{{task_id}}/phase_metrics/{{phase}}/{{frame_index}}")
+async def get_phase_metrics(task_id: str, phase: str, frame_index: int) -> JSONResponse:
+    """手动微调时实时重算目标阶段指标（纯增量，不改核心算法）。
+
+    - 双路径：PDD 主路径 ``/api/v1/task/{id}/phase_metrics/{phase}/{idx}``
+      + 旧别名 ``/api/v1/tasks/{id}/phase_metrics/{phase}/{idx}``；
+    - ``phase`` 接受 PhaseKey 值（``downswing``）或枚举名（``DOWNSWING``）；
+    - 成功返回 ``{phase, frame_index, metrics}``（``frame_index`` 为采样对齐后的
+      实际帧号，与骨架图同帧）；
+    - 失败统一错误包：任务不存在 20001、任务未完成 20002、帧号越界 20003、
+      阶段非法 20004。
+    """
+    try:
+        phase_key, actual, metrics = phase_metrics(task_id, phase, frame_index)
+    except FrameError as exc:
+        return err(exc.code, exc.message, exc.pdd_code)
+    return ok(
+        {
+            "phase": phase_key.value,
+            "frame_index": actual,
+            "metrics": [m.model_dump(mode="json") for m in metrics],
+        }
     )

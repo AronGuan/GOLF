@@ -618,3 +618,6 @@ LANDMARK_CACHE_FILENAME: Final[str] = "landmarks.npz"
 #: PDD 错误码 20003（帧号越界 / 超出可调整范围）。2000x 为任务结果域，
 #: 20001 任务不存在、20002 任务未完成、20003 帧号越界（PDD 未定义，我方顺延）。
 PDD_CODE_FRAME_OUT_OF_RANGE: Final[int] = 20003
+
+#: PDD 错误码 20004（阶段标识非法，非 8 阶段之一）。结果域顺延，纯增量新增。
+PDD_CODE_PHASE_INVALID: Final[int] = 20004
