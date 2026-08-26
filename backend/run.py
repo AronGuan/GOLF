@@ -64,7 +64,34 @@ def _cmd_check(args: argparse.Namespace) -> int:
     print(f"opencv        = {cv2.__version__}")
     print(f"ROTATION_SIGN = {config.ROTATION_SIGN}")
     print(f"TARGET_DIR_X  = {config.TARGET_DIR_X}")
-    ok = mediapipe.__version__ == config.MEDIAPIPE_VERSION and numpy.__version__ < "2"
+
+    # torch（SwingNet AI 事件检测需要，必须 CPU 版——+cpu 后缀才是 CPU wheel，
+    # 纯 CUDA 版会带 nvidia 依赖、几个 GB，且无 GPU 跑不起来）
+    torch_ver, torch_ok = "未安装", False
+    try:
+        import torch
+
+        torch_ver = torch.__version__
+        torch_ok = "+cpu" in torch_ver
+    except ImportError:
+        pass
+    print(f"torch         = {torch_ver} (expect 2.13.0+cpu)")
+
+    # SwingNet 权重（63MB 不入 git，需手动 scp 上传）
+    weights_path = config.SWINGNET_WEIGHTS_PATH
+    weights_ok = os.path.isfile(weights_path)
+    if weights_ok:
+        wsize_mb = os.path.getsize(weights_path) / 1024 / 1024
+        print(f"swingnet权重  = {wsize_mb:.1f}MB {weights_path}")
+    else:
+        print(f"swingnet权重  = 缺失 {weights_path}")
+
+    ok = (
+        mediapipe.__version__ == config.MEDIAPIPE_VERSION
+        and numpy.__version__ < "2"
+        and torch_ok
+        and weights_ok
+    )
     print("RESULT        =", "OK" if ok else "MISMATCH")
     return 0 if ok else 1
 
