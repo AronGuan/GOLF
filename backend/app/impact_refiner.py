@@ -188,6 +188,7 @@ def plan_reanchor_frames(
     meta: VideoMeta,
     frames: Sequence[FrameLandmarks],
     cand_frames: Sequence[int],
+    view: CameraView = CameraView.FACE_ON,
 ) -> List[int]:
     """预计算校正后可能出现的全部事件帧号（纯函数，无 IO，opens=1 的关键）。
 
@@ -207,6 +208,10 @@ def plan_reanchor_frames(
         meta: 视频元信息（保留签名一致性；帧号映射直接用 ``frames``）。
         frames: 姿态序列（array 下标 -> 原帧号映射）。
         cand_frames: :func:`plan_refine_frames` 返回的候选帧号（原视频帧号）。
+        view: 拍摄机位（face-on / DTL）。传给 :func:`segmenter.reanchor_impact`，
+            让预计算的 ⑤ 与主链路最终 reanchor 使用同一机位阈值（DTL 的 ⑤ 更靠后，
+            若不传，DTL 视频校正后的 ⑤ 帧可能不在解码并集内、渲染走兜底帧）。
+            默认 face-on 保持历史行为。
 
     Returns:
         可能出现的全部事件帧号（升序、去重）；任何 reanchor 冲突（返回 None）
@@ -229,7 +234,9 @@ def plan_reanchor_frames(
         array_index = index_to_array.get(cand_frame)
         if array_index is None:
             continue
-        rebuilt = segmenter.reanchor_impact(frames, signals, events, array_index)
+        rebuilt = segmenter.reanchor_impact(
+            frames, signals, events, array_index, view=view
+        )
         if rebuilt is None:
             continue
         possible.update(e.frame_index for e in rebuilt)

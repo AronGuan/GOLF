@@ -23,6 +23,7 @@ from . import config, geometry
 from .pose_extractor import moving_average, smooth_window
 from .schemas import (
     AnalysisError,
+    CameraView,
     ErrorCode,
     FrameLandmarks,
     PHASE_META,
@@ -403,7 +404,9 @@ def _ratio_frame(start: int, end: int, ratio: float) -> int:
 
 
 def locate_intermediate(
-    sig: SwingSignals, anchors: Tuple[int, int, int, int]
+    sig: SwingSignals,
+    anchors: Tuple[int, int, int, int],
+    view: CameraView = CameraView.FACE_ON,
 ) -> Dict[PhaseKey, Tuple[int, bool]]:
     """②③⑤⑦：解剖高度判据 + 兜底比例，未命中走兜底。
 
@@ -414,6 +417,9 @@ def locate_intermediate(
       （:func:`_first_falling_cross`，阈值 :data:`config.H_DOWNSWING`，⑤ 专用，
       与 ②/⑦ 共享的 ``H_HIP`` 无关）；相对旧判据「腕降肩」更靠后，
       且带 ⑤/⑥ 间距守卫（⑤ 必须严格早于 ⑥）。
+      分机位（2026-08 ⑤下杆机位感知改造）：face-on 用 :data:`config.H_DOWNSWING`
+      （0.50，历史行为逐字节不变）；DTL 用 :data:`config.H_DOWNSWING_DTL`
+      （阈值更低 → 触发更晚 → 偏离顶点、更靠后）。
     - ⑦ 送杆（方案 B，2026-08 用户拍板）：``h`` 局部最小值 + **DELTA 偏移**。
       上一版「h 局部最小点」（送杆刚启动）用户实测偏早，本版在 ``h`` 最小点
       基础上加 :data:`config.FOLLOWTHROUGH_RISE` 上升阈值：全窗
@@ -423,6 +429,8 @@ def locate_intermediate(
     Args:
         sig: 信号包。
         anchors: ``(i_addr, i_top, i_impact, i_finish)``。
+        view: 拍摄机位（face-on / DTL）。仅影响 ⑤ 的阈值选择；默认 face-on
+            保持历史行为（与不传 view 逐字节一致）。
     """
     i_addr, i_top, i_impact, i_finish = anchors
     r2, r3, r5, r7 = config.FALLBACK_RATIO
@@ -453,20 +461,26 @@ def locate_intermediate(
     # ⑤ 下杆：手腕首次回落到髋线附近（方案 A，2026-08 用户拍板；原判据为
     # 「手腕回落穿过肩线」——实测偏早 2 帧，如 22030124 得 111 而视觉为 113）。
     # 语义：``h = (hip_mid_y - wrist_y)/S`` 向上为正；顶点时腕在髋上
-    # （``h≈2``），下杆期 ``h`` 单调递减，**首次下穿 ``H_DOWNSWING``** 即「腕接近髋」。
-    # ⚠️ ⑤ 专用阈值 :data:`config.H_DOWNSWING`（≠ ②/⑦ 共享的 ``H_HIP``）：
-    # 2026-08 用户最后一次判据微调——旧值 ``H_HIP=0.18`` 在 22030124 上命中 114，
-    # 紧贴 ⑥击球 115（仅 1 帧间隔，下杆指标退化为「击球前一帧」）；⑤ 专用阈值
-    # 0.50 让 ⑤ 提前到 113（顶点 106 → 击球 115 区间的中段），且因下杆期 ``h``
-    # 递减、阈值越高越早触发（0.05 草案反而命中击球当帧触发兜底，见 config 注释）。
-    # 相比旧判据（``wrist_y`` 下穿肩线）更靠后，更接近击球。
+    # （``h≈2``），下杆期 ``h`` 单调递减，**首次下穿阈值**即「腕接近髋」。
+    # ⚠️ ⑤ 专用阈值（≠ ②/⑦ 共享的 ``H_HIP``）：2026-08 用户最后一次判据微调——
+    # 旧值 ``H_HIP=0.18`` 在 22030124 上命中 114，紧贴 ⑥击球 115（仅 1 帧间隔，
+    # 下杆指标退化为「击球前一帧」）；⑤ 专用阈值 0.50 让 ⑤ 提前到 113（顶点 106
+    # → 击球 115 区间的中段），且因下杆期 ``h`` 递减、阈值越高越早触发。
+    # ⚠️ 分机位（2026-08 ⑤下杆机位感知改造）：face-on 用 ``H_DOWNSWING=0.50``
+    # （正面回归逐字节一致）；DTL 用 ``H_DOWNSWING_DTL``（更低 → 触发更晚 →
+    # 偏离顶点、更靠后，见 config 注释与校准探针）。
     # ⚠️ ⑤/⑥ 间距守卫：⑤ 必须严格早于 ⑥（间隔 ≥ 1 帧），否则说明判据未在
     # 击球前真正命中（窗口内 ``h`` 未降到髋线），回退兜底比例——避免 ⑤≥⑥
     # 触发 :func:`enforce_monotonic_indices` 把 impact 锚点向前挤（降级污染）。
+    h_threshold = (
+        config.H_DOWNSWING_DTL
+        if view is CameraView.DOWN_THE_LINE
+        else config.H_DOWNSWING
+    )
     idx = None
     if not anchor_only and i_impact > i_top:
         window = slice(i_top, i_impact + 1)
-        idx = _first_falling_cross(sig.h[window], config.H_DOWNSWING, i_top)
+        idx = _first_falling_cross(sig.h[window], h_threshold, i_top)
         if idx is not None and idx >= i_impact:
             idx = None
     if idx is None:
@@ -600,6 +614,7 @@ def segment_swing(
     fps: float,
     sig: Optional[SwingSignals] = None,
     aspect: float = 1.0,
+    view: CameraView = CameraView.FACE_ON,
 ) -> List[SwingEvent]:
     """8 阶段切分主入口。
 
@@ -608,6 +623,9 @@ def segment_swing(
         fps: 原视频帧率。
         sig: 可选的预构建信号包（避免重复计算）。传入时 ``aspect`` 被忽略。
         aspect: 画幅纵横比 ``height / width``，含义见 :func:`build_signals`。
+        view: 拍摄机位（face-on / DTL）。传给 :func:`locate_intermediate` 决定
+            ⑤ 下杆阈值（face-on=``H_DOWNSWING`` 历史不变；DTL=``H_DOWNSWING_DTL``）。
+            默认 face-on 保持历史行为（与不传 view 逐字节一致）。
 
     Returns:
         恒定 8 个、帧号严格递增的 :class:`SwingEvent`。
@@ -622,7 +640,9 @@ def segment_swing(
     i_addr, e_addr = locate_address(signals, i_top)
     i_impact, e_impact = locate_impact(signals, i_top, i_addr)
     i_finish, e_finish = locate_finish(signals, i_impact)
-    mid = locate_intermediate(signals, (i_addr, i_top, i_impact, i_finish))
+    mid = locate_intermediate(
+        signals, (i_addr, i_top, i_impact, i_finish), view=view
+    )
 
     ordered_pairs: List[Tuple[int, bool]] = [
         (i_addr, e_addr),
@@ -647,6 +667,7 @@ def reanchor_impact(
     signals: SwingSignals,
     events: Sequence[SwingEvent],
     new_impact_array_index: int,
+    view: CameraView = CameraView.FACE_ON,
 ) -> Optional[List[SwingEvent]]:
     """用校正后的击球帧重建 8 事件（ARCHITECTURE-v3-clublite.md §4.2）。
 
@@ -665,6 +686,9 @@ def reanchor_impact(
         signals: 切分信号包（与 :func:`segment_swing` 同源）。
         events: 8 事件（原 ``segment_swing`` 产出）。
         new_impact_array_index: 校正后的 impact 数组下标（array 下标）。
+        view: 拍摄机位（face-on / DTL）。传给 :func:`locate_intermediate`，
+            保证校正后 ⑤ 与 :func:`segment_swing` 用同一机位阈值（DTL 校正后
+            ⑤ 不会回跳到 face-on 位置）。默认 face-on 保持历史行为。
 
     Returns:
         重建后的 8 事件；冲突时返回 ``None``。
@@ -700,7 +724,9 @@ def reanchor_impact(
             return list(events)
 
         mid = locate_intermediate(
-            signals, (addr.array_index, top.array_index, new_idx, finish.array_index)
+            signals,
+            (addr.array_index, top.array_index, new_idx, finish.array_index),
+            view=view,
         )
         ordered_pairs: List[Tuple[int, bool]] = [
             (addr.array_index, addr.estimated),

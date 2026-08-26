@@ -10,7 +10,15 @@ import numpy as np
 import pytest
 
 from app import config, segmenter
-from app.schemas import PHASE_ORDER, AnalysisError, ErrorCode, PhaseKey
+from app.schemas import (
+    PHASE_ORDER,
+    AnalysisError,
+    CameraView,
+    ErrorCode,
+    FrameLandmarks,
+    PhaseKey,
+    SwingSignals,
+)
 
 from conftest import FPS, N_FRAMES, build_pose, make_still_frames, make_swing_frames
 
@@ -298,3 +306,131 @@ class TestMonotonic:
         with pytest.raises(AnalysisError) as exc:
             segmenter.enforce_monotonic(events)
         assert exc.value.code is ErrorCode.NO_SWING
+
+
+# ---------------------------------------------------------------------------
+# ⑤下杆机位感知（2026-08 改造：face-on / DTL 分机位阈值）
+# ---------------------------------------------------------------------------
+
+
+def _downswing_sweep_signals() -> SwingSignals:
+    """构造 h 在顶点→击球间线性单调递减的信号包，验证 ⑤ 阈值分机位。
+
+    h: ``[0,5)`` 站位 ≈ 0；``[5,40)`` 上杆 0→2；``[40,60)`` 下杆 2→0（线性）；
+    ``[60,90)`` 送杆 -0.1→0.48；``[90,100)`` 收杆 ≈ -0.1。
+    下杆段 ``h[i] = 2*(60-i)/20``（i ∈ [40,60]）：
+      - 首次 ``h <= 0.50``（:data:`config.H_DOWNSWING`）发生在 i=55；
+      - 首次 ``h <= 0.18``（测试用 :data:`config.H_DOWNSWING_DTL`）发生在 i=59
+        （h[58]=0.20 > 0.18，h[59]=0.10 <= 0.18）。
+    ``h = (hip_mid_y - wrist_y) / S``，取 S=1、hip_mid_y=0 → ``wrist_y = -h``。
+    """
+    n = 100
+    h = np.empty(n, dtype=np.float64)
+    for i in range(n):
+        if i < 5:
+            h[i] = 0.02
+        elif i < 40:
+            h[i] = 2.0 * (i - 5) / 35.0
+        elif i < 60:
+            h[i] = 2.0 * (60 - i) / 20.0
+        elif i < 90:
+            h[i] = -0.1 + 0.6 * (i - 60) / 30.0
+        else:
+            h[i] = -0.1
+    wrist_y = -h
+    return SwingSignals(
+        n=n,
+        fps=30.0,
+        dt=1.0 / 30.0,
+        S=1.0,
+        wrist_x=np.zeros(n, dtype=np.float64),
+        wrist_y=wrist_y,
+        shoulder_mid_y=np.full(n, 0.5, dtype=np.float64),
+        hip_mid_y=np.zeros(n, dtype=np.float64),
+        h=h,
+        speed=np.zeros(n, dtype=np.float64),
+    )
+
+
+def _frames_for_reanchor(n: int = 100):
+    """与 :func:`_downswing_sweep_signals` 配套的 FrameLandmarks 序列。"""
+    return [
+        FrameLandmarks(
+            frame_index=i,
+            timestamp=i / 30.0,
+            detected=True,
+            norm=np.zeros((33, 3), dtype=np.float64),
+            world=np.zeros((33, 3), dtype=np.float64),
+            visibility=np.zeros(33, dtype=np.float64),
+        )
+        for i in range(n)
+    ]
+
+
+class TestViewAwareDownswing:
+    """⑤ 下杆机位感知：view 参数向后兼容 + DTL 阈值生效 + 正面零影响。"""
+
+    def test_segment_swing_default_equals_face_on(self, swing_frames):
+        """不传 view 与显式 face-on 必须逐字节一致（历史行为保持）。"""
+        ev_default = segmenter.segment_swing(swing_frames, FPS)
+        ev_face = segmenter.segment_swing(swing_frames, FPS, view=CameraView.FACE_ON)
+        assert [(e.key, e.frame_index, e.estimated) for e in ev_default] == [
+            (e.key, e.frame_index, e.estimated) for e in ev_face
+        ]
+
+    def test_locate_intermediate_dtl_uses_dedicated_threshold(self, monkeypatch):
+        """view=DTL 用 H_DOWNSWING_DTL：阈值调低 → h 单调递减 → ⑤ 更靠后。"""
+        sig = _downswing_sweep_signals()
+        anchors = (5, 40, 60, 90)
+        # 基准：DTL 阈值 == face-on 阈值 → ⑤ 相同
+        monkeypatch.setattr(config, "H_DOWNSWING_DTL", config.H_DOWNSWING)
+        mid_same = segmenter.locate_intermediate(
+            sig, anchors, view=CameraView.DOWN_THE_LINE
+        )
+        ds_same = mid_same[PhaseKey.DOWNSWING][0]
+        assert ds_same == 55
+        # 调低 DTL 阈值 → 首次下穿更晚 → ⑤ 更靠后（偏离顶点、接近击球）
+        monkeypatch.setattr(config, "H_DOWNSWING_DTL", 0.18)
+        mid_low = segmenter.locate_intermediate(
+            sig, anchors, view=CameraView.DOWN_THE_LINE
+        )
+        ds_low = mid_low[PhaseKey.DOWNSWING][0]
+        assert ds_low == 59
+        assert ds_low > ds_same
+        assert ds_low < 60  # ⑤ 仍严格早于 ⑥
+
+    def test_face_on_ignores_dtl_threshold(self, monkeypatch):
+        """face-on 恒用 H_DOWNSWING，H_DOWNSWING_DTL 变化零影响（正面零影响）。"""
+        sig = _downswing_sweep_signals()
+        anchors = (5, 40, 60, 90)
+        mid_a = segmenter.locate_intermediate(sig, anchors, view=CameraView.FACE_ON)
+        monkeypatch.setattr(config, "H_DOWNSWING_DTL", 0.01)
+        mid_b = segmenter.locate_intermediate(sig, anchors, view=CameraView.FACE_ON)
+        assert mid_a[PhaseKey.DOWNSWING] == mid_b[PhaseKey.DOWNSWING]
+        assert mid_a[PhaseKey.DOWNSWING][0] == 55
+
+    def test_reanchor_impact_forwards_view(self, monkeypatch):
+        """reanchor_impact(view=DTL) ⑤ 保持 DTL 阈值；不传 view 保持 face-on。"""
+        monkeypatch.setattr(config, "H_DOWNSWING_DTL", 0.18)
+        frames = _frames_for_reanchor()
+        sig = _downswing_sweep_signals()
+        # 用 face-on ⑤=55 组 8 事件（与 locate_intermediate 直调结果一致）
+        indices = [5, 9, 10, 40, 55, 60, 70, 90]
+        estimated = [False] * 8
+        events = segmenter._assemble(frames, indices, estimated)
+        new_idx = 61  # 校正把 impact 从 60 移到 61（真实移动，触发重建）
+
+        rebuilt_face = segmenter.reanchor_impact(
+            frames, sig, events, new_idx, view=CameraView.FACE_ON
+        )
+        rebuilt_dtl = segmenter.reanchor_impact(
+            frames, sig, events, new_idx, view=CameraView.DOWN_THE_LINE
+        )
+        assert rebuilt_face is not None and rebuilt_dtl is not None
+        ds_face = next(e for e in rebuilt_face if e.key is PhaseKey.DOWNSWING)
+        ds_dtl = next(e for e in rebuilt_dtl if e.key is PhaseKey.DOWNSWING)
+        assert ds_face.array_index == 55
+        assert ds_dtl.array_index == 59
+        # 重建后 8 事件仍严格递增
+        idxs = [e.array_index for e in rebuilt_dtl]
+        assert all(b > a for a, b in zip(idxs, idxs[1:]))

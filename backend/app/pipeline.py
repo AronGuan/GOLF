@@ -145,7 +145,21 @@ def _run(task_id: str) -> None:
     # aspect = H/W：把归一化坐标换算成各向同性单位，否则横竖屏阈值会漂移
     aspect = meta.height / meta.width if meta.width > 0 else 1.0
     signals = segmenter.build_signals(frames, meta.fps, aspect=aspect)
-    events = segmenter.segment_swing(frames, meta.fps, sig=signals)
+    # 第一遍切分（默认 face-on）只用于取 Address 帧 → 机位判定。机位判定需要
+    # Address 帧的「图像肩宽/图像身高」（DTL 双肩前后重叠 < 0.13），而 Address
+    # 锚点本身与 view 无关（locate_top/address/impact/finish 均不读 view），
+    # 因此第一遍的 Address 对 DTL 视频同样成立。
+    prelim_events = segmenter.segment_swing(frames, meta.fps, sig=signals)
+    addr_index = next(
+        (e.array_index for e in prelim_events if e.key is PhaseKey.ADDRESS), 0
+    )
+    view, view_warning = view_detector.resolve(
+        state.camera_view, frames, meta, addr_index
+    )
+    meta.camera_view = view
+    # 第二遍切分：传解析后的机位。⑤ 下杆阈值分机位（face-on=H_DOWNSWING 与历史
+    # 逐字节一致；DTL=H_DOWNSWING_DTL，偏离顶点更靠后）。纯函数重跑，秒级。
+    events = segmenter.segment_swing(frames, meta.fps, sig=signals, view=view)
     task_store.set_progress(task_id, 3, _P_SEGMENT_END, "阶段识别完成")
     _check_timeout(created_at)
 
@@ -154,9 +168,6 @@ def _run(task_id: str) -> None:
         task_id, 4, _P_SEGMENT_END + 2, "正在解析机位与解码事件帧...",
         step_text=config.STEP_TEXTS[4],
     )
-    addr_index = next((e.array_index for e in events if e.key is PhaseKey.ADDRESS), 0)
-    view, view_warning = view_detector.resolve(state.camera_view, frames, meta, addr_index)
-    meta.camera_view = view
     event_frames = [e.frame_index for e in events]
 
     # 击球帧校正（CLUBLITE）：与 renderer 共享同一次第 2 趟解码。
@@ -173,7 +184,7 @@ def _run(task_id: str) -> None:
         # 全部可能的事件帧集并入解码集，保证校正后 8 事件帧必在解码集内
         # （纯函数无 IO，解码仍为 1 趟，opens=1）。
         _possible_frames = impact_refiner.plan_reanchor_frames(
-            events, signals, meta, frames=frames, cand_frames=_cand_frames
+            events, signals, meta, frames=frames, cand_frames=_cand_frames, view=view
         )
         frames_bgr = frame_reader.grab_frames(
             video_path,
@@ -189,7 +200,7 @@ def _run(task_id: str) -> None:
             <= config.CLUBLITE_MAX_SHIFT_FRAMES
         ):
             new_events = segmenter.reanchor_impact(
-                frames, signals, events, refine.new_array_index
+                frames, signals, events, refine.new_array_index, view=view
             )
             if new_events is not None:
                 events = new_events
