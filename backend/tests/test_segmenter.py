@@ -434,3 +434,91 @@ class TestViewAwareDownswing:
         # 重建后 8 事件仍严格递增
         idxs = [e.array_index for e in rebuilt_dtl]
         assert all(b > a for a, b in zip(idxs, idxs[1:]))
+
+
+# ---------------------------------------------------------------------------
+# ⑥击球机位感知（2026-08 改造：face-on 穿越点±速度峰；DTL 直接用穿越点）
+# ---------------------------------------------------------------------------
+
+
+class TestViewAwareImpact:
+    """⑥ 击球机位感知：face-on 保持历史行为；DTL 穿越成功直接用穿越点；兜底共用。
+
+    构造信号：n=100、i_top=40、i_addr=5（``h_addr=h[5]=0.02``），
+    下杆窗口 ``[41, hi)``（``hi=86``）。穿越阈值
+    ``tol = h_addr + IMPACT_Y_TOL = 0.37``：
+
+    - ``cross=True``：下杆期 ``h`` 从 2.0 线性降到 0.2 → 首次穿越 ``h<=0.37``
+      在 i=59；速度峰放 i=61（face-on 半窗 ``[57,62)`` 内取到 61，DTL 直取 59）。
+    - ``cross=False``：窗口内 ``h`` 恒 2.0（> tol）→ 永不穿越 → 两机位共用
+      速度峰兜底（i=61, estimated=True）。
+    """
+
+    @staticmethod
+    def _impact_signals(cross: bool = True) -> SwingSignals:
+        n = 100
+        h = np.full(n, 2.0, dtype=np.float64)
+        h[:41] = 0.02
+        if cross:
+            for i in range(41, 61):
+                h[i] = 2.0 - (i - 41) * (1.8 / 19.0)
+            h[61:] = 0.2
+        speed = np.zeros(n, dtype=np.float64)
+        speed[61] = 10.0
+        return SwingSignals(
+            n=n,
+            fps=30.0,
+            dt=1.0 / 30.0,
+            S=1.0,
+            wrist_x=np.zeros(n, dtype=np.float64),
+            wrist_y=-h,
+            shoulder_mid_y=np.full(n, 0.5, dtype=np.float64),
+            hip_mid_y=np.zeros(n, dtype=np.float64),
+            h=h,
+            speed=speed,
+        )
+
+    def test_face_on_default_uses_speed_peak_near_cross(self):
+        """face-on（含不传 view）：穿越点 ± 速度峰 → 取窗口内速度峰 61。"""
+        sig = self._impact_signals(cross=True)
+        i_default, est_default = segmenter.locate_impact(sig, 40, 5)
+        i_face, est_face = segmenter.locate_impact(
+            sig, 40, 5, view=CameraView.FACE_ON
+        )
+        assert i_default == i_face == 61  # ≠ 穿越点 59
+        assert est_default is False and est_face is False
+
+    def test_dtl_uses_cross_point_directly(self):
+        """view=DTL：穿越成功后 i_impact == i_cross（不用速度峰偏移）。"""
+        sig = self._impact_signals(cross=True)
+        i_impact, est = segmenter.locate_impact(
+            sig, 40, 5, view=CameraView.DOWN_THE_LINE
+        )
+        assert i_impact == 59  # 穿越点（≠ 速度峰 61）
+        assert est is False
+
+    def test_dtl_cross_failure_falls_back_to_speed_peak(self):
+        """view=DTL 穿越失败：走速度峰兜底（estimated=True），与 face-on 相同。"""
+        sig = self._impact_signals(cross=False)
+        i_dtl, est_dtl = segmenter.locate_impact(
+            sig, 40, 5, view=CameraView.DOWN_THE_LINE
+        )
+        i_face, est_face = segmenter.locate_impact(sig, 40, 5)
+        assert i_dtl == i_face == 61
+        assert est_dtl is True and est_face is True
+
+    def test_segment_swing_forwards_view_to_impact(self, monkeypatch, swing_frames):
+        """segment_swing 把 view 传给 locate_impact（DTL 分支可达）。"""
+        seen: dict = {}
+        real = segmenter.locate_impact
+
+        def spy(sig, i_top, i_addr, view=CameraView.FACE_ON):
+            seen["view"] = view
+            return real(sig, i_top, i_addr, view)
+
+        monkeypatch.setattr(segmenter, "locate_impact", spy)
+        events = segmenter.segment_swing(
+            swing_frames, FPS, view=CameraView.DOWN_THE_LINE
+        )
+        assert seen.get("view") is CameraView.DOWN_THE_LINE
+        assert len(events) == 8

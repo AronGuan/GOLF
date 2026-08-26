@@ -272,8 +272,13 @@ def locate_address(sig: SwingSignals, i_top: int) -> Tuple[int, bool]:
     return i_addr, estimated
 
 
-def locate_impact(sig: SwingSignals, i_top: int, i_addr: int) -> Tuple[int, bool]:
-    """⑥ 击球：下杆窗口内「手位回落到 Address 高度」处的速度峰。
+def locate_impact(
+    sig: SwingSignals,
+    i_top: int,
+    i_addr: int,
+    view: CameraView = CameraView.FACE_ON,
+) -> Tuple[int, bool]:
+    """⑥ 击球：下杆窗口内「手位回落到 Address 高度」处的击球帧。
 
     相对 §7.2 的两处工程修正（均由真实视频实测反推）：
 
@@ -286,6 +291,22 @@ def locate_impact(sig: SwingSignals, i_top: int, i_addr: int) -> Tuple[int, bool
     3. 窗口内**没有**回落穿越时回退到速度峰。实测 9 段视频中速度峰分支给出的
        下杆时长全部落在 0.20~0.30s（真实值 0.25~0.30s），可靠性显著高于
        高度穿越分支，故窗口收紧后二者结论一致。
+
+    ⚠️ **分机位（2026-08 ⑥击球机位感知改造，用户拍板）**：
+    face-on（默认）保持历史行为逐字节不变——穿越点 ± 速度峰（半窗
+    :data:`config.IMPACT_WIN_SEC`）取峰，因为正面视角手腕高度信号强、速度峰
+    与接触瞬间同帧；DTL（侧面）改为**直接用穿越点作击球帧**（``i_impact =
+    i_cross``，去掉速度峰偏移），因为 DTL 视角下双肩前后重叠、手腕高度信号弱，
+    速度峰落在击球后 1~2 帧（用户视觉实测：速度峰 121 vs 穿越点 117，穿越点
+    = 接触瞬间更准）。穿越失败时两机位共用同一速度峰兜底（用户未要求改兜底）。
+
+    Args:
+        sig: 信号包。
+        i_top: ④ 顶点数组下标。
+        i_addr: ① 准备数组下标。
+        view: 拍摄机位（face-on / DTL）。仅影响穿越成功分支：DTL 直接用穿越点，
+            face-on 走穿越点 ± 速度峰。默认 face-on 保持历史行为（与不传 view
+            逐字节一致）。
 
     Raises:
         AnalysisError: ``NO_SWING`` —— 下杆时长异常。
@@ -308,13 +329,21 @@ def locate_impact(sig: SwingSignals, i_top: int, i_addr: int) -> Tuple[int, bool
 
     if crossed.size > 0:
         i_cross = int(i_top + 1 + crossed[0])
-        radius = max(1, int(round(config.IMPACT_WIN_SEC * fe)))
-        a = max(i_top + 1, i_cross - radius)
-        b = min(hi, i_cross + radius + 1)
-        if b <= a:
-            b = min(hi, a + 1)
-        i_impact = a + int(np.argmax(sig.speed[a:b]))
-        estimated = False
+        if view is CameraView.DOWN_THE_LINE:
+            # DTL（侧面）：直接用穿越点作击球帧（2026-08 用户拍板）。穿越点 =
+            # 手腕高度首次回落到 Address 容差带 = 接触瞬间；不再用速度峰偏移
+            # （DTL 下速度峰滞后 1~2 帧，见 docstring）。
+            i_impact = i_cross
+            estimated = False
+        else:
+            # face-on（默认，历史行为逐字节不变）：穿越点 ± 速度峰
+            radius = max(1, int(round(config.IMPACT_WIN_SEC * fe)))
+            a = max(i_top + 1, i_cross - radius)
+            b = min(hi, i_cross + radius + 1)
+            if b <= a:
+                b = min(hi, a + 1)
+            i_impact = a + int(np.argmax(sig.speed[a:b]))
+            estimated = False
     else:
         i_impact = i_top + 1 + int(np.argmax(sig.speed[i_top + 1 : hi]))
         estimated = True
@@ -623,9 +652,11 @@ def segment_swing(
         fps: 原视频帧率。
         sig: 可选的预构建信号包（避免重复计算）。传入时 ``aspect`` 被忽略。
         aspect: 画幅纵横比 ``height / width``，含义见 :func:`build_signals`。
-        view: 拍摄机位（face-on / DTL）。传给 :func:`locate_intermediate` 决定
-            ⑤ 下杆阈值（face-on=``H_DOWNSWING`` 历史不变；DTL=``H_DOWNSWING_DTL``）。
-            默认 face-on 保持历史行为（与不传 view 逐字节一致）。
+        view: 拍摄机位（face-on / DTL）。传给 :func:`locate_impact`（⑥ 击球：
+            DTL 直接用穿越点、face-on 速度峰）与 :func:`locate_intermediate`
+            （⑤ 下杆阈值：face-on=``H_DOWNSWING`` 历史不变；
+            DTL=``H_DOWNSWING_DTL``）。默认 face-on 保持历史行为（与不传 view
+            逐字节一致）。
 
     Returns:
         恒定 8 个、帧号严格递增的 :class:`SwingEvent`。
@@ -638,7 +669,7 @@ def segment_swing(
 
     i_top = locate_top(signals)
     i_addr, e_addr = locate_address(signals, i_top)
-    i_impact, e_impact = locate_impact(signals, i_top, i_addr)
+    i_impact, e_impact = locate_impact(signals, i_top, i_addr, view=view)
     i_finish, e_finish = locate_finish(signals, i_impact)
     mid = locate_intermediate(
         signals, (i_addr, i_top, i_impact, i_finish), view=view

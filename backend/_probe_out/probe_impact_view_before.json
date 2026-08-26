@@ -1,0 +1,79 @@
+{
+  "正面1": {
+    "view": "face_on",
+    "i_top": 28,
+    "i_addr": 3,
+    "i_cross": null,
+    "i_impact_current": 37,
+    "estimated_current": true,
+    "hi": 63,
+    "fps": 26.0,
+    "n": 63
+  },
+  "正面2": {
+    "view": "face_on",
+    "i_top": 252,
+    "i_addr": 157,
+    "i_cross": 286,
+    "i_impact_current": 284,
+    "estimated_current": false,
+    "hi": 298,
+    "fps": 30.0,
+    "n": 389
+  },
+  "正面3": {
+    "view": "face_on",
+    "i_top": 61,
+    "i_addr": 37,
+    "i_cross": null,
+    "i_impact_current": 70,
+    "estimated_current": true,
+    "hi": 102,
+    "fps": 27.0,
+    "n": 112
+  },
+  "22030124": {
+    "view": "face_on",
+    "i_top": 106,
+    "i_addr": 84,
+    "i_cross": 115,
+    "i_impact_current": 113,
+    "estimated_current": false,
+    "hi": 152,
+    "fps": 30.0,
+    "n": 212
+  },
+  "11a6594b": {
+    "view": "down_the_line",
+    "i_top": 202,
+    "i_addr": 166,
+    "i_cross": null,
+    "i_impact_current": 213,
+    "estimated_current": true,
+    "hi": 248,
+    "fps": 29.897,
+    "n": 289
+  },
+  "f470c599": {
+    "view": "down_the_line",
+    "i_top": 234,
+    "i_addr": 187,
+    "i_cross": null,
+    "i_impact_current": 245,
+    "estimated_current": true,
+    "hi": 280,
+    "fps": 30.0,
+    "n": 388
+  },
+  "dtl_143": {
+    "view": "down_the_line",
+    "i_top": 109,
+    "i_addr": 0,
+    "i_cross": 116,
+    "i_impact_current": 114,
+    "estimated_current": false,
+    "hi": 155,
+    "fps": 30.094,
+    "n": 206
+  }
+}
