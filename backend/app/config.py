@@ -621,3 +621,16 @@ PDD_CODE_FRAME_OUT_OF_RANGE: Final[int] = 20003
 
 #: PDD 错误码 20004（阶段标识非法，非 8 阶段之一）。结果域顺延，纯增量新增。
 PDD_CODE_PHASE_INVALID: Final[int] = 20004
+
+
+# ---------------------------------------------------------------------------
+# 11. SwingNet（AI DTL 事件检测，M1 封装，M2 才切换 pipeline）
+# ---------------------------------------------------------------------------
+
+#: SwingNet 8 事件检测器权重路径（DTL 侧面机位专用）。
+#: 权重 60MB 不入 git（``backend/models/`` 已在根 .gitignore 忽略），
+#: 可用 ``GOLF_SWINGNET_WEIGHTS`` 环境变量覆盖（如测试/部署指定别的副本）。
+#: M1 仅封装；:mod:`app.ai.swingnet_detector` 懒加载该权重，M2 才接入 pipeline。
+SWINGNET_WEIGHTS_PATH: Final[Path] = Path(
+    os.getenv("GOLF_SWINGNET_WEIGHTS", str(BASE_DIR / "models" / "swingnet_1800.pth.tar"))
+).resolve()
