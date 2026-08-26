@@ -634,3 +634,13 @@ PDD_CODE_PHASE_INVALID: Final[int] = 20004
 SWINGNET_WEIGHTS_PATH: Final[Path] = Path(
     os.getenv("GOLF_SWINGNET_WEIGHTS", str(BASE_DIR / "models" / "swingnet_1800.pth.tar"))
 ).resolve()
+
+#: SwingNet DTL 检测总开关（M2 接入）。False 时 pipeline 对 DTL 视频仍走规则引擎
+#: （一键关停，线上止血阀，与 CLUBLITE_ENABLED / RISK_ENGINE_ENABLED 同构）。
+#: face-on 机位始终不受本开关影响（恒走规则引擎）。
+SWINGNET_ENABLED: Final[bool] = True
+
+#: SwingNet 击球（Impact）事件置信度下限。检测到的 Impact 置信度低于该值视为
+#: 不可信，pipeline 回退规则引擎（SwingNet 在非单次挥杆 / 画面异常 / 多人入镜时
+#: 概率分布会被摊薄，argmax 得到的 Impact 不再可靠）。默认 0.3。
+SWINGNET_MIN_IMPACT_CONF: Final[float] = 0.3
