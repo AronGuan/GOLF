@@ -522,3 +522,109 @@ class TestViewAwareImpact:
         )
         assert seen.get("view") is CameraView.DOWN_THE_LINE
         assert len(events) == 8
+
+
+# ---------------------------------------------------------------------------
+# 标尺机位感知（2026-08 用户拍板：face-on 肩宽制逐字节不变；DTL 身高制）
+# ---------------------------------------------------------------------------
+
+
+class TestViewAwareScale:
+    """build_signals view 感知：face-on 用肩宽中位数、DTL 用身高（头→脚）中位数。
+
+    设计理由（用户拍板）：DTL 侧面机位下双肩与光轴近似共线、投影肩宽被严重
+    压缩（真实样本 S 仅 0.005~0.014，约正面 1/20），肩宽标尺让 ``h`` 爆炸到
+    20~34（正常 ≈1）、``locate_impact`` 穿越判据永不触发；身高方向与光轴
+    垂直、不受压缩，是 DTL 唯一可靠的像素标尺（头 = NOSE、脚 = 双踝中点，
+    与 :func:`app.geometry.body_height_px` 同口径）。
+    """
+
+    def test_face_on_default_byte_identical_to_explicit(self, swing_frames):
+        """不传 view 与显式 face-on 必须逐字段逐字节一致（历史行为保持）。"""
+        sig_default = segmenter.build_signals(swing_frames, FPS)
+        sig_face = segmenter.build_signals(swing_frames, FPS, view=CameraView.FACE_ON)
+        assert sig_default.S == sig_face.S
+        for arr_name in (
+            "wrist_x", "wrist_y", "shoulder_mid_y", "hip_mid_y", "h", "speed",
+        ):
+            a = getattr(sig_default, arr_name)
+            b = getattr(sig_face, arr_name)
+            assert a.shape == b.shape, arr_name
+            assert np.array_equal(a, b, equal_nan=True), arr_name
+
+    def test_dtl_scale_equals_height_median(self, swing_frames):
+        """view=DTL 的 S = 身高（NOSE→双踝中点）中位数，且显著大于肩宽标尺。"""
+        sig_dtl = segmenter.build_signals(
+            swing_frames, FPS, view=CameraView.DOWN_THE_LINE
+        )
+        manual = float(np.median([
+            abs((f.norm[geometry.L_ANKLE, 1] + f.norm[geometry.R_ANKLE, 1]) / 2.0
+                - f.norm[geometry.NOSE, 1])
+            for f in swing_frames
+        ]))
+        assert sig_dtl.S == pytest.approx(manual, rel=1e-9)
+        assert np.isfinite(sig_dtl.S) and sig_dtl.S > 0
+        # 合成序列肩宽中位数 < 0.08，身高标尺应大一个数量级（> 5 倍）
+        sig_face = segmenter.build_signals(swing_frames, FPS)
+        assert sig_dtl.S > sig_face.S * 5
+
+    def test_dtl_h_magnitude_normalized(self, swing_frames):
+        """身高标尺下 h 幅度回到 O(1)：显著小于肩宽标尺（h 爆炸修复）。"""
+        sig_face = segmenter.build_signals(swing_frames, FPS)
+        sig_dtl = segmenter.build_signals(
+            swing_frames, FPS, view=CameraView.DOWN_THE_LINE
+        )
+        hmax_face = float(np.max(np.abs(sig_face.h)))
+        hmax_dtl = float(np.max(np.abs(sig_dtl.h)))
+        assert hmax_face > 3.0  # 肩宽标尺下 h 被放大（合成 4.68）
+        assert hmax_dtl < 1.0  # 身高标尺下 h ≈ (hip-wrist)/height < 1
+        assert hmax_dtl < hmax_face * 0.5
+
+    def test_segment_swing_dtl_produces_monotonic_events(self, swing_frames):
+        """view=DTL 且 sig=None：自动用身高标尺构建，守卫（身高制换算）通过。"""
+        events = segmenter.segment_swing(
+            swing_frames, FPS, view=CameraView.DOWN_THE_LINE
+        )
+        assert len(events) == 8
+        nums = [e.frame_index for e in events]
+        assert all(b > a for a, b in zip(nums, nums[1:])), nums
+
+    def test_guard_dtl_re_expresses_shoulder_thresholds(self):
+        """同一物理信号：肩宽制判 NO_SWING，身高制（换算 ×SHOULDER_TO_HEIGHT_RATIO）通过。
+
+        构造：``speed = 1.0``（< :data:`config.V_PEAK_MIN` 2.7，但 >
+        ``2.7 × 0.26 ≈ 0.70``）、``travel = 0.951``（< 1.07，但 >
+        ``1.07 × 0.26 ≈ 0.28``）。face-on 必须 NO_SWING；DTL 必须通过——
+        否则真实 DTL 挥杆会被身高制信号误杀（实测 11a6594b / f470c599 /
+        c6f67f38 全部误杀，见 docstring）。
+        """
+        n = 100
+        sig = SwingSignals(
+            n=n,
+            fps=30.0,
+            dt=1.0 / 30.0,
+            S=1.0,
+            wrist_x=np.zeros(n, dtype=np.float64),
+            wrist_y=np.linspace(0.0, 1.0, n),
+            shoulder_mid_y=np.full(n, 0.3, dtype=np.float64),
+            hip_mid_y=np.full(n, 0.5, dtype=np.float64),
+            h=np.zeros(n, dtype=np.float64),
+            speed=np.full(n, 1.0, dtype=np.float64),
+        )
+        with pytest.raises(AnalysisError) as exc:
+            segmenter._guard_no_swing(sig, view=CameraView.FACE_ON)
+        assert exc.value.code is ErrorCode.NO_SWING
+        # DTL：同一物理信号在身高制下换算后通过（不抛异常）
+        segmenter._guard_no_swing(sig, view=CameraView.DOWN_THE_LINE)
+
+    def test_dtl_degenerate_height_raises_no_swing(self):
+        """DTL 身高标尺异常（身高≈0）判 NO_SWING（下限守卫复用）。"""
+        frames = make_swing_frames(n=40)
+        for frame in frames:
+            frame.norm = frame.norm.copy()
+            frame.norm[geometry.NOSE, 1] = 0.5
+            frame.norm[geometry.L_ANKLE, 1] = 0.5
+            frame.norm[geometry.R_ANKLE, 1] = 0.5
+        with pytest.raises(AnalysisError) as exc:
+            segmenter.build_signals(frames, FPS, view=CameraView.DOWN_THE_LINE)
+        assert exc.value.code is ErrorCode.NO_SWING

@@ -66,7 +66,10 @@ def _sample_step_of(frames: Sequence[FrameLandmarks]) -> int:
 
 
 def build_signals(
-    frames: Sequence[FrameLandmarks], fps: float, aspect: float = 1.0
+    frames: Sequence[FrameLandmarks],
+    fps: float,
+    aspect: float = 1.0,
+    view: CameraView = CameraView.FACE_ON,
 ) -> SwingSignals:
     """构建切分所需的一维信号（架构文档 §7.1）。
 
@@ -83,9 +86,23 @@ def build_signals(
             （实测：竖屏样本 ``travel_in_S≈1.9~2.6``，横屏样本 ``≈3.1``，
             换算回真实像素后恰好反过来）。默认 ``1.0`` 保持历史行为，
             真实视频调用方**必须**传 ``meta.height / meta.width``。
+        view: 拍摄机位（face-on / DTL）。**只影响 S3 标尺选择**，其余信号生成
+            逻辑共用：
+
+            - ``FACE_ON``（默认）：肩宽中位数（历史行为逐字节不变）。
+            - ``DOWN_THE_LINE``：身高（头→脚）中位数。DTL 侧面机位下双肩与
+              相机光轴近似共线、投影肩宽被严重压缩（实测 0.005~0.014，约正面
+              的 1/20），若沿用肩宽标尺，``h``/``speed`` 会爆炸（``h`` 实测
+              20~34，正常 ≈1），``locate_impact`` 的穿越判据永不触发、击球帧
+              走兜底 estimated；身高方向与光轴垂直、不受该压缩影响，是 DTL
+              唯一可靠的像素标尺。身高定义与 :func:`geometry.body_height_px`
+              同口径：头顶点 = NOSE，脚点 = 双踝中点（head→foot 中位数）。
+
+            默认 face-on 保持历史行为（与不传 view 逐字节一致）。
 
     Raises:
-        AnalysisError: ``NO_SWING`` —— 帧数过少或肩宽标尺异常。
+        AnalysisError: ``NO_SWING`` —— 帧数过少或标尺异常（face-on 为肩宽、
+            DTL 为身高；下限守卫复用 :data:`config.MIN_SHOULDER_SCALE`）。
     """
     n = len(frames)
     if n == 0:
@@ -99,13 +116,31 @@ def build_signals(
     # 只拉伸 y：换算后 x/y 同为「图像宽度」单位，各向同性
     norm = raw * np.array([1.0, ratio, 1.0], dtype=np.float64)
 
-    # S3 肩宽标尺：全片中位数（各向同性图像坐标，单位=图像宽度）
-    shoulder_vec = norm[:, geometry.L_SHOULDER, :2] - norm[:, geometry.R_SHOULDER, :2]
-    widths = np.linalg.norm(shoulder_vec, axis=1)
-    widths = widths[np.isfinite(widths)]
-    scale = float(np.median(widths)) if widths.size else 0.0
-    if not np.isfinite(scale) or scale < config.MIN_SHOULDER_SCALE:
-        raise AnalysisError(ErrorCode.NO_SWING, f"illegal shoulder scale: {scale}")
+    # S3 标尺（机位感知，2026-08 用户拍板）：
+    # - face-on（默认）：肩宽中位数（历史行为逐字节不变）；
+    # - DTL（侧面）：身高（头→脚）中位数。DTL 双肩前后重叠、投影肩宽被压缩
+    #   （实测 0.005~0.014，约正面 1/20），肩宽标尺会让 h/speed 爆炸；身高
+    #   方向与光轴垂直、不受压缩。头顶点取 NOSE、脚点取双踝中点（与
+    #   geometry.body_height_px 同口径，见 docstring）。
+    if view is CameraView.DOWN_THE_LINE:
+        head_top = norm[:, geometry.NOSE, 1]
+        foot_bottom = (
+            norm[:, geometry.L_ANKLE, 1] + norm[:, geometry.R_ANKLE, 1]
+        ) / 2.0
+        heights = np.abs(foot_bottom - head_top)
+        heights = heights[np.isfinite(heights)]
+        scale = float(np.median(heights)) if heights.size else 0.0
+        if not np.isfinite(scale) or scale < config.MIN_SHOULDER_SCALE:
+            raise AnalysisError(ErrorCode.NO_SWING, f"illegal height scale: {scale}")
+    else:
+        shoulder_vec = (
+            norm[:, geometry.L_SHOULDER, :2] - norm[:, geometry.R_SHOULDER, :2]
+        )
+        widths = np.linalg.norm(shoulder_vec, axis=1)
+        widths = widths[np.isfinite(widths)]
+        scale = float(np.median(widths)) if widths.size else 0.0
+        if not np.isfinite(scale) or scale < config.MIN_SHOULDER_SCALE:
+            raise AnalysisError(ErrorCode.NO_SWING, f"illegal shoulder scale: {scale}")
 
     # S4/S5 平滑
     win = smooth_window(1.0 / dt)
@@ -119,10 +154,10 @@ def build_signals(
         (norm[:, geometry.L_HIP, 1] + norm[:, geometry.R_HIP, 1]) / 2.0, win
     )
 
-    # S6 高度信号（向上为正，肩宽归一化）
+    # S6 高度信号（向上为正，按 S3 标尺归一化：face-on=肩宽、DTL=身高）
     h = (hip_mid_y - wrist_y) / scale
 
-    # S7 速度：中心差分，两端用前/后向差分
+    # S7 速度：中心差分，两端用前/后向差分（单位 = 标尺/秒）
     speed = _central_diff_speed(wrist_xy, dt) / scale
     # S8 速度再平滑
     speed = moving_average(speed, win)
@@ -158,8 +193,20 @@ def _central_diff_speed(points: np.ndarray, dt: float) -> np.ndarray:
 # ---------------------------------------------------------------------------
 
 
-def _guard_no_swing(sig: SwingSignals) -> None:
-    """前置判据：帧数 / 速度峰值 / 手腕垂直行程。"""
+def _guard_no_swing(
+    sig: SwingSignals, view: CameraView = CameraView.FACE_ON
+) -> None:
+    """前置判据：帧数 / 速度峰值 / 手腕垂直行程。
+
+    ⚠️ DTL 分标尺（2026-08 用户拍板）：DTL 信号用**身高**标尺构建（肩宽被
+    压缩），而 :data:`config.V_PEAK_MIN` / :data:`config.MIN_WRIST_TRAVEL`
+    是**肩宽制**阈值。若不换算，同一物理挥杆在身高制下的速度/行程数值会比
+    肩宽制小约 ``1/0.26`` 倍，判据会把真实 DTL 挥杆误杀成 NO_SWING（实测
+    11a6594b / f470c599 / c6f67f38 三样本全部误杀，wrist travel 0.28~0.42
+    < ``1.07 × S``）。用 :data:`config.SHOULDER_TO_HEIGHT_RATIO`
+    （肩宽 ≈ 0.26×身高，metrics DTL 同款换算）把肩宽制阈值换算成身高制。
+    face-on 恒为 1.0，判据逐字节不变。
+    """
     fe = sig.fps_eff
     min_frames = max(10, int(round(0.5 * fe)))
     if sig.n < min_frames:
@@ -167,15 +214,20 @@ def _guard_no_swing(sig: SwingSignals) -> None:
             ErrorCode.NO_SWING, f"too few frames: {sig.n} < {min_frames}"
         )
 
+    scale_ratio = 1.0
+    if view is CameraView.DOWN_THE_LINE:
+        scale_ratio = float(config.SHOULDER_TO_HEIGHT_RATIO)
+
     peak = float(np.nanmax(sig.speed)) if sig.n else 0.0
-    if not np.isfinite(peak) or peak < config.V_PEAK_MIN:
+    if not np.isfinite(peak) or peak < config.V_PEAK_MIN * scale_ratio:
         raise AnalysisError(ErrorCode.NO_SWING, f"speed peak too low: {peak:.3f}")
 
     travel = float(np.percentile(sig.wrist_y, 95) - np.min(sig.wrist_y))
-    if travel < config.MIN_WRIST_TRAVEL * sig.S:
+    if travel < config.MIN_WRIST_TRAVEL * scale_ratio * sig.S:
         raise AnalysisError(
             ErrorCode.NO_SWING,
-            f"wrist travel too small: {travel:.4f} < {config.MIN_WRIST_TRAVEL * sig.S:.4f}",
+            f"wrist travel too small: {travel:.4f} < "
+            f"{config.MIN_WRIST_TRAVEL * scale_ratio * sig.S:.4f}",
         )
 
 
@@ -650,7 +702,8 @@ def segment_swing(
     Args:
         frames: :func:`pose_extractor.extract` 的产出。
         fps: 原视频帧率。
-        sig: 可选的预构建信号包（避免重复计算）。传入时 ``aspect`` 被忽略。
+        sig: 可选的预构建信号包（避免重复计算）。face-on 下传入时 ``aspect``
+            被忽略；DTL 下恒被忽略（强制按身高标尺重建，见 ``view`` 说明）。
         aspect: 画幅纵横比 ``height / width``，含义见 :func:`build_signals`。
         view: 拍摄机位（face-on / DTL）。传给 :func:`locate_impact`（⑥ 击球：
             DTL 直接用穿越点、face-on 速度峰）与 :func:`locate_intermediate`
@@ -658,14 +711,24 @@ def segment_swing(
             DTL=``H_DOWNSWING_DTL``）。默认 face-on 保持历史行为（与不传 view
             逐字节一致）。
 
+            ⚠️ DTL 分标尺（2026-08 用户拍板）：``view=DTL`` 时**强制**用
+            :func:`build_signals` 身高标尺重建信号（即使传入 ``sig`` 也忽略——
+            传入的 ``sig`` 通常是 pipeline 第一遍的 face-on 肩宽标尺信号，
+            量纲与 DTL 判据不兼容；重建所需 ``aspect`` 以本函数入参为准，
+            真实视频调用方必须传 ``meta.height / meta.width``）。face-on
+            （默认）保持历史行为：有 ``sig`` 用之、无 ``sig`` 现建。
+
     Returns:
         恒定 8 个、帧号严格递增的 :class:`SwingEvent`。
 
     Raises:
         AnalysisError: ``NO_SWING``。
     """
-    signals = sig if sig is not None else build_signals(frames, fps, aspect=aspect)
-    _guard_no_swing(signals)
+    if view is CameraView.DOWN_THE_LINE:
+        signals = build_signals(frames, fps, aspect=aspect, view=view)
+    else:
+        signals = sig if sig is not None else build_signals(frames, fps, aspect=aspect)
+    _guard_no_swing(signals, view=view)
 
     i_top = locate_top(signals)
     i_addr, e_addr = locate_address(signals, i_top)

@@ -159,7 +159,17 @@ def _run(task_id: str) -> None:
     meta.camera_view = view
     # 第二遍切分：传解析后的机位。⑤ 下杆阈值分机位（face-on=H_DOWNSWING 与历史
     # 逐字节一致；DTL=H_DOWNSWING_DTL，偏离顶点更靠后）。纯函数重跑，秒级。
-    events = segmenter.segment_swing(frames, meta.fps, sig=signals, view=view)
+    # ⚠️ DTL 分标尺（2026-08 用户拍板）：DTL 双肩前后重叠、投影肩宽被压缩
+    # （实测 0.005~0.014，约正面 1/20），第一遍的肩宽标尺信号会让 h 爆炸
+    # （实测 20~34）→ locate_impact 穿越判据永不触发 → 击球帧兜底 estimated；
+    # 因此 DTL 改用**身高**标尺重建信号，并把该信号传给下游全部消费方
+    # （impact_refiner / reanchor_impact / metrics.build_context），保证
+    # 切分、校正、指标三处量纲一致。face-on 保持第一遍信号对象，逐字节不变。
+    if view is CameraView.DOWN_THE_LINE:
+        signals = segmenter.build_signals(frames, meta.fps, aspect=aspect, view=view)
+    events = segmenter.segment_swing(
+        frames, meta.fps, sig=signals, aspect=aspect, view=view
+    )
     task_store.set_progress(task_id, 3, _P_SEGMENT_END, "阶段识别完成")
     _check_timeout(created_at)
 
