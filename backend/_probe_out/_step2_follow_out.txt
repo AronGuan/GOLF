@@ -1,0 +1,105 @@
+INFO: Created TensorFlow Lite XNNPACK delegate for CPU.
+WARNING: All log messages before absl::InitializeLog() is called are written to STDERR
+W0000 00:00:1787716756.002632   30616 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1787716756.016548   28716 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+E:\project\golf\.tools\python312\Lib\site-packages\google\protobuf\symbol_database.py:55: UserWarning: SymbolDatabase.GetPrototype() is deprecated. Please use message_factory.GetMessageClass() instead. SymbolDatabase.GetPrototype() will be removed soon.
+  warnings.warn('SymbolDatabase.GetPrototype() is deprecated. Please '
+W0000 00:00:1787716761.693631   25444 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1787716761.708823   29628 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1787716769.318919   29900 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1787716769.333130   29900 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1787716775.610711   30460 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1787716775.624903   30460 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+
+=== 11a6594b ===
+  impact(原始)=208 finish=219 win=12
+  impact(refined)=208 finish=219 refine_delta=0
+  送杆窗 h_min @ impact+2 (=frame 210) = 0.0684
+  送杆窗 h_max @ 219 = 0.6265
+  窗内 h (frame: h):
+    208: +0.2351
+    209: +0.1263
+    210: +0.0684 <-MIN
+    211: +0.1036
+    212: +0.2007
+    213: +0.3396
+    214: +0.4492
+    215: +0.5265
+    216: +0.5693
+    217: +0.6013
+    218: +0.6193
+    219: +0.6265
+  thr=0.05 target=0.1184 首次穿越 frame=212 strictly_inside=True
+  thr=0.10 target=0.1684 首次穿越 frame=212 strictly_inside=True
+  thr=0.15 target=0.2184 首次穿越 frame=213 strictly_inside=True
+  thr=0.20 target=0.2684 首次穿越 frame=213 strictly_inside=True
+  thr=0.30 target=0.3684 首次穿越 frame=214 strictly_inside=True
+
+=== f470c599 ===
+  impact(原始)=239 finish=251 win=13
+  impact(refined)=237 finish=251 refine_delta=-2
+  送杆窗 h_min @ impact+5 (=frame 242) = 0.0133
+  送杆窗 h_max @ 250 = 0.5858
+  窗内 h (frame: h):
+    237: +0.4616
+    238: +0.3930
+    239: +0.2867
+    240: +0.1603
+    241: +0.0567
+    242: +0.0133 <-MIN
+    243: +0.0470
+    244: +0.1324
+    245: +0.2464
+    246: +0.3598
+    247: +0.4610
+    248: +0.5342
+    249: +0.5732
+    250: +0.5858
+    251: +0.5823
+  thr=0.05 target=0.0633 首次穿越 frame=244 strictly_inside=True
+  thr=0.10 target=0.1133 首次穿越 frame=244 strictly_inside=True
+  thr=0.15 target=0.1633 首次穿越 frame=245 strictly_inside=True
+  thr=0.20 target=0.2133 首次穿越 frame=245 strictly_inside=True
+  thr=0.30 target=0.3133 首次穿越 frame=246 strictly_inside=True
+
+=== c6f67f38 ===
+  impact(原始)=177 finish=187 win=11
+  impact(refined)=179 finish=187 refine_delta=2
+  送杆窗 h_min @ impact+0 (=frame 179) = 0.1171
+  送杆窗 h_max @ 187 = 0.5854
+  窗内 h (frame: h):
+    179: +0.1171 <-MIN
+    180: +0.1725
+    181: +0.2470
+    182: +0.3462
+    183: +0.4212
+    184: +0.4980
+    185: +0.5421
+    186: +0.5759
+    187: +0.5854
+  thr=0.05 target=0.1671 首次穿越 frame=180 strictly_inside=True
+  thr=0.10 target=0.2171 首次穿越 frame=181 strictly_inside=True
+  thr=0.15 target=0.2671 首次穿越 frame=182 strictly_inside=True
+  thr=0.20 target=0.3171 首次穿越 frame=182 strictly_inside=True
+  thr=0.30 target=0.4171 首次穿越 frame=183 strictly_inside=True
+
+=== 470057ac ===
+  impact(原始)=97 finish=111 win=15
+  impact(refined)=103 finish=111 refine_delta=6
+  送杆窗 h_min @ impact+0 (=frame 103) = 0.2991
+  送杆窗 h_max @ 111 = 0.5244
+  窗内 h (frame: h):
+    103: +0.2991 <-MIN
+    104: +0.3681
+    105: +0.3944
+    106: +0.4054
+    107: +0.4249
+    108: +0.4560
+    109: +0.4842
+    110: +0.5105
+    111: +0.5244
+  thr=0.05 target=0.3491 首次穿越 frame=104 strictly_inside=True
+  thr=0.10 target=0.3991 首次穿越 frame=106 strictly_inside=True
+  thr=0.15 target=0.4491 首次穿越 frame=108 strictly_inside=True
+  thr=0.20 target=0.4991 首次穿越 frame=110 strictly_inside=True
+  thr=0.30 target=0.5991 无穿越

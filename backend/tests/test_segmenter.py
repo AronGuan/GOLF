@@ -628,3 +628,181 @@ class TestViewAwareScale:
         with pytest.raises(AnalysisError) as exc:
             segmenter.build_signals(frames, FPS, view=CameraView.DOWN_THE_LINE)
         assert exc.value.code is ErrorCode.NO_SWING
+
+
+# ---------------------------------------------------------------------------
+# Step 2 DTL 身高制阈值（2026-08 重标）
+# ---------------------------------------------------------------------------
+
+
+class TestDtlScaleThresholds:
+    """Step 2 DTL 身高制阈值重标：H_DOWNSWING_DTL=0.40、FOLLOWTHROUGH_RISE_DTL=0.10。
+
+    设计理由：DTL 改用身高标尺后（Step 1，h 范围 0.6~0.7），旧的肩宽制阈值
+    （0.25 / 0.95）量级不匹配：
+      - H_DOWNSWING_DTL=0.25（肩宽制值）远低于身高制 h 范围，⑤ 触发位置贴近
+        顶点（甚至撞 ④），⑤/⑥ 间距守卫将其踢回兜底；
+      - FOLLOWTHROUGH_RISE=0.95（肩宽制）远高于 DTL 送杆窗内 min→max 跨度
+        （实测 0.5~0.6），⑦ 必走兜底。
+
+    Step 2 重标为身高制实测值：DTL ⑤ 触发更晚（更靠击球）、⑦ 变 real。
+    Face-on 路径恒用 ``H_DOWNSWING`` / ``FOLLOWTHROUGH_RISE``，逐字节不变。
+    """
+
+    def test_face_on_intermediate_byte_identical_to_step1(self, swing_frames):
+        """face-on 路径：locate_intermediate 与 Step 1 完全一致（⑤⑦ 阈值未动）。
+
+        使用合成挥杆序列（height scale 不可用，swing_frames 是合成的接近正面）。
+        显式传 view=FACE_ON 与不传 view（默认）必须逐字段一致——
+        Step 1 已保证这一点，Step 2 不引入新分支。
+        """
+        default_events = segmenter.segment_swing(swing_frames, FPS)
+        face_events = segmenter.segment_swing(
+            swing_frames, FPS, view=CameraView.FACE_ON
+        )
+        assert [(e.key, e.frame_index, e.estimated) for e in default_events] == [
+            (e.key, e.frame_index, e.estimated) for e in face_events
+        ]
+
+    def test_dtl_downswing_uses_dtl_threshold_later_than_faceon(self):
+        """⑤ 阈值分机位：相同 h 信号下 DTL（H_DOWNSWING_DTL=0.40）比 face-on
+        （H_DOWNSWING=0.50）触发更晚。
+
+        设计：downswing h 从 1.0 单调递减到 0.1（10 帧），首次下穿 0.50 发生在
+        第 5 帧（h=0.55→0.46）、首次下穿 0.40 发生在第 6 帧（h=0.46→0.37）。
+        合成信号用最小字段构造，绕过 build_signals/locate_top/locate_address/
+        locate_impact/locate_finish，直接喂给 locate_intermediate。
+        """
+        n = 30
+        h = np.zeros(n, dtype=np.float64)
+        h[15] = 1.0  # top
+        for k in range(15, 25):
+            h[k] = 1.0 - (k - 15) * 0.09  # 1.0, 0.91, ..., 0.10
+        sig = SwingSignals(
+            n=n,
+            fps=30.0,
+            dt=1.0 / 30.0,
+            S=1.0,
+            wrist_x=np.zeros(n, dtype=np.float64),
+            wrist_y=np.zeros(n, dtype=np.float64),
+            shoulder_mid_y=np.full(n, 0.3, dtype=np.float64),
+            hip_mid_y=np.full(n, 0.5, dtype=np.float64),
+            h=h,
+            speed=np.zeros(n, dtype=np.float64),
+        )
+        anchors = (10, 15, 25, 28)  # addr=10, top=15, impact=25, finish=28
+        face = segmenter.locate_intermediate(
+            sig, anchors, view=CameraView.FACE_ON
+        )
+        dtl = segmenter.locate_intermediate(
+            sig, anchors, view=CameraView.DOWN_THE_LINE
+        )
+        # h 序列 15→25：1.00, 0.91, 0.82, 0.73, 0.64, 0.55, 0.46, 0.37, 0.28, 0.19, 0.10
+        # face-on (H_DOWNSWING=0.50): 首次 h<=0.50 在帧 21（h=0.46）
+        assert face[PhaseKey.DOWNSWING][0] == 21
+        # DTL (H_DOWNSWING_DTL=0.40): 首次 h<=0.40 在帧 22（h=0.37）
+        assert dtl[PhaseKey.DOWNSWING][0] == 22
+        assert dtl[PhaseKey.DOWNSWING][0] > face[PhaseKey.DOWNSWING][0]
+        # 两者均非兜底（estimated=False）
+        assert face[PhaseKey.DOWNSWING][1] is False
+        assert dtl[PhaseKey.DOWNSWING][1] is False
+
+    def test_dtl_followthrough_uses_dtl_threshold_real(self):
+        """⑦ 阈值分机位：DTL 用 FOLLOWTHROUGH_RISE_DTL=0.10（身高制）让 ⑦ real。
+
+        设计：送杆窗 [impact, finish] 内 h 先降后升——h_min @ impact+2（值 0.05），
+        之后单调上升到 0.50 @ finish-1（跨度 0.45 heights）。
+          - face-on 用 FOLLOWTHROUGH_RISE=0.95：target=1.00 > h_max(0.50)，
+            无穿越 → ⑦ 走兜底（estimated=True）；
+          - DTL 用 FOLLOWTHROUGH_RISE_DTL=0.10：target=0.15，第 1 帧穿越
+            (impact+3, h=0.16)，⑦ real（estimated=False）。
+        """
+        n = 30
+        h = np.zeros(n, dtype=np.float64)
+        # 送杆窗 [20, 28]：impact=20 h=0.20 → h_min @ 22 (0.05) → 上升 → 0.50 @ 27
+        h[20] = 0.20
+        h[21] = 0.10
+        h[22] = 0.05  # min
+        h[23] = 0.16  # 跨越 0.05+0.10=0.15（首个 above 阈值）
+        h[24] = 0.25
+        h[25] = 0.35
+        h[26] = 0.45
+        h[27] = 0.50  # finish-1
+        h[28] = 0.55  # finish
+        sig = SwingSignals(
+            n=n,
+            fps=30.0,
+            dt=1.0 / 30.0,
+            S=1.0,
+            wrist_x=np.zeros(n, dtype=np.float64),
+            wrist_y=np.zeros(n, dtype=np.float64),
+            shoulder_mid_y=np.full(n, 0.3, dtype=np.float64),
+            hip_mid_y=np.full(n, 0.5, dtype=np.float64),
+            h=h,
+            speed=np.zeros(n, dtype=np.float64),
+        )
+        anchors = (10, 15, 20, 28)
+        face = segmenter.locate_intermediate(
+            sig, anchors, view=CameraView.FACE_ON
+        )
+        dtl = segmenter.locate_intermediate(
+            sig, anchors, view=CameraView.DOWN_THE_LINE
+        )
+        # face-on: FOLLOWTHROUGH_RISE=0.95, target=1.00, h_max=0.55, 无穿越 → 兜底
+        assert face[PhaseKey.FOLLOW_THROUGH][1] is True
+        # DTL: FOLLOWTHROUGH_RISE_DTL=0.10, target=0.15, 首次穿越 @ 23
+        assert dtl[PhaseKey.FOLLOW_THROUGH] == (23, False)
+
+    def test_dtl_takeaway_unchanged_by_step2(self, swing_frames):
+        """② 起杆：H_HIP 共享（Step 2 未改），DTL 下 ② 应与 Step 1 一致。
+
+        验证：Step 2 没新增 H_HIP_DTL，DTL ② 沿用 face-on 的 H_HIP=0.18
+        （与 Step 1 完全一致）。此测试以「Step 2 后 DTL ② 不变」为目标。
+        """
+        # swing_frames 是合成的，view_detector 会判 face-on。这里直接验证
+        # locate_intermediate 的 ② 行为：对 DTL view，② 用 H_HIP（无 _DTL 后缀）。
+        n = 30
+        h = np.zeros(n, dtype=np.float64)
+        # address h=0（帧 5），takeaway h 上升：帧 7 h=0.10, 帧 8 h=0.20, 帧 9 h=0.30
+        h[5] = 0.0
+        h[7] = 0.10
+        h[8] = 0.20
+        h[9] = 0.30
+        h[15] = 1.0  # top
+        sig = SwingSignals(
+            n=n,
+            fps=30.0,
+            dt=1.0 / 30.0,
+            S=1.0,
+            wrist_x=np.zeros(n, dtype=np.float64),
+            wrist_y=np.zeros(n, dtype=np.float64),
+            shoulder_mid_y=np.full(n, 0.3, dtype=np.float64),
+            hip_mid_y=np.full(n, 0.5, dtype=np.float64),
+            h=h,
+            speed=np.zeros(n, dtype=np.float64),
+        )
+        anchors = (5, 15, 25, 28)
+        dtl = segmenter.locate_intermediate(
+            sig, anchors, view=CameraView.DOWN_THE_LINE
+        )
+        face = segmenter.locate_intermediate(
+            sig, anchors, view=CameraView.FACE_ON
+        )
+        # H_HIP=0.18，rising cross：帧 5-7 h<0.18, 帧 8 h=0.20>0.18 → ②=8
+        assert dtl[PhaseKey.TAKEAWAY] == face[PhaseKey.TAKEAWAY] == (8, False)
+
+    def test_dtl_threshold_constants_in_config(self):
+        """DTL 专用阈值常量在 config 中存在且为身高制（与 face-on 区分）。"""
+        # face-on 阈值（Step 1 已验收，逐字节不变）
+        assert config.H_DOWNSWING == 0.50
+        assert config.FOLLOWTHROUGH_RISE == 0.95
+        assert config.H_HIP == 0.18
+        # DTL 专用阈值（Step 2 新增或重标）
+        assert hasattr(config, "H_DOWNSWING_DTL"), "Step 2 必须新增 DTL ⑤ 常量"
+        assert hasattr(config, "FOLLOWTHROUGH_RISE_DTL"), "Step 2 必须新增 DTL ⑦ 常量"
+        # 身高制下 h 范围 0.6~0.7 → DTL 阈值应在 [0.1, 0.5] 区间（实测校准值）
+        assert 0.3 <= config.H_DOWNSWING_DTL <= 0.5
+        assert 0.05 <= config.FOLLOWTHROUGH_RISE_DTL <= 0.20
+        # DTL 阈值与 face-on 阈值必须不同（否则分机位无意义）
+        assert config.H_DOWNSWING_DTL != config.H_DOWNSWING
+        assert config.FOLLOWTHROUGH_RISE_DTL != config.FOLLOWTHROUGH_RISE

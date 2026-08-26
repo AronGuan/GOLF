@@ -1,0 +1,137 @@
+INFO: Created TensorFlow Lite XNNPACK delegate for CPU.
+WARNING: All log messages before absl::InitializeLog() is called are written to STDERR
+W0000 00:00:1787717395.733942     552 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1787717395.748366   16848 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+E:\project\golf\.tools\python312\Lib\site-packages\google\protobuf\symbol_database.py:55: UserWarning: SymbolDatabase.GetPrototype() is deprecated. Please use message_factory.GetMessageClass() instead. SymbolDatabase.GetPrototype() will be removed soon.
+  warnings.warn('SymbolDatabase.GetPrototype() is deprecated. Please '
+W0000 00:00:1787717397.093572   27844 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1787717397.108690   27844 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1787717412.210819   31080 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1787717412.224888   31080 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1787717416.986658   23408 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1787717417.012432   27016 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1787717425.909046   29072 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1787717425.930385   28160 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1787717437.499409   28884 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1787717437.513455    1500 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1787717452.873315   31280 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1787717452.894719    2776 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1787717465.730407   16200 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1787717465.768586   30212 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1787717474.910262   26768 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1787717474.923973   20512 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+==============================================================================
+Step2 回归 — face-on 4 样本（验证 0 变化）+ DTL 5 样本（最终 8 阶段表）
+  H_DOWNSWING_DTL=0.4, FOLLOWTHROUGH_RISE_DTL=0.1
+==============================================================================
+
+==============================================================================
+[A] face-on 4 样本（Step 1 逐字节一致基线 — Step 2 必须保持）
+==============================================================================
+
+[正面1 (face-on)] view=face_on
+  refine_delta=0
+  8 阶段 array_index（E=estimated）:
+    1 address         array=3    frame=3      
+    2 takeaway        array=16   frame=16     
+    3 backswing       array=22   frame=22     
+    4 top             array=28   frame=28     
+    5 downswing       array=35   frame=35     
+    6 impact          array=37   frame=37    E
+    7 follow_through  array=39   frame=39     
+    8 finish          array=62   frame=62    E
+
+[正面2 (face-on)] view=face_on
+  refine_delta=7
+  8 阶段 array_index（E=estimated）:
+    1 address         array=157  frame=157    
+    2 takeaway        array=186  frame=186    
+    3 backswing       array=224  frame=224    
+    4 top             array=252  frame=252    
+    5 downswing       array=281  frame=281    
+    6 impact          array=291  frame=291    
+    7 follow_through  array=302  frame=302    
+    8 finish          array=373  frame=373   E
+
+[正面3 (face-on)] view=face_on
+  refine_delta=3
+  8 阶段 array_index（E=estimated）:
+    1 address         array=37   frame=37     
+    2 takeaway        array=49   frame=49     
+    3 backswing       array=57   frame=57     
+    4 top             array=61   frame=61     
+    5 downswing       array=68   frame=68     
+    6 impact          array=73   frame=73     
+    7 follow_through  array=76   frame=76     
+    8 finish          array=101  frame=101    
+
+[22030124 (face-on)] view=face_on
+  refine_delta=2
+  8 阶段 array_index（E=estimated）:
+    1 address         array=84   frame=84     
+    2 takeaway        array=95   frame=95     
+    3 backswing       array=100  frame=100    
+    4 top             array=106  frame=106    
+    5 downswing       array=113  frame=113    
+    6 impact          array=115  frame=115    
+    7 follow_through  array=119  frame=119    
+    8 finish          array=146  frame=146   E
+
+==============================================================================
+[B] DTL 5 样本（身高制，Step 2 阈值生效）
+==============================================================================
+
+[11a6594b] view=down_the_line
+  refine_delta=0
+  8 阶段 array_index（E=estimated）:
+    1 address         array=187  frame=187    
+    2 takeaway        array=194  frame=194    
+    3 backswing       array=196  frame=196    
+    4 top             array=202  frame=202    
+    5 downswing       array=207  frame=207    
+    6 impact          array=208  frame=208    
+    7 follow_through  array=212  frame=212    
+    8 finish          array=219  frame=219    
+  h_top=0.527 h_impact=0.235
+
+[f470c599] view=down_the_line
+  refine_delta=-2
+  8 阶段 array_index（E=estimated）:
+    1 address         array=220  frame=220    
+    2 takeaway        array=227  frame=227    
+    3 backswing       array=229  frame=229    
+    4 top             array=234  frame=234    
+    5 downswing       array=236  frame=236   E
+    6 impact          array=237  frame=237    
+    7 follow_through  array=244  frame=244    
+    8 finish          array=251  frame=251    
+  h_top=0.522 h_impact=0.462
+
+[c6f67f38] view=down_the_line
+  refine_delta=2
+  8 阶段 array_index（E=estimated）:
+    1 address         array=153  frame=153    
+    2 takeaway        array=160  frame=160    
+    3 backswing       array=163  frame=163    
+    4 top             array=169  frame=169    
+    5 downswing       array=176  frame=176    
+    6 impact          array=179  frame=179    
+    7 follow_through  array=181  frame=181    
+    8 finish          array=187  frame=187    
+  h_top=0.724 h_impact=0.117
+
+[470057ac] view=down_the_line
+  refine_delta=6
+  8 阶段 array_index（E=estimated）:
+    1 address         array=78   frame=78     
+    2 takeaway        array=85   frame=85     
+    3 backswing       array=87   frame=87     
+    4 top             array=92   frame=92     
+    5 downswing       array=96   frame=96     
+    6 impact          array=103  frame=103    
+    7 follow_through  array=106  frame=106    
+    8 finish          array=111  frame=111    
+  h_top=0.442 h_impact=0.299
+
+[0bb16a97] view=down_the_line
+  ERR: NO_SWING: wrist travel too small: 0.0850 < 0.1383

@@ -1,0 +1,161 @@
+INFO: Created TensorFlow Lite XNNPACK delegate for CPU.
+WARNING: All log messages before absl::InitializeLog() is called are written to STDERR
+W0000 00:00:1787716637.236899   28884 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1787716637.253732   28884 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+E:\project\golf\.tools\python312\Lib\site-packages\google\protobuf\symbol_database.py:55: UserWarning: SymbolDatabase.GetPrototype() is deprecated. Please use message_factory.GetMessageClass() instead. SymbolDatabase.GetPrototype() will be removed soon.
+  warnings.warn('SymbolDatabase.GetPrototype() is deprecated. Please '
+W0000 00:00:1787716642.520978   29164 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1787716642.534981   21720 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1787716649.957825    8256 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1787716649.972051    8256 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1787716656.103901   28524 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1787716656.118256   29144 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+[load] 4 cases in 23.8s
+
+==============================================================================
+[baseline 当前默认值] view=DTL, 3 阈值保持旧值（H_HIP=0.18, H_DOWNSWING_DTL=0.25, FOLLOWTHROUGH_RISE=0.95）
+  H_HIP_DTL/FOLLOWTHROUGH_RISE_DTL 不存在 ⇒ 走 face-on 共享阈值（Step 1 现状）
+==============================================================================
+case       8 阶段 (①②③④⑤⑥⑦⑧)                                         top/imp      estimated(②⑤⑦)
+11a6594b   187  194  196  202  205e 208  212e 219                  0.527/0.235    False/True/True
+f470c599   220  227  229  234  236e 237  242e 251                  0.522/0.462    False/True/True
+c6f67f38   153  160  163  169  177  179  182e 187                  0.724/0.117    False/False/True
+470057ac   78  85  87  92  98  103  106e 111                       0.442/0.299    False/False/True
+
+==============================================================================
+[sweep] H_HIP_DTL (影响 ②起杆)
+==============================================================================
+
+[11a6594b]
+     h_hip    ②  take_e   take-top
+     0.020  194   False         -8
+     0.040  194   False         -8
+     0.060  194   False         -8
+     0.080  194   False         -8
+     0.100  194   False         -8
+
+[f470c599]
+     h_hip    ②  take_e   take-top
+     0.020  227   False         -7
+     0.040  227   False         -7
+     0.060  227   False         -7
+     0.080  227   False         -7
+     0.100  227   False         -7
+
+[c6f67f38]
+     h_hip    ②  take_e   take-top
+     0.020  160   False         -9
+     0.040  160   False         -9
+     0.060  160   False         -9
+     0.080  160   False         -9
+     0.100  160   False         -9
+
+[470057ac]
+     h_hip    ②  take_e   take-top
+     0.020   85   False         -7
+     0.040   85   False         -7
+     0.060   85   False         -7
+     0.080   85   False         -7
+     0.100   85   False         -7
+
+==============================================================================
+[sweep] H_DOWNSWING_DTL (影响 ⑤下杆)
+==============================================================================
+
+[11a6594b] h_top=0.527 h_impact=0.235
+      h_ds        ④⑤⑥   ds_e   ds-top   imp-ds   ft-imp  ft_e
+     0.050  202/205/208   True       +3       +3       +4  True
+     0.100  202/205/208   True       +3       +3       +4  True
+     0.150  202/205/208   True       +3       +3       +4  True
+     0.200  202/205/208   True       +3       +3       +4  True
+     0.250  202/205/208   True       +3       +3       +4  True
+     0.300  202/205/208   True       +3       +3       +4  True
+     0.350  202/205/208   True       +3       +3       +4  True
+     0.400  202/207/208  False       +5       +1       +4  True
+
+[f470c599] h_top=0.522 h_impact=0.287
+      h_ds        ④⑤⑥   ds_e   ds-top   imp-ds   ft-imp  ft_e
+     0.050  234/236/237   True       +2       +1       +5  True
+     0.100  234/236/237   True       +2       +1       +5  True
+     0.150  234/236/237   True       +2       +1       +5  True
+     0.200  234/236/237   True       +2       +1       +5  True
+     0.250  234/236/237   True       +2       +1       +5  True
+     0.300  234/236/237   True       +2       +1       +5  True
+     0.350  234/236/237   True       +2       +1       +5  True
+     0.400  234/236/237   True       +2       +1       +5  True
+
+[c6f67f38] h_top=0.724 h_impact=0.202
+      h_ds        ④⑤⑥   ds_e   ds-top   imp-ds   ft-imp  ft_e
+     0.050  169/174/179   True       +5       +5       +3  True
+     0.100  169/174/179   True       +5       +5       +3  True
+     0.150  169/178/179  False       +9       +1       +3  True
+     0.200  169/178/179  False       +9       +1       +3  True
+     0.250  169/177/179  False       +8       +2       +3  True
+     0.300  169/177/179  False       +8       +2       +3  True
+     0.350  169/176/179  False       +7       +3       +3  True
+     0.400  169/176/179  False       +7       +3       +3  True
+
+[470057ac] h_top=0.442 h_impact=0.290
+      h_ds        ④⑤⑥   ds_e   ds-top   imp-ds   ft-imp  ft_e
+     0.050   92/100/103  False       +8       +3       +3  True
+     0.100   92/ 99/103  False       +7       +4       +3  True
+     0.150   92/ 99/103  False       +7       +4       +3  True
+     0.200   92/ 98/103  False       +6       +5       +3  True
+     0.250   92/ 98/103  False       +6       +5       +3  True
+     0.300   92/ 97/103  False       +5       +6       +3  True
+     0.350   92/ 97/103  False       +5       +6       +3  True
+     0.400   92/ 96/103  False       +4       +7       +3  True
+
+==============================================================================
+[sweep] FOLLOWTHROUGH_RISE_DTL (影响 ⑦送杆)
+==============================================================================
+
+[11a6594b] 送杆窗 h_min=0.068 h_max=0.626
+      ft_r       ⑥⑦   ft_e   ft-imp  ft-window-min+thr
+     0.050  208/212   True       +4              0.118
+     0.100  208/212   True       +4              0.168
+     0.150  208/212   True       +4              0.218
+     0.200  208/212   True       +4              0.268
+     0.250  208/212   True       +4              0.318
+     0.300  208/212   True       +4              0.368
+     0.350  208/212   True       +4              0.418
+     0.400  208/212   True       +4              0.468
+     0.500  208/212   True       +4              0.568
+
+[f470c599] 送杆窗 h_min=0.013 h_max=0.586
+      ft_r       ⑥⑦   ft_e   ft-imp  ft-window-min+thr
+     0.050  237/242   True       +5              0.063
+     0.100  237/242   True       +5              0.113
+     0.150  237/242   True       +5              0.163
+     0.200  237/242   True       +5              0.213
+     0.250  237/242   True       +5              0.263
+     0.300  237/242   True       +5              0.313
+     0.350  237/242   True       +5              0.363
+     0.400  237/242   True       +5              0.413
+     0.500  237/242   True       +5              0.513
+
+[c6f67f38] 送杆窗 h_min=0.117 h_max=0.585
+      ft_r       ⑥⑦   ft_e   ft-imp  ft-window-min+thr
+     0.050  179/182   True       +3              0.167
+     0.100  179/182   True       +3              0.217
+     0.150  179/182   True       +3              0.267
+     0.200  179/182   True       +3              0.317
+     0.250  179/182   True       +3              0.367
+     0.300  179/182   True       +3              0.417
+     0.350  179/182   True       +3              0.467
+     0.400  179/182   True       +3              0.517
+     0.500  179/182   True       +3              0.617
+
+[470057ac] 送杆窗 h_min=0.035 h_max=0.524
+      ft_r       ⑥⑦   ft_e   ft-imp  ft-window-min+thr
+     0.050  103/106   True       +3              0.349
+     0.100  103/106   True       +3              0.399
+     0.150  103/106   True       +3              0.449
+     0.200  103/106   True       +3              0.499
+     0.250  103/106   True       +3              0.549
+     0.300  103/106   True       +3              0.599
+     0.350  103/106   True       +3              0.649
+     0.400  103/106   True       +3              0.699
+     0.500  103/106   True       +3              0.799
+
+[elapsed] 46.3s

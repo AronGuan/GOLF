@@ -506,12 +506,17 @@ def locate_intermediate(
       基础上加 :data:`config.FOLLOWTHROUGH_RISE` 上升阈值：全窗
       ``[i_impact, i_finish]`` 内 ``h`` 最小点（杆头最低）之后**第一个**
       ``h >= 最小点 + 阈值`` 的帧 = 杆身略上扬时刻 = ⑦ 送杆；未命中走兜底比例。
+      **分机位（2026-08 Step 2 DTL 身高制阈值重标）**：face-on 用
+      :data:`config.FOLLOWTHROUGH_RISE`（0.95 肩宽制，逐字节不变），DTL 用
+      :data:`config.FOLLOWTHROUGH_RISE_DTL`（0.10 身高制）。
 
     Args:
         sig: 信号包。
         anchors: ``(i_addr, i_top, i_impact, i_finish)``。
-        view: 拍摄机位（face-on / DTL）。仅影响 ⑤ 的阈值选择；默认 face-on
-            保持历史行为（与不传 view 逐字节一致）。
+        view: 拍摄机位（face-on / DTL）。影响 ⑤ 的阈值（:data:`H_DOWNSWING`
+            vs :data:`H_DOWNSWING_DTL`）与 ⑦ 的上升阈值
+            （:data:`FOLLOWTHROUGH_RISE` vs :data:`FOLLOWTHROUGH_RISE_DTL`）；
+            默认 face-on 保持历史行为（与不传 view 逐字节一致）。
     """
     i_addr, i_top, i_impact, i_finish = anchors
     r2, r3, r5, r7 = config.FALLBACK_RATIO
@@ -575,7 +580,7 @@ def locate_intermediate(
     # 略上扬）更好。方案 B 在 h 最小点基础上加上升阈值：
     #   - ``h_min_idx`` = ``[i_impact, i_finish]`` 全窗 ``h`` 最小点
     #     （杆头最低 = 腕部过底点，送杆启动的真实基线）；
-    #   - 阈值 = ``h_min_val + config.FOLLOWTHROUGH_RISE``（肩宽制）；
+    #   - 阈值 = ``h_min_val + config.FOLLOWTHROUGH_RISE[_DTL]``（肩宽/身高制）；
     #   - 从 ``h_min_idx`` **之后**找第一个 ``h >= 阈值`` 的帧 = 杆身略上扬
     #     时刻 = ⑦ 送杆。
     # 守卫：⑦ 必须严格在击球后（``> i_impact``）且严格在收杆前
@@ -585,13 +590,24 @@ def locate_intermediate(
     # +42），但本判据取「最小点之后第一次上穿阈值」，天然锚定在最小点后的
     # 上升沿，不会被后续二次下探甩到收杆前（这正是旧版改短窗的原因；
     # 方案 B 用上升沿替代短窗，同时消除了「短窗可能不含最低点」的窗口敏感）。
+    #
+    # ⚠️ **分机位（2026-08 Step 2 DTL 身高制阈值重标）**：face-on 用
+    # :data:`config.FOLLOWTHROUGH_RISE`（0.95 肩宽制，正面回归逐字节不变，用户
+    # 已验收）；DTL 用 :data:`config.FOLLOWTHROUGH_RISE_DTL`（0.10 身高制——
+    # DTL h 范围 0.6~0.7、送杆窗内 min→max 仅 0.5~0.6 跨度，肩宽制 0.95
+    # 永远超出窗内最大值、⑦ 必走兜底；身高制 0.10 让 4/4 DTL 样本 ⑦ 变 real）。
+    ft_rise_threshold = (
+        config.FOLLOWTHROUGH_RISE_DTL
+        if view is CameraView.DOWN_THE_LINE
+        else config.FOLLOWTHROUGH_RISE
+    )
     idx = None
     if not anchor_only and i_finish > i_impact:
         seg_h = sig.h[i_impact:i_finish + 1]
         if len(seg_h) > 0:
             k_min = int(np.argmin(seg_h))
             h_min_val = float(seg_h[k_min])
-            threshold = h_min_val + config.FOLLOWTHROUGH_RISE
+            threshold = h_min_val + ft_rise_threshold
             after = seg_h[k_min + 1:]
             hits = np.where(after >= threshold)[0]
             if hits.size > 0:

@@ -1,0 +1,78 @@
+INFO: Created TensorFlow Lite XNNPACK delegate for CPU.
+WARNING: All log messages before absl::InitializeLog() is called are written to STDERR
+W0000 00:00:1787717154.744683   28300 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1787717154.759734   28300 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+E:\project\golf\.tools\python312\Lib\site-packages\google\protobuf\symbol_database.py:55: UserWarning: SymbolDatabase.GetPrototype() is deprecated. Please use message_factory.GetMessageClass() instead. SymbolDatabase.GetPrototype() will be removed soon.
+  warnings.warn('SymbolDatabase.GetPrototype() is deprecated. Please '
+W0000 00:00:1787717164.409423    3480 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1787717164.432712   27436 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1787717180.217556   30556 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1787717180.238706   19008 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1787717193.331629   28744 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1787717193.355906    3172 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1787717202.613920   28372 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1787717202.641399   30056 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+==============================================================================
+Step2 验证 5 DTL × 最终 8 阶段表（Step 2 阈值：H_DOWNSWING_DTL=0.40, FOLLOWTHROUGH_RISE_DTL=0.10）
+  H_DOWNSWING_DTL=0.4, FOLLOWTHROUGH_RISE_DTL=0.1
+==============================================================================
+
+[11a6594b]
+  view=DTL refine_delta=0
+  h_top=0.527 h_impact=0.235
+  8 阶段 array_index（E=estimated）:
+    1 address         array=187  frame=187    
+    2 takeaway        array=194  frame=194    
+    3 backswing       array=196  frame=196    
+    4 top             array=202  frame=202    
+    5 downswing       array=207  frame=207    
+    6 impact          array=208  frame=208    
+    7 follow_through  array=212  frame=212    
+    8 finish          array=219  frame=219    
+  间距: ②-①=7  ④-③=6  ⑤-④=5  ⑥-⑤=1  ⑦-⑥=4  ⑧-⑦=7
+
+[f470c599]
+  view=DTL refine_delta=-2
+  h_top=0.522 h_impact=0.462
+  8 阶段 array_index（E=estimated）:
+    1 address         array=220  frame=220    
+    2 takeaway        array=227  frame=227    
+    3 backswing       array=229  frame=229    
+    4 top             array=234  frame=234    
+    5 downswing       array=236  frame=236   E
+    6 impact          array=237  frame=237    
+    7 follow_through  array=244  frame=244    
+    8 finish          array=251  frame=251    
+  间距: ②-①=7  ④-③=5  ⑤-④=2  ⑥-⑤=1  ⑦-⑥=7  ⑧-⑦=7
+
+[c6f67f38]
+  view=DTL refine_delta=2
+  h_top=0.724 h_impact=0.117
+  8 阶段 array_index（E=estimated）:
+    1 address         array=153  frame=153    
+    2 takeaway        array=160  frame=160    
+    3 backswing       array=163  frame=163    
+    4 top             array=169  frame=169    
+    5 downswing       array=176  frame=176    
+    6 impact          array=179  frame=179    
+    7 follow_through  array=181  frame=181    
+    8 finish          array=187  frame=187    
+  间距: ②-①=7  ④-③=6  ⑤-④=7  ⑥-⑤=3  ⑦-⑥=2  ⑧-⑦=6
+
+[470057ac]
+  view=DTL refine_delta=6
+  h_top=0.442 h_impact=0.299
+  8 阶段 array_index（E=estimated）:
+    1 address         array=78   frame=78     
+    2 takeaway        array=85   frame=85     
+    3 backswing       array=87   frame=87     
+    4 top             array=92   frame=92     
+    5 downswing       array=96   frame=96     
+    6 impact          array=103  frame=103    
+    7 follow_through  array=106  frame=106    
+    8 finish          array=111  frame=111    
+  间距: ②-①=7  ④-③=5  ⑤-④=4  ⑥-⑤=7  ⑦-⑥=3  ⑧-⑦=5
+
+[0bb16a97]
+  AnalysisError NO_SWING: wrist travel too small: 0.0850 < 0.1383
+  （注：身高制守卫误判/正确拒绝 — 视频挥杆幅度不足）
