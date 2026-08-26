@@ -525,6 +525,104 @@ class TestViewAwareImpact:
 
 
 # ---------------------------------------------------------------------------
+# ①准备 address→top 门槛机位感知（2026-08 方案 C：DTL 专用 MIN_TOP_ADDR_SEC_DTL）
+# ---------------------------------------------------------------------------
+
+
+def _address_gap_signals(i_top: int = 20, i_addr: int = 10) -> SwingSignals:
+    """构造 ``i_top - i_addr`` 恰好 10 帧（30fps）的信号包，验证门槛分机位。
+
+    ``speed[:i_top]`` 中 ``[0, i_addr]`` 为静止段（``0.1 < V_STILL=0.55``）、
+    其后为高速段（5.0）；``h`` 全 0（低手位，满足 ``ADDR_H_MAX=0.6``）→
+    ``locate_address`` 命中 ``runs[-1][1] == i_addr``（非兜底，estimated=False）。
+
+    30fps 下门槛：
+      - face-on ``MIN_TOP_ADDR_SEC=0.45`` → ``max(3, round(13.5))=14``；
+      - DTL    ``MIN_TOP_ADDR_SEC_DTL=0.30`` → ``max(3, round(9.0))=9``。
+    故 gap=10：face-on 判 NO_SWING（10<14）、DTL 通过（10≥9）。
+    """
+    n = i_top + 10
+    speed = np.full(n, 5.0, dtype=np.float64)
+    speed[: i_addr + 1] = 0.1
+    h = np.zeros(n, dtype=np.float64)
+    return SwingSignals(
+        n=n,
+        fps=30.0,
+        dt=1.0 / 30.0,
+        S=1.0,
+        wrist_x=np.zeros(n, dtype=np.float64),
+        wrist_y=np.zeros(n, dtype=np.float64),
+        shoulder_mid_y=np.full(n, 0.5, dtype=np.float64),
+        hip_mid_y=np.zeros(n, dtype=np.float64),
+        h=h,
+        speed=speed,
+    )
+
+
+class TestViewAwareAddress:
+    """① 准备 address→top 门槛机位感知：DTL 放宽（方案 C）+ 正面零影响。"""
+
+    def test_face_on_default_uses_original_threshold(self):
+        """face-on（含不传 view）：门槛 0.45s=14 帧，gap=10 判 NO_SWING（与现状一致）。"""
+        sig = _address_gap_signals()
+        with pytest.raises(AnalysisError) as exc:
+            segmenter.locate_address(sig, 20)
+        assert exc.value.code is ErrorCode.NO_SWING
+        with pytest.raises(AnalysisError) as exc:
+            segmenter.locate_address(sig, 20, view=CameraView.FACE_ON)
+        assert exc.value.code is ErrorCode.NO_SWING
+
+    def test_dtl_uses_relaxed_threshold(self):
+        """view=DTL：门槛 0.30s=9 帧，gap=10 通过，且 address 帧位不变（=10）。"""
+        sig = _address_gap_signals()
+        i_addr, estimated = segmenter.locate_address(
+            sig, 20, view=CameraView.DOWN_THE_LINE
+        )
+        assert i_addr == 10
+        assert estimated is False
+
+    def test_same_signal_faceon_raises_dtl_passes(self):
+        """同信号 face-on 抛 NO_SWING、DTL 通过（门槛分机位生效）。"""
+        sig = _address_gap_signals()
+        with pytest.raises(AnalysisError):
+            segmenter.locate_address(sig, 20, view=CameraView.FACE_ON)
+        i_addr, _ = segmenter.locate_address(
+            sig, 20, view=CameraView.DOWN_THE_LINE
+        )
+        assert i_addr == 10
+
+    def test_default_equals_explicit_face_on_when_passing(self):
+        """gap 足够大（≥14）时，不传 view 与显式 face-on 的 address 逐字节一致。"""
+        sig = _address_gap_signals(i_top=30, i_addr=10)  # gap=20
+        assert segmenter.locate_address(sig, 30) == (10, False)
+        assert segmenter.locate_address(sig, 30, view=CameraView.FACE_ON) == (10, False)
+
+    def test_min_gap_matches_config(self):
+        """门槛与 config 常量一致：face-on=0.45（14 帧）、DTL=0.30（9 帧）。"""
+        fe = 30.0
+        assert config.MIN_TOP_ADDR_SEC == 0.45
+        assert config.MIN_TOP_ADDR_SEC_DTL == 0.30
+        assert max(3, int(round(config.MIN_TOP_ADDR_SEC * fe))) == 14
+        assert max(3, int(round(config.MIN_TOP_ADDR_SEC_DTL * fe))) == 9
+
+    def test_segment_swing_forwards_view_to_address(self, monkeypatch, swing_frames):
+        """segment_swing 把 view 传给 locate_address（DTL 分支可达）。"""
+        seen: dict = {}
+        real = segmenter.locate_address
+
+        def spy(sig, i_top, view=CameraView.FACE_ON):
+            seen["view"] = view
+            return real(sig, i_top, view)
+
+        monkeypatch.setattr(segmenter, "locate_address", spy)
+        events = segmenter.segment_swing(
+            swing_frames, FPS, view=CameraView.DOWN_THE_LINE
+        )
+        assert seen.get("view") is CameraView.DOWN_THE_LINE
+        assert len(events) == 8
+
+
+# ---------------------------------------------------------------------------
 # 标尺机位感知（2026-08 用户拍板：face-on 肩宽制逐字节不变；DTL 身高制）
 # ---------------------------------------------------------------------------
 

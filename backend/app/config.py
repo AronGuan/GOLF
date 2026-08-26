@@ -238,6 +238,13 @@ TOP_REFINE_SEC: Final[float] = 0.10
 #: 让残缺视频得到诚实的 NO_SWING 而不是 8 个挤在 0.2s 内的垃圾阶段。
 MIN_TOP_ADDR_SEC: Final[float] = 0.45
 
+#: ①Address→④Top 最小时长（秒），**DTL 侧面机位专用**（2026-08 方案 C 用户拍板）。
+#: DTL 拍摄时人物往往先准备 1~2 秒不动（找球/调整），``locate_address`` 找不到真实
+#: 静止段 → address 估计靠后 → address→top 被挤压（实测 11.mp4 仅 10 帧）→ 触发
+#: ``MIN_TOP_ADDR_SEC=0.45`` 守卫误杀正常挥杆。故 DTL 放宽到 0.30s（30fps 下
+#: 9 帧门槛，10 帧可通过）；face-on 保持 :data:`MIN_TOP_ADDR_SEC`（0.45）逐字节不变。
+MIN_TOP_ADDR_SEC_DTL: Final[float] = 0.30
+
 #: locate_address 候选静止段的「髋部相对手位高度」上限。
 #: 站位的手位贴近髋线（``h≈0``，可略负），而**顶点前减速微停**发生在 ``h≈2``
 #: （手已高举、手腕瞬时变慢），后者会被 :data:`V_STILL` 误判成一段静止，从而把

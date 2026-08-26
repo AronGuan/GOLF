@@ -286,8 +286,25 @@ def locate_top(sig: SwingSignals) -> int:
     return a + int(np.argmin(sig.speed[a:b]))
 
 
-def locate_address(sig: SwingSignals, i_top: int) -> Tuple[int, bool]:
+def locate_address(
+    sig: SwingSignals, i_top: int, view: CameraView = CameraView.FACE_ON
+) -> Tuple[int, bool]:
     """① 准备：顶点前最后一段静止的末帧。
+
+    ⚠️ **分机位（2026-08 方案 C 用户拍板）**：address→top 最短门槛分机位。
+    DTL 侧面机位下人物往往先准备 1~2 秒不动（找球/调整），本函数的静止段
+    判据找不到真实站位段 → ``i_addr`` 退化为 ``argmin`` 兜底、估计靠后 →
+    address→top 被挤压（实测 11.mp4 仅 10 帧），face-on 门槛 0.45s（30fps
+    = 14 帧）会误杀正常挥杆；DTL 用 :data:`config.MIN_TOP_ADDR_SEC_DTL`
+    （0.30s，30fps = 9 帧）放宽门槛。face-on（默认）用
+    :data:`config.MIN_TOP_ADDR_SEC`，逐字节不变（与不传 view 一致）。
+
+    Args:
+        sig: 信号包。
+        i_top: ④ 顶点数组下标。
+        view: 拍摄机位（face-on / DTL）。仅影响 address→top 最短门槛
+            （face-on=``MIN_TOP_ADDR_SEC`` 历史不变；DTL=``MIN_TOP_ADDR_SEC_DTL``）。
+            默认 face-on 保持历史行为（与不传 view 逐字节一致）。
 
     Raises:
         AnalysisError: ``NO_SWING`` —— 顶点离起点过近。
@@ -315,7 +332,12 @@ def locate_address(sig: SwingSignals, i_top: int) -> Tuple[int, bool]:
         i_addr = int(np.argmin(segment))
         estimated = True
 
-    min_gap = max(3, int(round(config.MIN_TOP_ADDR_SEC * fe)))
+    min_sec = (
+        config.MIN_TOP_ADDR_SEC_DTL
+        if view is CameraView.DOWN_THE_LINE
+        else config.MIN_TOP_ADDR_SEC
+    )
+    min_gap = max(3, int(round(min_sec * fe)))
     if i_top - i_addr < min_gap:
         raise AnalysisError(
             ErrorCode.NO_SWING,
@@ -721,7 +743,9 @@ def segment_swing(
         sig: 可选的预构建信号包（避免重复计算）。face-on 下传入时 ``aspect``
             被忽略；DTL 下恒被忽略（强制按身高标尺重建，见 ``view`` 说明）。
         aspect: 画幅纵横比 ``height / width``，含义见 :func:`build_signals`。
-        view: 拍摄机位（face-on / DTL）。传给 :func:`locate_impact`（⑥ 击球：
+        view: 拍摄机位（face-on / DTL）。传给 :func:`locate_address`（① 准备：
+            address→top 门槛 face-on=``MIN_TOP_ADDR_SEC`` 历史不变、
+            DTL=``MIN_TOP_ADDR_SEC_DTL``）、:func:`locate_impact`（⑥ 击球：
             DTL 直接用穿越点、face-on 速度峰）与 :func:`locate_intermediate`
             （⑤ 下杆阈值：face-on=``H_DOWNSWING`` 历史不变；
             DTL=``H_DOWNSWING_DTL``）。默认 face-on 保持历史行为（与不传 view
@@ -747,7 +771,7 @@ def segment_swing(
     _guard_no_swing(signals, view=view)
 
     i_top = locate_top(signals)
-    i_addr, e_addr = locate_address(signals, i_top)
+    i_addr, e_addr = locate_address(signals, i_top, view=view)
     i_impact, e_impact = locate_impact(signals, i_top, i_addr, view=view)
     i_finish, e_finish = locate_finish(signals, i_impact)
     mid = locate_intermediate(
