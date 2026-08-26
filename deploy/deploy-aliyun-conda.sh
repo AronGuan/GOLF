@@ -73,6 +73,16 @@ else
 fi
 
 # ---------------------------------------------------------------------------
+# [4.5/7] 安装 PyTorch (CPU) —— SwingNet AI 事件检测需要
+#   注意：torch 不能走清华 PyPI 源（Linux 下会装成几 GB 的 CUDA 版，含 NVIDIA 依赖），
+#   必须从官方 CPU wheel 源安装。国内暂无稳定 CPU wheel 镜像（清华 pytorch-wheels 已下线）。
+#   download.pytorch.org 走 CloudFront CDN，阿里云 ECS 一般可访问（速度中等）。
+#   版本锁 2.13.0（与本地开发环境一致，避免未来大版本引入不兼容）。
+# ---------------------------------------------------------------------------
+echo ">>> [4.5/7] 安装 PyTorch (CPU) — SwingNet AI 事件检测 ..."
+"$PYTHON" -m pip install torch==2.13.0 --index-url https://download.pytorch.org/whl/cpu --default-timeout=300 --retries 3
+
+# ---------------------------------------------------------------------------
 # [5/7] 放行 8000/tcp（firewalld 是第二道防火墙）
 # ---------------------------------------------------------------------------
 echo ">>> [5/7] 放行防火墙端口 $PORT/tcp ..."
@@ -101,6 +111,20 @@ sed -e "s#__PYTHON_PATH__#${PYTHON}#g" \
 sudo systemctl daemon-reload
 sudo systemctl enable --now "$SERVICE_NAME"
 sudo systemctl restart "$SERVICE_NAME"
+
+# ---------------------------------------------------------------------------
+# [6.5/7] 检查 SwingNet 权重（63MB 不入 git，需手动上传）
+# ---------------------------------------------------------------------------
+WEIGHTS="$BACKEND_DIR/models/swingnet_1800.pth.tar"
+echo ">>> [6.5/7] 检查 SwingNet 权重 ..."
+if [ -f "$WEIGHTS" ]; then
+  echo "    ✓ SwingNet 权重存在: $WEIGHTS"
+else
+  echo "    ⚠ SwingNet 权重缺失: $WEIGHTS"
+  echo "      DTL 视频会自动回退规则引擎（AI 事件检测不生效，但不影响使用）。"
+  echo "      手动上传权重（在本地项目根目录执行）："
+  echo "        scp backend/models/swingnet_1800.pth.tar root@<ECS公网IP>:/root/golf/GOLF/backend/models/"
+fi
 
 # ---------------------------------------------------------------------------
 # [7/7] 健康检查

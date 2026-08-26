@@ -25,7 +25,10 @@ env/
 
 # ===== 后端运行时数据 / 产物（用户视频、渲染图、结果 JSON） =====
 backend/data/
-backend/models/
+# 模型权重（SwingNet 63MB）不入 git，但保留 models/ 目录本身（.gitkeep），
+# 否则服务器 git pull 后没有该目录，scp 上传权重会失败。
+backend/models/*
+!backend/models/.gitkeep
 
 # ===== 日志 =====
 *.log

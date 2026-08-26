@@ -74,12 +74,12 @@ def test_default_weights_path_from_config():
 
 
 def _find_sample_video() -> str:
-    """定位 backend_ai 的 DTL 样本视频（用于 opt-in 真实推理验证）。"""
+    """定位真实 DTL 样本视频（用于 opt-in 真实推理验证，样本在本地 .tools 目录）。"""
     here = os.path.dirname(os.path.abspath(__file__))  # backend/tests
     repo_root = os.path.dirname(os.path.dirname(here))  # project root
     candidates = [
-        os.path.join(repo_root, "backend_ai", "golfdb_repo", "test_video.mp4"),
-        os.path.join(repo_root, "backend_ai", "data", "samples", "11.mp4"),
+        os.path.join(repo_root, ".tools", "_probe", "samples", "侧面", "11.mp4"),
+        os.path.join(repo_root, ".tools", "_probe", "samples", "侧面", "4e8d0d7e517a67a2a7698fd1536289eb.mp4"),
     ]
     for cand in candidates:
         if os.path.isfile(cand):
@@ -95,14 +95,14 @@ _RUN_SLOW = os.environ.get("GOLF_RUN_SWINGNET_SLOW") == "1"
     reason="真实推理加载 60MB 权重较慢，默认跳过；设 GOLF_RUN_SWINGNET_SLOW=1 运行",
 )
 def test_real_inference_optional():
-    """用 backend_ai 样本跑一次真实推理，验证 detect 输出 8 事件且时序合理。"""
+    """用真实 DTL 样本跑一次真实推理，验证 detect 输出 8 事件且时序合理。"""
     weights = str(config.SWINGNET_WEIGHTS_PATH)
     if not os.path.isfile(weights):
         pytest.skip("SwingNet 权重不存在，跳过真实推理")
 
     video = _find_sample_video()
     if not video:
-        pytest.skip("backend_ai 样本视频不存在，跳过真实推理")
+        pytest.skip("真实 DTL 样本视频不存在，跳过真实推理")
 
     detector = SwingNetDetector(weights_path=weights)
     assert detector.is_loaded is False

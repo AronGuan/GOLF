@@ -1,6 +1,6 @@
 """SwingNet 8 事件检测器封装（DTL 专用，face-on 不调用）。
 
-把 ``backend_ai`` POC（``scripts/infer.py``）的推理逻辑封装成可直接调用的类：
+把 GolfDB 官方 SwingNet 的推理逻辑封装成可直接调用的类：
 
 - **懒加载**：模型与 60MB 权重在首次 :meth:`SwingNetDetector.detect` 时才加载，
   ``import app.ai.swingnet_detector`` 只引入 torch 模块、不读权重文件。
@@ -155,7 +155,7 @@ class SwingNetDetector:
     def _read_and_transform(self, video_path: str) -> torch.Tensor:
         """读取视频帧并按 POC 预处理，返回 ``(1, T, C, 160, 160)`` float 张量。
 
-        与 ``backend_ai/scripts/infer.py`` 的 ``SampleVideo`` 逐帧一致：
+        与 GolfDB 官方 ``test_video.py`` 的 ``SampleVideo`` 逐帧一致：
         等比缩放短边到 160 → 用 ImageNet 均值填充到 160×160 → BGR→RGB →
         转 float 张量并归一化。``torchvision.transforms`` 被内联为等价实现。
         """

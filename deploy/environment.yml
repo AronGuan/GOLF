@@ -5,6 +5,9 @@
 #      3.13 的精简包移除了 legacy `mp.solutions.pose`，算法层会直接报错。
 #   2. mediapipe 锁 0.10.14：1.0.0 已删除 legacy solutions API。
 #   3. numpy 锁 1.26.4（<2）：mediapipe 0.10.14 不兼容 numpy 2.x。
+#   4. torch（SwingNet AI 事件检测需要）不要写进本文件的 pip 段——pip 段走
+#      清华 PyPI 源，Linux 下会装成几 GB 的 CUDA 版（含 NVIDIA 依赖）；torch
+#      由 deploy-aliyun-conda.sh 的 [4.5/7] 单独从官方 CPU 源安装。
 #
 # 用法：
 #   conda env create -f environment.yml     # 首次创建

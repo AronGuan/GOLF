@@ -1,4 +1,0 @@
-# 数据、模型、环境不入 git
-data/
-models/
-.venv/

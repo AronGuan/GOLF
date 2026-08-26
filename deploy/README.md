@@ -30,8 +30,10 @@ bash deploy-aliyun-conda.sh
 | 2 | `dnf install mesa-libGL`（`opencv-python-headless` 运行所需的 libGL） |
 | 3 | 按 `environment.yml` 创建 conda 环境 **`golf` (python 3.12)**；环境已存在则自动改为 `env update` |
 | 4 | 用 env 内的 pip 安装 `backend/requirements.txt`，走**清华镜像** `https://pypi.tuna.tsinghua.edu.cn/simple` |
+| 4.5 | 安装 **PyTorch (CPU)**（`torch==2.13.0`，走官方 `download.pytorch.org/whl/cpu`）——SwingNet AI 事件检测需要 |
 | 5 | firewalld 放行 `8000/tcp`（未启用 firewalld 则跳过） |
 | 6 | 把 `golf-backend.service` 里的 `__PYTHON_PATH__` 替换为真实 python 路径，写入 `/etc/systemd/system/`，`daemon-reload` + `enable --now` |
+| 6.5 | 检查 **SwingNet 权重** `backend/models/swingnet_1800.pth.tar`（63MB 不入 git），缺失则打印 scp 上传提示 |
 | 7 | 健康检查 `curl http://127.0.0.1:8000/api/v1/health`，并打印访问地址 |
 
 > 为什么要替换占位符：systemd 的 `ExecStart` **不展开** shell 变量/环境变量，必须写死绝对路径（形如 `/root/anaconda3/envs/golf/bin/python`）。
@@ -85,6 +87,8 @@ sudo journalctl -u golf-backend -n 100 --no-pager   # 最近 100 行
 - **`mediapipe==0.10.14`**：1.0.0 已移除 legacy `mp.solutions.pose` API。
 - **`numpy==1.26.4`（<2）**：0.10.14 不兼容 numpy 2.x。
 - **`--workers 1`**：任务状态是内存 dict，多 worker 会让轮询请求落到没有该任务的进程。
+- **PyTorch 必须装 CPU 版**：`torch` 走官方 `download.pytorch.org/whl/cpu`（脚本 [4.5/7]），**不要**用清华 PyPI 源（Linux 下会装成几 GB 的 CUDA 版，含 NVIDIA 依赖）。
+- **SwingNet 权重需手动上传一次**：`backend/models/swingnet_1800.pth.tar`（63MB）在 `.gitignore` 里，`git pull` 不会同步。首次部署后在本地执行 `scp backend/models/swingnet_1800.pth.tar root@<公网IP>:/root/golf/GOLF/backend/models/`；缺失时 DTL 视频会自动回退规则引擎（不影响使用）。
 
 ### 部署产物（Conda）
 | 文件 | 作用 |

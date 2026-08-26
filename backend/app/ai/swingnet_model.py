@@ -1,4 +1,4 @@
-"""SwingNet 模型定义（自 ``backend_ai/golfdb_repo`` 搬入，保留 CPU 适配）。
+"""SwingNet 模型定义（自 GolfDB 官方仓库 ``wmcnally/golfdb`` 搬入，保留 CPU 适配）。
 
 GolfDB 预训练的 SwingNet 结构：MobileNetV2 backbone 提取逐帧视觉特征，
 再接一层双向 LSTM 建模时序，输出 9 类（8 事件 + 1 个"无事件"背景类）
