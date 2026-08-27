@@ -14,18 +14,16 @@
         class="view-option {{cameraView === 'face_on' ? 'view-option--on' : ''}}"
         data-view="face_on"
         bindtap="onSelectView">
-        <view class="view-icon">🙋</view>
+        <image class="view-icon" src="../../assets/icons/view_face_on.png" mode="aspectFit" />
         <view class="view-label">正面机位</view>
-        <view class="view-sub">正对身体 · 竖持</view>
         <view class="view-dot" wx:if="{{cameraView === 'face_on'}}">✓</view>
       </view>
       <view
         class="view-option {{cameraView === 'down_the_line' ? 'view-option--on' : ''}}"
         data-view="down_the_line"
         bindtap="onSelectView">
-        <view class="view-icon">🏌️</view>
+        <image class="view-icon" src="../../assets/icons/view_down_the_line.png" mode="aspectFit" />
         <view class="view-label">侧面机位</view>
-        <view class="view-sub">垂直于目标线 · 横持</view>
         <view class="view-dot" wx:if="{{cameraView === 'down_the_line'}}">✓</view>
       </view>
     </view>
@@ -44,15 +42,10 @@
       </view>
 
       <view class="golfer">
-        <view class="g-head"></view>
-        <view class="g-body"></view>
-        <view class="g-arm-l"></view>
-        <view class="g-arm-r"></view>
-        <view class="g-leg-l"></view>
-        <view class="g-leg-r"></view>
+        <image class="golfer-img" src="{{cameraView === 'face_on' ? '../../assets/icons/golfer_face_on.png' : '../../assets/icons/golfer.png'}}" mode="aspectFit" />
       </view>
     </view>
-    <view class="diagram-caption">{{cameraView === 'face_on' ? '正面机位（face-on）· 手机竖持固定 · 全身入镜' : '侧面机位（down-the-line）· 手机横持水平 · 球杆清晰可见'}}</view>
+    <view class="diagram-caption">{{cameraView === 'face_on' ? '正面机位（face-on）· 手机竖持固定 · 全身入镜' : '侧面机位（down-the-line）· 手机竖持固定 · 全身+球杆入镜'}}</view>
   </view>
 
   <!-- 拍摄要求（随机位切换） -->
