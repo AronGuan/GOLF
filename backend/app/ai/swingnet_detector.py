@@ -127,12 +127,14 @@ class SwingNetDetector:
            Mid-downswing ∈ (Top, Impact)、Mid-follow-through ∈ (Impact, Finish)）；
         3. 对最终帧号做严格递增强制（相邻过渡事件 argmax 到同一帧时后推 1 帧），
            保证物理时序，避免 pipeline 单调守卫误回退；
-        4. 若锚点本身乱序（多段挥杆 / 非单次挥杆），保持全视频 argmax 原结果，
-           交由调用方（pipeline 单调守卫）回退规则引擎。
+        4. 若锚点本身乱序：区分「局部乱序」（仅 Top 乱序，Address < Impact <
+           Finish 仍成立）与「整体乱序」（Address/Impact/Finish 本身乱序）。局部
+           乱序时把 Top 重定位到 (Address, Impact) 后继续正常路径；整体乱序才
+           保持全视频 argmax 原结果，交由调用方（pipeline 单调守卫）回退规则引擎。
 
         Returns:
             8 事件 -> ``{"frame_index", "confidence"}`` 映射，事件名见
-            :data:`EVENT_NAMES`。锚点乱序时返回的帧号可能不单调，由调用方兜底。
+            :data:`EVENT_NAMES`。整体乱序时返回的帧号可能不单调，由调用方兜底。
         """
         n_frames = probs.shape[0]
 
@@ -149,16 +151,6 @@ class SwingNetDetector:
                 }
             return out
 
-        # 4 个主锚点全局 argmax（EVENT_NAMES 下标：Address=0, Top=3, Impact=5, Finish=7）
-        a_frame = int(global_events[0])
-        t_frame = int(global_events[3])
-        i_frame = int(global_events[5])
-        f_frame = int(global_events[7])
-
-        if not (a_frame < t_frame < i_frame < f_frame):
-            # 锚点乱序：模型在此视频上不可信，返回原始结果，由 pipeline 回退。
-            return _make(global_events)
-
         def _argmax_in(cls_idx: int, lo_excl: int, hi_excl: int) -> int:
             """开区间 ``(lo_excl, hi_excl)`` 内的峰值帧；退化时 clamp 到单帧。"""
             lo = lo_excl + 1
@@ -170,6 +162,27 @@ class SwingNetDetector:
             if hi < lo:
                 hi = lo
             return int(np.argmax(probs[lo : hi + 1, cls_idx])) + lo
+
+        # 4 个主锚点全局 argmax（EVENT_NAMES 下标：Address=0, Top=3, Impact=5, Finish=7）
+        a_frame = int(global_events[0])
+        t_frame = int(global_events[3])
+        i_frame = int(global_events[5])
+        f_frame = int(global_events[7])
+
+        if not (a_frame < t_frame < i_frame < f_frame):
+            # 锚点乱序（方案 A，2026-09-05）：区分「局部乱序」与「整体乱序」。
+            # Impact/Finish 是模型区分度最高的锚点（实测 9660113a：Impact conf
+            # 0.71 vs Top conf 0.02），乱序几乎总是 Top 被假峰抢走。若
+            # Address < Impact < Finish 仍成立，则保留这三个可信锚点，仅把 Top
+            # 重定位到 (Address, Impact) 后继续走下方正常路径，而非整体回退——
+            # 否则正确的 Impact 会被「锚点乱序就整体回退」误杀（9660113a 曾
+            # 因此把 Impact=130 回退成规则引擎的 128）。
+            # 否则（Address/Impact/Finish 本身乱序）模型真不可信，返回原始结果，
+            # 由 pipeline 单调守卫回退规则引擎。
+            if a_frame < i_frame < f_frame:
+                t_frame = _argmax_in(3, a_frame, i_frame)  # Top ∈ (Address, Impact)
+            else:
+                return _make(global_events)
 
         toe_up = _argmax_in(1, a_frame, t_frame)        # Toe-up ∈ (Address, Top)
         mid_back = _argmax_in(2, toe_up, t_frame)       # Mid-backswing ∈ (Toe-up, Top)

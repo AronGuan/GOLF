@@ -186,6 +186,33 @@ def test_constrained_events_anchor_disorder_returns_global():
     assert result["Top"]["frame_index"] == 109
 
 
+def test_constrained_events_local_disorder_relocates_top():
+    """仅 Top 乱序（Top > Impact）但 Address < Impact < Finish → 修复 Top 而非整体回退。
+
+    复现 9660113a：Top 假峰 141 超过 Impact=130，若整体回退会丢弃正确的 Impact
+    （回退规则引擎得到 128）。方案 A 保留 Address/Impact/Finish，把 Top 重定位
+    到 (Address, Impact) 区间内的次峰（90）。
+    """
+    probs = np.zeros((200, 9), dtype=np.float32)
+    probs[35, 0] = 1.0   # Address
+    probs[141, 3] = 1.0  # Top 假峰（乱序，> Impact）
+    probs[90, 3] = 0.5   # Top 区间内次峰（真实上杆顶点）
+    probs[130, 5] = 1.0  # Impact（真值）
+    probs[167, 7] = 1.0  # Finish
+    result = SwingNetDetector._constrained_events(probs)
+    frames = _frames_of(result)
+
+    # 修复后必须严格递增（pipeline 单调守卫通过的硬前提）
+    assert frames == sorted(frames)
+    assert len(set(frames)) == len(frames)
+    # 可信锚点保留：Impact / Finish 不被整体回退丢弃
+    assert result["Impact"]["frame_index"] == 130
+    assert result["Finish"]["frame_index"] == 167
+    # Top 被重定位到 (Address, Impact) 区间内的次峰，而非停留在乱序的 141
+    assert result["Top"]["frame_index"] == 90
+    assert 35 < result["Top"]["frame_index"] < 130
+
+
 def test_constrained_events_strictly_increasing_on_tie():
     """相邻过渡事件 argmax 到同一帧时，严格递增强制把后者后推 1 帧。
 

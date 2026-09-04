@@ -24,7 +24,7 @@ import os
 import threading
 import time
 from pathlib import Path
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, List, Optional, Sequence, Tuple
 
 from . import (
     config,
@@ -196,6 +196,106 @@ def _detect_dtl_events_swingnet(
     return events
 
 
+def _try_swingnet_raw(video_path: str, meta: VideoMeta) -> Optional[Dict[str, Dict]]:
+    """跑 SwingNet 返回 raw dict（``{事件名: {frame_index, confidence}}``），不做任何守卫。
+
+    Args:
+        video_path: 原视频路径（SwingNet 逐帧读原视频）。
+        meta: 视频元信息（保留入参以对齐调用方语义；当前实现不读它）。
+
+    Returns:
+        ``None`` 表示 SwingNet 不可用（异常 / 返回空 / 事件不全）；非 None 为 raw dict。
+    """
+    # 惰性导入：torch 只在 DTL SwingNet 路径按需加载（与 ``_detect_dtl_events_swingnet`` 一致）。
+    from .ai.swingnet_detector import SwingNetDetector
+
+    try:
+        raw = SwingNetDetector().detect(video_path)
+    except Exception as exc:  # noqa: BLE001 - 任何检测异常都回退，绝不拖垮主链路
+        logger.warning("SwingNet detect failed (raw pass): %s", exc)
+        return None
+    if not raw or len(raw) != len(_SWINGNET_PHASE_MAP):
+        logger.warning(
+            "SwingNet returned %d events (expected %d), raw pass unavailable",
+            len(raw) if raw else 0,
+            len(_SWINGNET_PHASE_MAP),
+        )
+        return None
+    return raw
+
+
+def _merge_dtl_events_per_event(
+    sw_raw: Dict[str, Dict],
+    re_events: Sequence[SwingEvent],
+    meta: VideoMeta,
+    frames: List[FrameLandmarks],
+    threshold: float,
+) -> Tuple[List[SwingEvent], bool]:
+    """DTL per-event 混合：每个阶段 conf ≥ threshold 用 SwingNet，否则用规则引擎。
+
+    Args:
+        sw_raw: ``SwingNetDetector.detect`` 的输出（``{事件名: {frame_index, confidence}}``）。
+        re_events: 规则引擎 ``segment_swing`` 的 8 个事件（已单调）。
+        meta: 视频元信息（``fps`` / ``sample_step``）。
+        frames: ``pose_extractor.extract`` 的采样序列（用于 ``array_index`` 转换）。
+        threshold: conf 阈值（默认 :data:`config.SWINGNET_MIX_THRESHOLD`）。
+
+    Returns:
+        ``(events, impact_from_swingnet)``——events 严格单调，``impact_from_swingnet``
+        表示 Impact 阶段是否来自 SwingNet（用于 pipeline 主流程控制 M3 击球校正开关）。
+    """
+    # SwingNet 事件名 -> PhaseKey 顺序：与 PHASE_ORDER 完全一致
+    sw_names = list(_SWINGNET_PHASE_MAP.keys())
+    phase_keys = list(_SWINGNET_PHASE_MAP.values())
+
+    re_by_key = {e.key: e for e in re_events}
+    fps = float(meta.fps)
+    step = max(1, int(meta.sample_step))
+    n = len(frames)
+
+    # 按 phase 顺序判断来源
+    picks: List[Tuple[PhaseKey, int, bool, bool]] = []  # (key, frame_index, from_swingnet, estimated)
+    for sw_name, key in zip(sw_names, phase_keys):
+        sw_fi = int(sw_raw[sw_name]["frame_index"])
+        sw_conf = float(sw_raw[sw_name]["confidence"])
+        re_e = re_by_key.get(key)
+        if re_e is None:
+            # 防御：理论上不会发生（re_events 是 segment_swing 输出，恒 8 个）
+            picks.append((key, sw_fi, True, False))
+            continue
+        if sw_conf >= threshold:
+            picks.append((key, sw_fi, True, False))
+        else:
+            picks.append((key, int(re_e.frame_index), False, bool(re_e.estimated)))
+
+    # 单调守卫：相邻阶段 fi 非递增时后推 1 帧（保留物理时序）
+    for i in range(1, len(picks)):
+        prev_fi = picks[i - 1][1]
+        if picks[i][1] <= prev_fi:
+            picks[i] = (picks[i][0], prev_fi + 1, picks[i][2], picks[i][3])
+    # 防越界
+    picks = [(k, min(fi, max(0, n - 1)), fs, est) for (k, fi, fs, est) in picks]
+
+    # 构造 SwingEvent
+    events: List[SwingEvent] = []
+    impact_from_swingnet = False
+    for idx, (key, fi, from_sw, est) in enumerate(picks):
+        array_index = max(0, min(n - 1, fi // step))
+        events.append(
+            SwingEvent(
+                index=PHASE_META[key].index,
+                key=key,
+                frame_index=fi,
+                timestamp=round(fi / fps, 3) if fps > 0 else 0.0,
+                estimated=est,
+                array_index=array_index,
+            )
+        )
+        if key is PhaseKey.IMPACT and from_sw:
+            impact_from_swingnet = True
+    return events, impact_from_swingnet
+
+
 def _segment_events(
     video_path: str,
     meta: VideoMeta,
@@ -216,14 +316,28 @@ def _segment_events(
         SwingNet（后续跳过 CLUBLITE refine/reanchor，避免对已准的 Impact 引入偏差）。
     """
     if view is CameraView.DOWN_THE_LINE:
+        # 总是先跑规则引擎（per-event 混合的兜底数据源）
+        re_events = segmenter.segment_swing(
+            frames, meta.fps, sig=signals, aspect=aspect, view=view
+        )
         if config.SWINGNET_ENABLED:
-            events = _detect_dtl_events_swingnet(video_path, meta, frames, signals)
-            if events is not None:
-                return events, True
-            logger.warning("DTL SwingNet 不可用，回退规则引擎切分")
+            sw_raw = _try_swingnet_raw(video_path, meta)
+            if sw_raw is not None:
+                if config.SWINGNET_MIX_ENABLED:
+                    events, impact_from_sw = _merge_dtl_events_per_event(
+                        sw_raw, re_events, meta, frames, config.SWINGNET_MIX_THRESHOLD
+                    )
+                    return events, impact_from_sw
+                # 关闭 per-event 混合：保留原二元语义（SWINGNET_MIN_IMPACT_CONF 守卫 + 单调守卫）
+                events = _detect_dtl_events_swingnet(video_path, meta, frames, signals)
+                if events is not None:
+                    return events, True
+            logger.warning("DTL SwingNet 不可用，全用规则引擎")
         else:
-            logger.info("SwingNet 已关闭（SWINGNET_ENABLED=False），DTL 回退规则引擎")
+            logger.info("SwingNet 已关闭（SWINGNET_ENABLED=False），全用规则引擎")
+        return re_events, False
 
+    # face-on：保持规则引擎（逐字节不变）
     events = segmenter.segment_swing(
         frames, meta.fps, sig=signals, aspect=aspect, view=view
     )

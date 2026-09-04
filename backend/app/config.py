@@ -725,6 +725,14 @@ SWINGNET_ENABLED: Final[bool] = True
 #: 概率分布会被摊薄，argmax 得到的 Impact 不再可靠）。默认 0.3。
 SWINGNET_MIN_IMPACT_CONF: Final[float] = 0.3
 
+#: per-event 混合阈值：DTL 上 SwingNet 阶段 conf ≥ 此值用 SwingNet（高精度），
+#: 否则用规则引擎（用户视觉验证稳定）。0.30 与 SWINGNET_MIN_IMPACT_CONF 同档位，
+#: 适合 SwingNet 8 阶段 conf 普遍偏低的 DTL 场景（实测 9660113a 7/8 conf < 0.15）。
+SWINGNET_MIX_THRESHOLD: Final[float] = 0.30
+
+#: per-event 混合总开关。False 时维持原 DTL→SwingNet 失败回退规则引擎的二元语义。
+SWINGNET_MIX_ENABLED: Final[bool] = True
+
 
 # ---------------------------------------------------------------------------
 # 12. GolfPose ONNX（球杆检测器 + 5 关键点，生产环境推理用）

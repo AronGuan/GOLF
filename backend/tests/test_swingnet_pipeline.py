@@ -57,6 +57,17 @@ def _result(frame_indices, impact_conf: float = 0.9, other_conf: float = 0.9):
     }
 
 
+def _result_with_conf(frame_indices, confs):
+    """按 ``{事件名: conf}`` 构造 detect 返回结构（未列出的默认 0.9）。"""
+    return {
+        name: {
+            "frame_index": frame_indices[name],
+            "confidence": confs.get(name, 0.9),
+        }
+        for name in EVENT_NAMES_ORDER
+    }
+
+
 def _patch_swingnet(monkeypatch, result=None, exc=None):
     """替换 SwingNetDetector 为假实现，返回调用计数（``{"n": int}``）。"""
     calls = {"n": 0}
@@ -187,9 +198,17 @@ def test_segment_events_face_on_uses_rule_engine_not_swingnet(
 def test_segment_events_dtl_fallback_on_low_impact_confidence(
     monkeypatch, swing_frames, video_meta
 ):
-    """回退守卫①：Impact 置信度 < SWINGNET_MIN_IMPACT_CONF → 回退规则引擎。"""
-    calls = _patch_swingnet(monkeypatch, result=_result(EVENT_FRAMES, impact_conf=0.1))
+    """per-event 混合：Impact conf < 阈值 → Impact 用规则引擎，其他用 SwingNet。"""
     aspect, signals = _face_on_context(swing_frames, video_meta)
+    reference = segmenter.segment_swing(
+        swing_frames, video_meta.fps, sig=None, aspect=aspect, view=CameraView.DOWN_THE_LINE
+    )
+    re_impact = next(e for e in reference if e.key is PhaseKey.IMPACT).frame_index
+    # SwingNet Mid-downswing 落在规则引擎 Impact 之前，避免单调守卫把 Impact 后推，
+    # 从而让「Impact 精确用规则引擎帧号」的断言不被守卫污染。
+    fmap = dict(EVENT_FRAMES)
+    fmap["Mid-downswing"] = re_impact - 3
+    calls = _patch_swingnet(monkeypatch, result=_result(fmap, impact_conf=0.1))
 
     events, used_swingnet = pipeline._segment_events(
         "dummy.mp4", video_meta, swing_frames, signals, aspect, CameraView.DOWN_THE_LINE
@@ -197,16 +216,18 @@ def test_segment_events_dtl_fallback_on_low_impact_confidence(
 
     assert used_swingnet is False
     assert calls["n"] == 1
-    reference = segmenter.segment_swing(
-        swing_frames, video_meta.fps, sig=None, aspect=aspect, view=CameraView.DOWN_THE_LINE
-    )
-    assert _frame_indices(events) == _frame_indices(reference)
+    by_key = {e.key: e for e in events}
+    assert by_key[PhaseKey.IMPACT].frame_index == re_impact
+    for key, name in zip(PHASE_ORDER, EVENT_NAMES_ORDER):
+        if key is PhaseKey.IMPACT:
+            continue
+        assert by_key[key].frame_index == fmap[name]
 
 
 def test_segment_events_dtl_fallback_on_non_monotonic(
     monkeypatch, swing_frames, video_meta
 ):
-    """回退守卫②：8 事件 frame_index 不单调递增 → 回退规则引擎。"""
+    """per-event 混合：SwingNet 非单调 → 单调守卫按挥杆顺序重排，不回退规则引擎。"""
     fmap = dict(EVENT_FRAMES)
     fmap["Finish"] = 20  # 时序乱（Finish 跑到 Top 之前）
     calls = _patch_swingnet(monkeypatch, result=_result(fmap))
@@ -216,12 +237,13 @@ def test_segment_events_dtl_fallback_on_non_monotonic(
         "dummy.mp4", video_meta, swing_frames, signals, aspect, CameraView.DOWN_THE_LINE
     )
 
-    assert used_swingnet is False
+    assert used_swingnet is True
     assert calls["n"] == 1
-    reference = segmenter.segment_swing(
-        swing_frames, video_meta.fps, sig=None, aspect=aspect, view=CameraView.DOWN_THE_LINE
-    )
-    assert _frame_indices(events) == _frame_indices(reference)
+    by_key = {e.key: e for e in events}
+    # 前 7 阶段 conf 高仍按 SwingNet 位置；Finish 被单调守卫后推到前驱 +1。
+    for key, name in zip(PHASE_ORDER[:7], EVENT_NAMES_ORDER[:7]):
+        assert by_key[key].frame_index == fmap[name]
+    assert by_key[PhaseKey.FINISH].frame_index == fmap["Mid-follow-through"] + 1
 
 
 def test_segment_events_dtl_fallback_on_exception(monkeypatch, swing_frames, video_meta):
@@ -264,3 +286,83 @@ def test_segment_events_dtl_swingnet_disabled(monkeypatch, swing_frames, video_m
     assert used_swingnet is False
     assert calls["n"] == 0
     assert len(events) == 8
+
+
+def test_segment_events_dtl_per_event_mix_all_high_uses_swingnet(
+    monkeypatch, swing_frames, video_meta
+):
+    """per-event 混合：全部阶段 conf ≥ 阈值 → 输出 = SwingNet 8 阶段，used_swingnet=True。"""
+    calls = _patch_swingnet(monkeypatch, result=_result(EVENT_FRAMES))
+    aspect, signals = _face_on_context(swing_frames, video_meta)
+
+    events, used_swingnet = pipeline._segment_events(
+        "dummy.mp4", video_meta, swing_frames, signals, aspect, CameraView.DOWN_THE_LINE
+    )
+
+    assert used_swingnet is True
+    assert calls["n"] == 1
+    assert _frame_indices(events) == [EVENT_FRAMES[n] for n in EVENT_NAMES_ORDER]
+
+
+def test_segment_events_dtl_per_event_mix_low_conf_falls_back_to_rule_per_phase(
+    monkeypatch, swing_frames, video_meta
+):
+    """per-event 混合：Address conf 低 → Address 用规则引擎，其他用 SwingNet。"""
+    result = _result_with_conf(EVENT_FRAMES, {"Address": 0.1})
+    calls = _patch_swingnet(monkeypatch, result=result)
+    aspect, signals = _face_on_context(swing_frames, video_meta)
+
+    events, used_swingnet = pipeline._segment_events(
+        "dummy.mp4", video_meta, swing_frames, signals, aspect, CameraView.DOWN_THE_LINE
+    )
+
+    assert used_swingnet is True  # Impact 仍来自 SwingNet
+    assert calls["n"] == 1
+    reference = segmenter.segment_swing(
+        swing_frames, video_meta.fps, sig=None, aspect=aspect, view=CameraView.DOWN_THE_LINE
+    )
+    re_addr = next(e for e in reference if e.key is PhaseKey.ADDRESS).frame_index
+    by_key = {e.key: e for e in events}
+    assert by_key[PhaseKey.ADDRESS].frame_index == re_addr
+    for key, name in zip(PHASE_ORDER, EVENT_NAMES_ORDER):
+        if key is PhaseKey.ADDRESS:
+            continue
+        assert by_key[key].frame_index == EVENT_FRAMES[name]
+
+
+def test_segment_events_dtl_per_event_mix_impact_low_uses_rule_for_impact(
+    monkeypatch, swing_frames, video_meta
+):
+    """per-event 混合：Impact conf 低 → Impact 用规则引擎，其他用 SwingNet，used_swingnet=False。"""
+    aspect, signals = _face_on_context(swing_frames, video_meta)
+    reference = segmenter.segment_swing(
+        swing_frames, video_meta.fps, sig=None, aspect=aspect, view=CameraView.DOWN_THE_LINE
+    )
+    re_impact = next(e for e in reference if e.key is PhaseKey.IMPACT).frame_index
+    # SwingNet 帧号与规则引擎错开，使混合后严格单调、Impact 精确落到规则引擎帧号
+    # （不被单调守卫后推）。
+    fmap = {
+        "Address": 10,
+        "Toe-up": 20,
+        "Mid-backswing": 30,
+        "Top": 40,
+        "Mid-downswing": re_impact - 3,
+        "Impact": re_impact + 40,
+        "Mid-follow-through": re_impact + 12,
+        "Finish": re_impact + 27,
+    }
+    result = _result_with_conf(fmap, {"Impact": 0.1})
+    calls = _patch_swingnet(monkeypatch, result=result)
+
+    events, used_swingnet = pipeline._segment_events(
+        "dummy.mp4", video_meta, swing_frames, signals, aspect, CameraView.DOWN_THE_LINE
+    )
+
+    assert used_swingnet is False  # Impact 不是 SwingNet 出的 → M3 不会启用
+    assert calls["n"] == 1
+    by_key = {e.key: e for e in events}
+    assert by_key[PhaseKey.IMPACT].frame_index == re_impact
+    for key, name in zip(PHASE_ORDER, EVENT_NAMES_ORDER):
+        if key is PhaseKey.IMPACT:
+            continue
+        assert by_key[key].frame_index == fmap[name]
