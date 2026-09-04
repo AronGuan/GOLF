@@ -34,6 +34,7 @@ import pytest
 from app import config, frame_reader, geometry, impact_refiner, segmenter
 from app.schemas import (
     CameraView,
+    FrameLandmarks,
     PhaseKey,
     SwingEvent,
     VideoMeta,
@@ -168,6 +169,21 @@ def _swing_events() -> List[SwingEvent]:
 def _swing_signals():
     frames = make_swing_frames()
     return segmenter.build_signals(frames, FPS, aspect=1.0)
+
+
+@pytest.fixture(autouse=True)
+def _physical_guards_off(monkeypatch):
+    """默认**关闭** 2026-09-04 新增的物理窗口守卫。
+
+    合成挥杆的事件分布本身不物理：top=42、refine 目标 56（= ``T_CONTACT``
+    57 加 ``CLUBLITE_IMPACT_OFFSET`` -1），下杆 (56-42)/30 = **0.467s**，
+    远超真实下杆 0.20~0.30s。若启用守卫会被一致拒绝，反而掩盖本文件真正
+    要测的 refine 核心逻辑（M1 运动峰 / M2 杆身 / D 方案锚点）。
+
+    守卫的专项验证见 :class:`TestPhysicalGuard`。
+    """
+    monkeypatch.setattr(config, "CLUBLITE_MIN_FOLLOW_THROUGH_SEC", 0.0)
+    monkeypatch.setattr(config, "CLUBLITE_MAX_DOWNSTROKE_SEC", 999.0)
 
 
 # ---------------------------------------------------------------------------
@@ -564,6 +580,116 @@ class TestShaftLowestY:
 
 
 # ---------------------------------------------------------------------------
+# 方案 A：M2 全窗口化（_shaft_scan_window / _pick_full_window_anchor）
+# ---------------------------------------------------------------------------
+
+
+class TestM2FullWindow:
+    """方案 A（2026-09-04）：锚点来源扩大到整个 refine 窗口。"""
+
+    @staticmethod
+    def _line_frame(grip, head):
+        """画一张 400×600 图，含 grip->head 的竖直杆身线。"""
+        img = np.full((400, 600, 3), 70, dtype=np.uint8)
+        cv2.line(
+            img,
+            (int(grip[0]), int(grip[1])),
+            (int(head[0]), int(head[1])),
+            (60, 60, 255),
+            6,
+            cv2.LINE_AA,
+        )
+        return img
+
+    @staticmethod
+    def _mk_frame(frame_index, grip_px, w=600, h=400):
+        """构造 FrameLandmarks，双腕中点 = grip_px（供 _shaft_scan_window 取握把）。"""
+        norm = np.zeros((geometry.NUM_LANDMARKS, 3), dtype=np.float64)
+        gx, gy = grip_px[0] / w, grip_px[1] / h
+        norm[geometry.L_WRIST] = [gx, gy, 0.0]
+        norm[geometry.R_WRIST] = [gx, gy, 0.0]
+        return FrameLandmarks(
+            frame_index=frame_index,
+            timestamp=frame_index / 30.0,
+            detected=True,
+            norm=norm,
+            world=np.zeros((geometry.NUM_LANDMARKS, 3), dtype=np.float64),
+            visibility=np.ones(geometry.NUM_LANDMARKS, dtype=np.float64),
+        )
+
+    # ---- _pick_full_window_anchor（纯逻辑）----
+
+    def test_pick_anchor_prefers_lowest_with_motion(self):
+        shaft_ys = {0: 300.0, 1: 340.0, 2: 200.0}
+        raw_motion = np.array([5.0, 4.0, 6.0])
+        off = impact_refiner._pick_full_window_anchor(shaft_ys, raw_motion, 0.2)
+        assert off == 1  # 340 最大且 motion 4.0 >= 0.2*6
+
+    def test_pick_anchor_skips_lowest_when_static(self):
+        shaft_ys = {0: 340.0, 1: 300.0}
+        raw_motion = np.array([0.5, 5.0])  # offset 0 静止（0.5 < 0.2*5）
+        off = impact_refiner._pick_full_window_anchor(shaft_ys, raw_motion, 0.2)
+        assert off == 1  # 跳过最低但静止的 0
+
+    def test_pick_anchor_none_when_all_below_threshold(self):
+        """杆身检出帧的运动强度均低于门槛（强运动在别的帧）-> None。
+
+        这正是运动支持门槛要防御的：Hough 在静止帧检出假阳性，而真实运动
+        在窗口内其他帧，此时锚点不可信，应回退 Top-K。
+        """
+        shaft_ys = {0: 340.0}  # 只在 offset 0 检出杆身
+        raw_motion = np.array([0.1, 5.0])  # 最大强度 5.0 在 offset 1
+        assert (
+            impact_refiner._pick_full_window_anchor(shaft_ys, raw_motion, 0.2)
+            is None
+        )
+
+    def test_pick_anchor_none_when_empty(self):
+        assert (
+            impact_refiner._pick_full_window_anchor({}, np.array([1.0]), 0.2)
+            is None
+        )
+
+    # ---- _shaft_scan_window ----
+
+    def test_scan_window_returns_empty_for_no_frames(self):
+        assert (
+            impact_refiner._shaft_scan_window(
+                [], {}, [], [], 600, 400, 200.0, CameraView.FACE_ON
+            )
+            == {}
+        )
+
+    def test_scan_window_uses_per_frame_grip(self):
+        """逐帧扫描，各自帧用自己的握把定位杆头端点。"""
+        grip0 = np.array([300.0, 150.0])
+        head0 = np.array([300.0, 330.0])
+        grip1 = np.array([200.0, 150.0])
+        head1 = np.array([200.0, 300.0])
+        frames = [
+            self._mk_frame(100, grip0),
+            self._mk_frame(101, grip1),
+        ]
+        frames_bgr = {
+            100: self._line_frame(grip0, head0),
+            101: self._line_frame(grip1, head1),
+        }
+        result = impact_refiner._shaft_scan_window(
+            [100, 101],
+            frames_bgr,
+            frames,
+            [0, 1],
+            600,
+            400,
+            200.0,
+            CameraView.FACE_ON,
+        )
+        assert set(result.keys()) == {0, 1}
+        assert abs(result[0] - head0[1]) < 8
+        assert abs(result[1] - head1[1]) < 8
+
+
+# ---------------------------------------------------------------------------
 # D 方案：M2 杆身最低点先验锚点邻域（横扫式运动峰偏晚修正）
 # ---------------------------------------------------------------------------
 
@@ -819,3 +945,401 @@ class TestRendererMarker:
             a = (tmp_path / "plain" / name).read_bytes()
             b = (tmp_path / "with_marker_arg" / name).read_bytes()
             assert a == b, f"{key}: DRAW_MARKER=False 时应逐字节一致"
+
+
+# ---------------------------------------------------------------------------
+# 2026-09-04 新增：物理窗口守卫
+# ---------------------------------------------------------------------------
+
+
+class TestPhysicalGuard:
+    """下杆上界 + 送杆下界守卫。
+
+    合成挥杆：top=42、impact（locate_impact 原值）=51、finish=73、fps=30。
+    refine 目标 = ``T_CONTACT``(57) + ``CLUBLITE_IMPACT_OFFSET``(-1) = **56**。
+
+    - 下杆 (56-42)/30 = **0.467s** > 0.40s 上限 -> 下杆守卫应拒绝
+    - 送杆 (73-56)/30 = 0.567s > 0.25s 下限 -> 送杆守卫放行
+
+    .. note::
+       本类的两个守卫共用 ``refine_impact`` 里同一段判定
+       （``if not (lower_ok and follow_ok and down_ok)``）。这里用合成数据
+       覆盖**下杆上界**；**送杆下界**依赖 finish 与 refine 目标贴近的样本，
+       由真实素材端到端验证（横屏 impact=38 / finish=41，送杆仅 0.10s）。
+    """
+
+    def _refine(self, tmp_path, video_meta, name):
+        path = _write_club_video(str(tmp_path / name))
+        return impact_refiner.refine_impact(
+            path,
+            make_swing_frames(),
+            _swing_events(),
+            _swing_signals(),
+            CameraView.FACE_ON,
+            video_meta,
+        )
+
+    def test_downstroke_upper_bound_rejects(self, tmp_path, video_meta, monkeypatch):
+        """下杆 0.467s 超过 0.40s 硬上限 -> G0，保持 locate_impact 原值。"""
+        monkeypatch.setattr(config, "CLUBLITE_MAX_DOWNSTROKE_SEC", 0.40)
+        monkeypatch.setattr(config, "CLUBLITE_MIN_FOLLOW_THROUGH_SEC", 0.25)
+        result = self._refine(tmp_path, video_meta, "guard_reject.mp4")
+        assert not result.available
+        assert result.method == "none"
+        # 被拒前算出的目标帧仍保留在结果里，便于线上排查
+        assert result.new_array_index == 56
+        # 拒绝 = 保持 locate_impact 原值，不做任何位移
+        assert result.old_array_index == 51
+
+    def test_guard_off_restores_refine(self, tmp_path, video_meta, monkeypatch):
+        """守卫放宽到不生效时，恢复原有 refine 行为（回归保护）。"""
+        monkeypatch.setattr(config, "CLUBLITE_MAX_DOWNSTROKE_SEC", 999.0)
+        monkeypatch.setattr(config, "CLUBLITE_MIN_FOLLOW_THROUGH_SEC", 0.0)
+        result = self._refine(tmp_path, video_meta, "guard_off.mp4")
+        assert result.available
+        assert result.new_array_index == 56
+        assert result.delta_frames == 5
+
+
+# ---------------------------------------------------------------------------
+# M3：fresh _detect_hough 杆头最低点击球帧校正（2026-09-04 用户拍板「方案 A」）
+# ---------------------------------------------------------------------------
+
+
+class TestM3FreshAnchor:
+    """M3：以「杆头离地面最近的点」直接作为击球帧。
+
+    与 M2 全窗口化（``_shaft_scan_window`` / 简化 ``_shaft_lowest_y``）的
+    本质区别：改用路径 A 的完整 ``_detect_hough``（ROI + 扇形 + body_mask +
+    skeleton 四道过滤），并以 fresh 模式（fan/dir_tol 拉满）逐帧独立检测。
+    """
+
+    @staticmethod
+    def _line_frame(grip, head):
+        """画一张 400×600 图，含 grip->head 的竖直杆身线。"""
+        img = np.full((400, 600, 3), 70, dtype=np.uint8)
+        cv2.line(
+            img,
+            (int(grip[0]), int(grip[1])),
+            (int(head[0]), int(head[1])),
+            (60, 60, 255),
+            6,
+            cv2.LINE_AA,
+        )
+        return img
+
+    @staticmethod
+    def _mk_frame(frame_index, grip_px, w=600, h=400):
+        """构造 FrameLandmarks，双腕中点 = grip_px。"""
+        norm = np.zeros((geometry.NUM_LANDMARKS, 3), dtype=np.float64)
+        gx, gy = grip_px[0] / w, grip_px[1] / h
+        norm[geometry.L_WRIST] = [gx, gy, 0.0]
+        norm[geometry.R_WRIST] = [gx, gy, 0.0]
+        return FrameLandmarks(
+            frame_index=frame_index,
+            timestamp=frame_index / 30.0,
+            detected=True,
+            norm=norm,
+            world=np.zeros((geometry.NUM_LANDMARKS, 3), dtype=np.float64),
+            visibility=np.ones(geometry.NUM_LANDMARKS, dtype=np.float64),
+        )
+
+    def test_scan_window_fresh_empty(self):
+        assert (
+            impact_refiner._shaft_scan_window_fresh(
+                [], {}, [], [], 600, 400, 200.0, CameraView.FACE_ON
+            )
+            == {}
+        )
+
+    def test_scan_window_fresh_detects_shaft(self):
+        """fresh 扫描能检出杆身线，杆头端点 y 落在握把下方（y 更大）。"""
+        grip = np.array([300.0, 150.0])
+        head = np.array([300.0, 330.0])
+        frames = [self._mk_frame(100, grip)]
+        frames_bgr = {100: self._line_frame(grip, head)}
+        result = impact_refiner._shaft_scan_window_fresh(
+            [100], frames_bgr, frames, [0], 600, 400, 200.0,
+            CameraView.FACE_ON,
+        )
+        assert 0 in result
+        assert result[0] > grip[1], "杆头应在握把下方"
+        assert abs(result[0] - head[1]) < 25
+
+    def test_lowest_point_disabled_returns_none(self, tmp_path, video_meta, monkeypatch):
+        """显式关闭 M3 -> 返回 None（调用方保持原值）。"""
+        monkeypatch.setattr(config, "CLUBLITE_M3_FRESH_ANCHOR", False)
+        path = _write_club_video(str(tmp_path / "m3_off.mp4"))
+        result = impact_refiner.refine_impact_lowest_point(
+            path, make_swing_frames(), _swing_events(), _swing_signals(),
+            CameraView.FACE_ON, video_meta,
+        )
+        assert result is None
+
+    def test_lowest_point_orchestrates(self, tmp_path, video_meta, monkeypatch):
+        """M3 编排（mock 扫描/挑锚）：最低点 -> 返回校正后下标。
+
+        合成视频的「杆」贴着腿、长度与杆长先验不符，会被 ``_detect_hough`` 的
+        骨架共线过滤误杀（真实 11.mp4 上 49/49 命中，见 .workbuddy 探针），
+        故这里 mock 掉扫描与挑锚两步，专测编排：窗口规划 -> 扫描 -> 挑锚 ->
+        物理守卫 -> 位移守卫 -> 返回。
+        """
+        monkeypatch.setattr(config, "CLUBLITE_M3_FRESH_ANCHOR", True)
+        path = _write_club_video(str(tmp_path / "m3_mock.mp4"))
+        frames = make_swing_frames()
+        events = _swing_events()
+        signals = _swing_signals()
+        impact = next(e for e in events if e.key is PhaseKey.IMPACT)
+
+        monkeypatch.setattr(
+            impact_refiner, "_shaft_scan_window_fresh",
+            lambda *a, **k: {0: 100.0, 1: 200.0, 2: 300.0, 3: 900.0},
+        )
+        # 最低点放偏移 3（array = 窗口起点 49 + 3 = 52 = impact + 1）
+        monkeypatch.setattr(
+            impact_refiner, "_pick_full_window_anchor",
+            lambda shaft_ys, raw_motion, ratio: 3,
+        )
+        result = impact_refiner.refine_impact_lowest_point(
+            path, frames, events, signals, CameraView.FACE_ON, video_meta,
+        )
+        assert result == impact.array_index + 1
+
+    def test_lowest_point_min_shift_guard(self, tmp_path, video_meta, monkeypatch):
+        """M3 位移守卫：delta=0（最低点 == 原 impact）-> None（不采纳）。"""
+        monkeypatch.setattr(config, "CLUBLITE_M3_FRESH_ANCHOR", True)
+        path = _write_club_video(str(tmp_path / "m3_shift.mp4"))
+        frames = make_swing_frames()
+        events = _swing_events()
+        signals = _swing_signals()
+        impact = next(e for e in events if e.key is PhaseKey.IMPACT)
+        monkeypatch.setattr(
+            impact_refiner, "_shaft_scan_window_fresh",
+            lambda *a, **k: {2: 300.0},
+        )
+        monkeypatch.setattr(
+            impact_refiner, "_pick_full_window_anchor",
+            lambda shaft_ys, raw_motion, ratio: 2,
+        )
+        result = impact_refiner.refine_impact_lowest_point(
+            path, frames, events, signals, CameraView.FACE_ON, video_meta,
+        )
+        # 偏移 2 -> array 51 == impact，delta=0 < MIN_SHIFT -> None
+        assert result is None
+
+    def test_lowest_point_never_raises(self, tmp_path, video_meta, monkeypatch):
+        """模块级硬约束：M3 开关开启时坏输入也不外抛异常。"""
+        monkeypatch.setattr(config, "CLUBLITE_M3_FRESH_ANCHOR", True)
+        path = str(tmp_path / "bad.mp4")
+        with open(path, "wb") as fh:
+            fh.write(b"not a real video")
+        result = impact_refiner.refine_impact_lowest_point(
+            path, make_swing_frames(), _swing_events(), _swing_signals(),
+            CameraView.FACE_ON, video_meta,
+        )
+        assert result is None
+
+
+class TestRefineAnchorNeighborhood:
+    """方案 B：几何锚点邻域 ±1 精修（_refine_anchor_neighborhood）。
+
+    门控判据：锚点 y 优势（margin）≥ 门槛 → 信几何保持锚点；否则最低点落在
+    两帧之间，用邻域 ±1 motion 峰精修。门槛 = y_margin_ratio × club_len_px。
+    """
+
+    def test_strong_geometry_keeps_anchor(self):
+        """几何信号强（margin ≥ 门槛）→ 保持锚点，不被邻域 motion 峰带偏。
+
+        对应 11.mp4 / 470057ac：锚点已命中真值，motion 峰反而偏 1 帧。
+        """
+        shaft_ys = {3: 900.0, 2: 800.0, 4: 810.0}
+        raw_motion = np.array([0.0, 1.0, 2.0, 3.0, 9.9, 1.0])  # 峰在 off=4
+        off = impact_refiner._refine_anchor_neighborhood(
+            3, shaft_ys, raw_motion, club_len_px=200.0, y_margin_ratio=0.20,
+        )
+        # margin = 900 - 810 = 90 ≥ 0.20*200 = 40 → 保持 3
+        assert off == 3
+
+    def test_weak_geometry_refines_to_motion_peak(self):
+        """几何信号弱（margin < 门槛）→ 邻域 ±1 motion 峰精修。
+
+        对应 c6f67f38：杆头最低点 178 偏早 1 帧，击球瞬间 179 由运动峰表征。
+        """
+        shaft_ys = {3: 835.0, 2: 798.0, 4: 819.0}
+        raw_motion = np.array([0.0, 1.0, 4.7, 9.1, 9.3, 1.0])  # 峰在 off=4
+        off = impact_refiner._refine_anchor_neighborhood(
+            3, shaft_ys, raw_motion, club_len_px=200.0, y_margin_ratio=0.20,
+        )
+        # margin = 835 - 819 = 16 < 40 → 精修到 off=4
+        assert off == 4
+
+    def test_off_missing_in_shaft_ys_returns_off(self):
+        """锚点不在 shaft_ys 中 → 原样返回（不越界）。"""
+        raw_motion = np.array([1.0, 2.0, 3.0])
+        assert (
+            impact_refiner._refine_anchor_neighborhood(
+                1, {2: 100.0}, raw_motion, 200.0, 0.20,
+            )
+            == 1
+        )
+
+    def test_no_neighbor_detection_returns_off(self):
+        """邻域帧无杆检测 → 保守保持锚点（不做无依据的精修）。"""
+        raw_motion = np.array([1.0, 2.0, 3.0, 4.0, 5.0])
+        assert (
+            impact_refiner._refine_anchor_neighborhood(
+                2, {2: 500.0}, raw_motion, 200.0, 0.20,
+            )
+            == 2
+        )
+
+    def test_boundary_clamp(self):
+        """off=0 边界：邻域 clamp 到 [0,1]，motion 峰不越界。"""
+        shaft_ys = {0: 500.0, 1: 499.0}
+        raw_motion = np.array([0.0, 5.0, 9.0])  # 峰在 off=2（越界，应被 clamp）
+        off = impact_refiner._refine_anchor_neighborhood(
+            0, shaft_ys, raw_motion, club_len_px=200.0, y_margin_ratio=0.20,
+        )
+        # margin = 500 - 499 = 1 < 40 → 精修；邻域 [0,1] argmax=1 → off=1
+        assert off == 1
+
+
+# ---------------------------------------------------------------------------
+# Pipeline helper：M3 在 SwingNet / 规则引擎两条路径上的统一入口
+# （2026-09-04 接线：M3 优先于 CLUBLITE 主流程）
+# ---------------------------------------------------------------------------
+
+
+class TestPipelineM3Hook:
+    """``pipeline._try_m3_lowest_point``：M3 在两条路径上的复用 helper。
+
+    设计约束（2026-09-04 用户拍板）：
+    - 命中（M3 函数返 idx + reanchor 返 events）→ 返回新 events；
+    - 任一步失败（M3 返回 None / reanchor 返回 None）→ 返回 None（pipeline 走 fallback）；
+    - 任何异常被吞，返回 None（不阻断主链路）。
+    """
+
+    def test_helper_returns_new_events_on_success(self, monkeypatch):
+        """M3 命中 + reanchor 成功 -> 返回新 events。"""
+        from app import pipeline
+
+        new_events_obj = object()
+
+        monkeypatch.setattr(
+            impact_refiner, "refine_impact_lowest_point",
+            lambda *a, **k: 100,
+        )
+        monkeypatch.setattr(
+            segmenter, "reanchor_impact",
+            lambda *a, **k: new_events_obj,
+        )
+
+        result = pipeline._try_m3_lowest_point(
+            video_path="", frames=[], events=[],
+            signals=object(), view=CameraView.DOWN_THE_LINE, meta=object(),
+            frames_bgr={}, task_id="t1",
+        )
+        assert result is new_events_obj
+
+    def test_helper_returns_none_when_lowest_point_fails(self, monkeypatch):
+        """M3 函数返 None -> helper 返 None（不调 reanchor）。"""
+        from app import pipeline
+
+        reanchor_called = {"n": 0}
+        monkeypatch.setattr(
+            impact_refiner, "refine_impact_lowest_point",
+            lambda *a, **k: None,
+        )
+        monkeypatch.setattr(
+            segmenter, "reanchor_impact",
+            lambda *a, **k: (reanchor_called.__setitem__("n", reanchor_called["n"] + 1) or object()),
+        )
+
+        result = pipeline._try_m3_lowest_point(
+            video_path="", frames=[], events=[],
+            signals=object(), view=CameraView.DOWN_THE_LINE, meta=object(),
+            frames_bgr={}, task_id="t1",
+        )
+        assert result is None
+        assert reanchor_called["n"] == 0
+
+    def test_helper_returns_none_when_reanchor_fails(self, monkeypatch):
+        """M3 命中但 reanchor 返 None -> helper 返 None。"""
+        from app import pipeline
+
+        monkeypatch.setattr(
+            impact_refiner, "refine_impact_lowest_point",
+            lambda *a, **k: 100,
+        )
+        monkeypatch.setattr(
+            segmenter, "reanchor_impact",
+            lambda *a, **k: None,
+        )
+
+        result = pipeline._try_m3_lowest_point(
+            video_path="", frames=[], events=[],
+            signals=object(), view=CameraView.DOWN_THE_LINE, meta=object(),
+            frames_bgr={}, task_id="t1",
+        )
+        assert result is None
+
+    def test_helper_swallows_exceptions(self, monkeypatch):
+        """任何异常被吞 -> helper 返 None（不阻断 pipeline）。"""
+        from app import pipeline
+
+        def _boom(*a, **k):
+            raise RuntimeError("M3 internal boom")
+        monkeypatch.setattr(
+            impact_refiner, "refine_impact_lowest_point", _boom,
+        )
+
+        result = pipeline._try_m3_lowest_point(
+            video_path="", frames=[], events=[],
+            signals=object(), view=CameraView.DOWN_THE_LINE, meta=object(),
+            frames_bgr={}, task_id="t1",
+        )
+        assert result is None
+
+    def test_helper_skips_face_on(self, monkeypatch):
+        """face-on 机位 -> helper 直接返 None（不调 M3，保持 CLUBLITE 主流程）。"""
+        from app import pipeline
+
+        m3_called = {"n": 0}
+        def _spy(*a, **k):
+            m3_called["n"] += 1
+            return 100
+        monkeypatch.setattr(
+            impact_refiner, "refine_impact_lowest_point", _spy,
+        )
+        monkeypatch.setattr(
+            segmenter, "reanchor_impact", lambda *a, **k: object(),
+        )
+
+        result = pipeline._try_m3_lowest_point(
+            video_path="", frames=[], events=[],
+            signals=object(), view=CameraView.FACE_ON, meta=object(),
+            frames_bgr={}, task_id="t1",
+        )
+        assert result is None
+        assert m3_called["n"] == 0
+
+    def test_helper_runs_on_dtl(self, monkeypatch):
+        """DTL 机位 -> helper 走 M3（不因机位被 gate 掉）。"""
+        from app import pipeline
+
+        new_events_obj = object()
+        monkeypatch.setattr(
+            impact_refiner, "refine_impact_lowest_point",
+            lambda *a, **k: 100,
+        )
+        monkeypatch.setattr(
+            segmenter, "reanchor_impact",
+            lambda *a, **k: new_events_obj,
+        )
+
+        result = pipeline._try_m3_lowest_point(
+            video_path="", frames=[], events=[],
+            signals=object(), view=CameraView.DOWN_THE_LINE, meta=object(),
+            frames_bgr={}, task_id="t1",
+        )
+        assert result is new_events_obj

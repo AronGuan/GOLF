@@ -13,8 +13,29 @@ const MAX_DURATION = 20;
 /** 大小上限（字节） */
 const MAX_SIZE = 40 * 1024 * 1024;
 
-/** 机位定义（互斥二选一，v2） */
+/** 机位定义（2026-09-04：新增 auto 选项，默认走自动判定）
+ *
+ * - 显式选择（face_on / down_the_line）保留向后兼容：上传时携带该值，
+ *   后端做一致性校验（不一致会返回 ``WARN_VIEW_MISMATCH``，前端展示）。
+ * - auto：默认；由后端 view_detector 自动判定（实测 9/9 命中）。
+ *   改默认值的原因：之前默认 face_on 让 DTL 视频被错判为 face_on，
+ *   ClubProbe 等机位相关链路永远不触发。
+ */
 const VIEWS = {
+  auto: {
+    key: 'auto',
+    label: '自动判定',
+    sub: '系统根据画面自动识别（推荐）',
+    icon: '✨',
+    requirements: [
+      '选择此项后由系统自动判定机位',
+      '请保持机位单一，不要中途切换',
+      '保证全身入镜，球杆清晰可见',
+      '手机竖持固定，不要手持晃动',
+      '距离 2~3 米，时长 2~20 秒',
+      '建议 60fps 以上（拍摄设置）'
+    ]
+  },
   face_on: {
     key: 'face_on',
     label: '正面机位',
@@ -42,17 +63,27 @@ const VIEWS = {
       '请竖向拍摄（横拍视频无法识别）',
       '球杆与目标线在画面中清晰可见',
       '全身入镜，距离 2~3 米',
-      '时长 2~20 秒，只拍一次挥杆'
+      '时长 2~20 秒，只拍一次挥杆',
+      '建议 60fps 以上（拍摄设置）'
     ]
   }
+};
+
+/** 中文标签映射（req-tag、diagram-caption 都需要中文） */
+const VIEW_LABELS = {
+  auto: '自动',
+  face_on: '正面',
+  down_the_line: '侧面'
 };
 
 Page({
   data: {
     views: VIEWS,
-    /** 当前选中机位 key */
-    cameraView: 'face_on',
-    requirements: VIEWS.face_on.requirements,
+    /** 当前选中机位 key（默认 auto，由后端自动判定） */
+    cameraView: 'auto',
+    requirements: VIEWS.auto.requirements,
+    /** 机位中文标签 */
+    viewLabel: VIEW_LABELS,
     /** @type {object|null} 已选视频信息 */
     video: null,
     valid: false,

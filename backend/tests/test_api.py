@@ -198,15 +198,19 @@ class TestFieldNameCompat:
 
 
 class TestCameraView:
-    """``camera_view`` 必填二选一；缺省/非法值按 face_on 落值不硬拒。"""
+    """``camera_view`` 默认 AUTO；缺省/非法值按 AUTO 落值不硬拒（2026-09-04 改）。
 
-    def test_default_face_on(self, api_client, probe_bytes):
+    变更说明：之前默认 ``face_on`` 导致 DTL 视频被错判，ClubProbe 等机位相关
+    链路永远不触发。改默认 AUTO 后由 :func:`app.view_detector.resolve` 自动
+    判定（实测 9/9 命中），让真实 DTL 视频能自动识别。"""
+
+    def test_default_auto(self, api_client, probe_bytes):
         resp = create_task(api_client, probe_bytes)  # 不传 camera_view
         assert resp.status_code == 201, resp.text
         task_id = resp.json()["data"]["task_id"]
         state = task_store.get(task_id)
         assert state is not None
-        assert state.camera_view is CameraView.FACE_ON
+        assert state.camera_view is CameraView.AUTO
 
     def test_explicit_down_the_line(self, api_client, probe_bytes):
         resp = create_task(api_client, probe_bytes, camera_view="down_the_line")
@@ -221,17 +225,18 @@ class TestCameraView:
         assert state.camera_view is CameraView.FACE_ON
 
     def test_auto_accepted_internally(self, api_client, probe_bytes):
-        """``auto`` 内部可接受（B6：一致性校验用）。"""
+        """``auto`` 内部可接受；由 view_detector 在 pipeline 内解析为具体机位。"""
         resp = create_task(api_client, probe_bytes, camera_view="auto")
         assert resp.status_code == 201, resp.text
         state = task_store.get(resp.json()["data"]["task_id"])
         assert state.camera_view is CameraView.AUTO
 
-    def test_invalid_value_falls_back_face_on(self, api_client, probe_bytes):
+    def test_invalid_value_falls_back_auto(self, api_client, probe_bytes):
+        """非法值（如 ``side_view``）一律回退 AUTO，让后端自动判定兜底。"""
         resp = create_task(api_client, probe_bytes, camera_view="side_view")
         assert resp.status_code == 201, resp.text
         state = task_store.get(resp.json()["data"]["task_id"])
-        assert state.camera_view is CameraView.FACE_ON
+        assert state.camera_view is CameraView.AUTO
 
 
 # ---------------------------------------------------------------------------

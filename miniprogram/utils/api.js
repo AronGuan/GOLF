@@ -10,7 +10,7 @@
  */
 
 /** 后端基地址 */
-const BASE_URL = 'http://39.102.63.30:8000';
+const BASE_URL = 'http://127.0.0.1:8000';
 
 /** 接口前缀 */
 const API_PREFIX = '/api/v1';
@@ -122,7 +122,8 @@ function request(options) {
  * @return {Promise<{task_id:string, status:string}>}
  */
 function uploadVideo(filePath, cameraView, onProgress) {
-  const view = cameraView || 'face_on';
+  // 2026-09-04：默认从 'face_on' 改为 'auto'，与后端 _parse_camera_view 默认对齐
+  const view = cameraView || 'auto';
   return new Promise((resolve, reject) => {
     const task = wx.uploadFile({
       url: BASE_URL + API_PREFIX + '/task/create',

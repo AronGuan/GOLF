@@ -75,6 +75,11 @@ class MetricContext:
     #: 指标函数副作用写回：``{spec.key: (MetricSource, confidence)}``
     #: （L1 代理 / L0 实测置信度回传，避免改所有指标函数返回类型）
     source_of: Dict[str, Tuple[MetricSource, float]] = field(default_factory=dict)
+    # ---- 方案 A 球杆观测 ----
+    #: 阶段级球杆真值观测（由 :class:`app.ai.club_probe.ClubProbe` 注入）。
+    #: 指标函数按 ``obs.accepted`` 决定是否使用真值；
+    #: ``accepted=False`` 时按 PROXY 处理，前端展示「估算」标记。
+    club_obs: Dict["PhaseKey", object] = field(default_factory=dict)
 
     # -- 快捷访问 ---------------------------------------------------------
 
@@ -454,14 +459,35 @@ def m_max_head_drift_pct(ctx: MetricContext) -> float:
 
 
 def m_swing_plane(ctx: MetricContext) -> float:
-    """④ 顶点时引导臂（左肩 11 → 左腕 15）与图像水平线的夹角（°）。
+    """④ 顶点时杆身平面夹角（°）。
 
-    - 用【图像像素坐标】而非 world：PDD 口径是"与水平面的夹角"，DTL 机位下
-      图像水平线即地平线代理（拍摄指引强制手机保持水平）。
-    - 结果落在 [0, 180)，取锐角侧：``value > 90`` 时用 ``180 − value``。
+    **两路取值，三闸门**（2026-09-04 实测标定）：
+
+    - **L0 真值**（ClubProbe 已采信）：用 ``shaft → hosel`` 实测杆身方向。
+      触发条件见 :class:`app.ai.club_probe.ClubProbe._quality_gate`：
+      5 点得分全部 ≥ :data:`config.CLUB_ONNX_MIN_KP_SCORE` (0.50)、
+      骨架总长 ≥ 120px、shaft→hosel 基线 ≥ 40px（实测在横屏素材上
+      仅约 1/7 帧通过）。
+    - **L1 代理**（兜底）：用【引导臂】（左肩 11 → 左腕 15）与图像水平线夹角。
+      在 face-on / top 关键点不可见 / ClubProbe 未采信时使用。
+
+    实测真值与代理的差值在采信帧上噪声大（std ≈ 30°），
+    因此本函数严格只在**采信**时上报 ``source=MEASURED``，其余一律 ``PROXY``，
+    让前端如实标记「估算」并按 :data:`MetricSpec.proxy_ref_pad` 放宽参考区间。
+
+    - 取锐角侧 ``[0, 90]``：``angle > 90`` 时用 ``180 − angle``。
     - 关键点可见度守卫：左肩/左腕任一 ``visibility < 0.5`` -> 返回 NaN
       -> ``allow_drop`` 整项剔除（绝不填 ``ref_mid`` 造假绿值）。
     """
+    # ---- L0 真值路径：ClubProbe 已采信 ----------------------------- ---
+    obs = ctx.club_obs.get(PhaseKey.TOP)
+    if obs is not None and obs.accepted:
+        # 置信度按 obs 自身（ONNX=min_kp_score；rule=_detect_hough 综合打分）
+        conf = float(min(1.0, max(0.0, obs.confidence)))
+        ctx.source_of["swing_plane"] = (MetricSource.MEASURED, conf)
+        return float(obs.shaft_angle_deg)
+
+    # ---- L1 代理路径：左肩 → 左腕 ------------------------------------ ---
     top = ctx.frame_of(PhaseKey.TOP)
     if (
         not math.isfinite(float(top.visibility[geometry.L_SHOULDER]))
@@ -471,6 +497,13 @@ def m_swing_plane(ctx: MetricContext) -> float:
     ):
         ctx.warn("顶点关键点可见度不足，挥杆平面角无法计算，已跳过该指标")
         return float("nan")
+
+    # 代理值上报 source=PROXY，前端展示「估算」并按 proxy_ref_pad 放宽参考区间
+    if obs is not None and obs.available:
+        # 拿到了 5 点但未过质量门控 → 中等置信度（"观测到了但质量不够"）
+        ctx.source_of["swing_plane"] = (MetricSource.PROXY, 0.7)
+    else:
+        ctx.source_of["swing_plane"] = (MetricSource.PROXY, 0.6)
 
     a = _img_pt(ctx, top, geometry.L_SHOULDER)
     b = _img_pt(ctx, top, geometry.L_WRIST)

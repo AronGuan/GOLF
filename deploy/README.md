@@ -89,6 +89,13 @@ sudo journalctl -u golf-backend -n 100 --no-pager   # 最近 100 行
 - **`--workers 1`**：任务状态是内存 dict，多 worker 会让轮询请求落到没有该任务的进程。
 - **PyTorch 必须装 CPU 版**：`torch` 走官方 `download.pytorch.org/whl/cpu`（脚本 [4.5/7]），**不要**用清华 PyPI 源（Linux 下会装成几 GB 的 CUDA 版，含 NVIDIA 依赖）。
 - **SwingNet 权重需手动上传一次**：`backend/models/swingnet_1800.pth.tar`（63MB）在 `.gitignore` 里，`git pull` 不会同步。首次部署后在本地执行 `scp backend/models/swingnet_1800.pth.tar root@<公网IP>:/root/golf/GOLF/backend/models/`；缺失时 DTL 视频会自动回退规则引擎（不影响使用）。
+- **GolfPose ONNX 权重需手动上传一次**（2026-09-04）：`backend/models/golfpose_detector_2cls_yolox_s.onnx`（35.7MB）+ `backend/models/golfpose_club_hrnetw48.onnx`（254.4MB）同样不入 git（`.gitignore` 排除 `backend/models/*`）。首次部署后在本地执行：
+  ```bash
+  scp backend/models/golfpose_detector_2cls_yolox_s.onnx root@<公网IP>:/root/golf/GOLF/backend/models/
+  scp backend/models/golfpose_club_hrnetw48.onnx      root@<公网IP>:/root/golf/GOLF/backend/models/
+  ```
+  缺失时 `:mod:`app.ai.club_probe` 的 `:class:`ClubProbe` 会安全回退（gate_rate=0% 时不抛错）；当前 2 段素材下门控放行率仅 5%，因此即便缺失也几乎无感知，**但完整链路必须部署才可验证未来新素材上的真值化效果**。
+- **不要在生产环境装 mmdet/mmpose/mmcv/ultralytics**（2026-09-04 经验）：它们会拉高 numpy 或引入冲突，破坏 mediapipe 0.10.14。模型在隔离 conda 环境 `golfpose` 导出 ONNX 后，生产环境只用 onnxruntime（已在 `deploy/environment.yml` pip 段）。
 
 ### 部署产物（Conda）
 | 文件 | 作用 |

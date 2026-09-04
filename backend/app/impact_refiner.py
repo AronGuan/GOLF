@@ -48,7 +48,7 @@ from __future__ import annotations
 
 import logging
 import math
-from typing import Dict, List, Optional, Sequence, Tuple
+from typing import Dict, List, Mapping, Optional, Sequence, Tuple
 
 import cv2
 import numpy as np
@@ -66,6 +66,7 @@ from .schemas import (
     VideoMeta,
 )
 from . import segmenter  # 仅使用 segmenter.reanchor_impact（无循环依赖）
+from . import club_detector  # M3 最低点：复用路径 A 的 _detect_hough / _skeleton_segments
 
 logger = logging.getLogger(__name__)
 
@@ -573,6 +574,289 @@ def _shaft_lowest_y(
         return None
 
 
+def _shaft_scan_window(
+    cand_frames: Sequence[int],
+    frames_bgr: Mapping[int, np.ndarray],
+    frames: Sequence[FrameLandmarks],
+    cand_indices: Sequence[int],
+    width: int,
+    height: int,
+    club_len_px: float,
+    view: CameraView,
+) -> Dict[int, float]:
+    """**M2 全窗口化**：对 refine 窗口内每一帧独立跑 :func:`_shaft_lowest_y`。
+
+    与 Step 6 的 Top-K 版本有两点本质差异：
+
+    1. **覆盖范围**：不局限于 M1 挑出的 Top-K 运动峰，而是扫描窗口内全部帧。
+       这修掉了「真实杆头最低点不在 M1 候选里 -> 锚点被迫落在次优帧」的根因
+       （实测横屏 1446d1b9：真实最低点 array 35，M1 候选只有 [34, 39]）。
+    2. **握把逐帧化**：Top-K 版本共用 **impact 帧**的握把坐标（候选都在 impact
+       附近，握把几乎不动，共用成立）。全窗口跨度更大，下杆/送杆期握把已明显
+       移动，继续共用会让 :func:`_shaft_lowest_y` 的「延长线过握把」过滤失效
+       —— 因此**每帧用自己那一帧的 landmarks 算握把**。
+
+    Args:
+        cand_frames: 窗口内候选帧的**原视频帧号**（升序，与 ``cand_indices`` 平行）。
+        frames_bgr: 原帧号 -> BGR 图。
+        frames: 姿态序列（按 array 下标索引，提供逐帧 landmarks）。
+        cand_indices: 灰度帧偏移 -> array 下标。
+        width / height: 视频像素尺寸。
+        club_len_px: 杆长先验（像素）。
+        view: 机位。
+
+    Returns:
+        ``{灰度帧偏移: 杆头端点 y}``，只含 Hough 成功且该帧 landmarks 可用的帧；
+        扫描不可用（无帧 / 尺寸非法）时返回空 dict（调用方回退 Top-K 锚点）。
+    """
+    out: Dict[int, float] = {}
+    n = int(len(cand_frames))
+    if n == 0 or width <= 0 or height <= 0:
+        return out
+
+    # 成本上限：窗口过大时等距抽帧（保首保尾，中间均匀取）
+    max_frames = max(1, int(config.CLUBLITE_M2_FULL_MAX_FRAMES))
+    if n > max_frames:
+        step_f = (n - 1) / float(max_frames - 1) if max_frames > 1 else 0.0
+        offsets = sorted({int(round(k * step_f)) for k in range(max_frames)})
+    else:
+        offsets = list(range(n))
+
+    scale = np.array([float(width), float(height)], dtype=np.float64)
+    for off in offsets:
+        if not (0 <= off < len(cand_frames)) or off >= len(cand_indices):
+            continue
+        array_index = int(cand_indices[off])
+        if not (0 <= array_index < len(frames)):
+            continue
+        bgr = frames_bgr.get(int(cand_frames[off]))
+        if bgr is None:
+            continue
+        try:
+            ref_norm = frames[array_index].norm
+            grip_px = np.array(
+                [
+                    (float(ref_norm[geometry.L_WRIST, 0])
+                     + float(ref_norm[geometry.R_WRIST, 0])) / 2.0 * width,
+                    (float(ref_norm[geometry.L_WRIST, 1])
+                     + float(ref_norm[geometry.R_WRIST, 1])) / 2.0 * height,
+                ],
+                dtype=np.float64,
+            )
+            if not (math.isfinite(grip_px[0]) and math.isfinite(grip_px[1])):
+                continue
+            landmark_px = ref_norm[:, :2] * scale
+        except Exception:  # noqa: BLE001 - 单帧 landmarks 缺失只跳过该帧
+            continue
+
+        shaft_y = _shaft_lowest_y(
+            bgr, landmark_px, grip_px, club_len_px, view
+        )
+        if shaft_y is not None and math.isfinite(float(shaft_y)):
+            out[off] = float(shaft_y)
+    return out
+
+
+def _shaft_scan_window_fresh(
+    cand_frames: Sequence[int],
+    frames_bgr: Mapping[int, np.ndarray],
+    frames: Sequence[FrameLandmarks],
+    cand_indices: Sequence[int],
+    width: int,
+    height: int,
+    club_len_px: float,
+    view: CameraView,
+) -> Dict[int, float]:
+    """**M3 fresh 最低点**：全窗口逐帧独立跑路径 A 的 ``_detect_hough``。
+
+    与 :func:`_shaft_scan_window`（M2 全窗口化，用简化 :func:`_shaft_lowest_y`）
+    的本质差异是**信号源**：
+
+    - ``_shaft_lowest_y`` 无 ROI 扇形、无骨架共线过滤，「延长线过握把」过滤
+      不约束端点到握把距离 → 击球窗口内被背景直线假阳性淹没（实测 11.mp4
+      0/49 命中）；
+    - ``_detect_hough`` 带 ROI + 扇形 + body_mask + skeleton 四道过滤，且以
+      **fresh 模式**（``pred_dir`` 向下、``fan_deg``/``dir_tol`` 拉满让方向
+      约束失效）逐帧独立检测，绕开时序预测级联污染（实测 11.mp4 49/49 命中、
+      杆头最低点 = 117 = 用户手工真值）。
+
+    Args:
+        cand_frames: 窗口内候选帧的原视频帧号（升序，与 ``cand_indices`` 平行）。
+        frames_bgr: 原帧号 -> BGR 图。
+        frames: 姿态序列（按 array 下标索引，提供逐帧 landmarks）。
+        cand_indices: 灰度帧偏移 -> array 下标。
+        width / height: 视频像素尺寸。
+        club_len_px: 杆长先验（像素）。
+        view: 机位（当前仅影响日志，不改变算法分支）。
+
+    Returns:
+        ``{灰度帧偏移: 杆头端点 y}``；只含 Hough 成功且 landmarks 可用的帧。
+    """
+    out: Dict[int, float] = {}
+    n = int(len(cand_frames))
+    if n == 0 or width <= 0 or height <= 0:
+        return out
+
+    # 成本上限（与 M2 全窗口同口径，等距抽帧保首保尾）
+    max_frames = max(1, int(config.CLUBLITE_M2_FULL_MAX_FRAMES))
+    if n > max_frames:
+        step_f = (n - 1) / float(max_frames - 1) if max_frames > 1 else 0.0
+        offsets = sorted({int(round(k * step_f)) for k in range(max_frames)})
+    else:
+        offsets = list(range(n))
+
+    scale = np.array([float(width), float(height)], dtype=np.float64)
+    for off in offsets:
+        if not (0 <= off < len(cand_frames)) or off >= len(cand_indices):
+            continue
+        array_index = int(cand_indices[off])
+        if not (0 <= array_index < len(frames)):
+            continue
+        bgr = frames_bgr.get(int(cand_frames[off]))
+        if bgr is None:
+            continue
+        try:
+            ref_norm = frames[array_index].norm
+            grip_px = np.array(
+                [
+                    (float(ref_norm[geometry.L_WRIST, 0])
+                     + float(ref_norm[geometry.R_WRIST, 0])) / 2.0 * width,
+                    (float(ref_norm[geometry.L_WRIST, 1])
+                     + float(ref_norm[geometry.R_WRIST, 1])) / 2.0 * height,
+                ],
+                dtype=np.float64,
+            )
+            if not (math.isfinite(grip_px[0]) and math.isfinite(grip_px[1])):
+                continue
+            landmark_px = ref_norm[:, :2] * scale
+        except Exception:  # noqa: BLE001 - 单帧 landmarks 缺失只跳过该帧
+            continue
+
+        try:
+            body_mask = geometry.skeleton_polygon_mask(
+                landmark_px, (height, width), thickness=max(6, int(height // 120))
+            )
+        except Exception:  # noqa: BLE001 - 掩膜失败只影响过滤，不致命
+            body_mask = np.zeros((height, width), dtype=np.uint8)
+        try:
+            skeleton = club_detector._skeleton_segments(landmark_px)
+        except Exception:  # noqa: BLE001
+            skeleton = []
+
+        # fresh 模式：pred_dir 向下，fan/dir_tol 拉满让方向约束失效
+        outcome = club_detector._detect_hough(
+            bgr,
+            grip_px,
+            club_len_px,
+            np.array([0.0, 1.0], dtype=np.float64),
+            180.0,  # fan_deg：让扇形约束失效
+            180.0,  # dir_tol_deg：让方向约束失效
+            body_mask,
+            skeleton,
+        )
+        if outcome is None:
+            continue
+        head_px, _shaft_dir, _conf = outcome
+        head_y = float(head_px[1])
+        if math.isfinite(head_y):
+            out[off] = head_y
+    return out
+
+
+def _pick_full_window_anchor(
+    shaft_ys: Mapping[int, float],
+    raw_motion: np.ndarray,
+    min_ratio: float,
+) -> Optional[int]:
+    """从全窗口扫描结果里挑锚点：**杆头最低**且**该帧确有运动**。
+
+    单纯取 y 最大会被两类伪影带偏，故加运动支持门槛：
+
+    - **静止帧的 Hough 假阳性**：背景里的直边（球杆袋、地平线、广告牌）在
+      静态帧上更清晰，反而比糊掉的击球帧更容易给出"很低"的端点；
+    - **下杆早期/送杆期**：杆头确实低，但那不是击球。
+
+    要求锚点帧自身的帧差强度 ≥ ``min_ratio × 窗口最大强度``，即"这一帧确实
+    在剧烈运动"。与 :data:`config.CLUBLITE_MOTION_MIN_RATIO` 同口径。
+
+    Args:
+        shaft_ys: :func:`_shaft_scan_window` 的结果（偏移 -> 杆头 y）。
+        raw_motion: 未平滑的运动信号（与偏移同索引）。
+        min_ratio: 运动支持门槛比例。
+
+    Returns:
+        锚点的灰度帧偏移；无满足条件的帧时返回 ``None``（调用方回退 Top-K）。
+    """
+    if not shaft_ys:
+        return None
+    m_max = float(np.max(raw_motion)) if len(raw_motion) else 0.0
+    if not math.isfinite(m_max) or m_max <= 0.0:
+        return None
+    threshold = m_max * float(min_ratio)
+    # y 降序（杆头最低优先），同 y 时取靠前的帧
+    for off in sorted(shaft_ys, key=lambda c: (-float(shaft_ys[c]), c)):
+        if 0 <= int(off) < len(raw_motion):
+            if float(raw_motion[int(off)]) >= threshold:
+                return int(off)
+    return None
+
+
+def _refine_anchor_neighborhood(
+    off: int,
+    shaft_ys: Mapping[int, float],
+    raw_motion: np.ndarray,
+    club_len_px: float,
+    y_margin_ratio: float,
+) -> int:
+    """方案 B：几何锚点邻域 ±1 精修（几何弱信号时用 motion 峰纠偏）。
+
+    「杆头离地面最近的点」（几何锚）在多数 DTL 素材上 = 击球帧，但存在
+    「最低点 ≠ 击球瞬间」的 1 帧偏差（实测 c6f67f38：杆头先触地、球晚 1 帧
+    离杆，最低点 178 vs 击球 179）。朴素地对锚点邻域做 motion 峰 argmax 会
+    **破坏**几何信号强的素材（11.mp4：锚点 117 已命中，但邻域 motion 峰在
+    118，会把它推偏 1 帧）。故用「最低点显著度」门控：
+
+    - 锚点 y 比邻域最低 y 低 ≥ ``y_margin_ratio × club_len_px`` → 明确最低
+      点，几何信号强，**保持锚点**（不精修）；
+    - 否则最低点落在两帧之间、Hough ±1 帧噪声主导，用邻域 ±1 motion 峰
+      精修。
+
+    物理语义：杆头快速下插到最低点即击球（先打球后打地）时，锚点帧的杆头
+    是「尖锐 V 形」最低点（margin 大）；杆头在底部区域缓慢经过（打厚、球晚
+    1 帧离杆）时，最低点平缓（margin 小），击球瞬间由运动峰表征。
+
+    Args:
+        off: :func:`_pick_full_window_anchor` 的锚点偏移。
+        shaft_ys: 偏移 -> 杆头 y（与 :func:`_shaft_scan_window_fresh` 同构）。
+        raw_motion: 未平滑运动信号（与偏移同索引）。
+        club_len_px: 杆长像素先验（margin 归一化基准）。
+        y_margin_ratio: 最低点显著度门槛（相对杆长）。
+
+    Returns:
+        精修后的偏移（可能等于 ``off`` 表示保持不动）。
+    """
+    if off not in shaft_ys:
+        return off
+    anchor_y = float(shaft_ys[off])
+    n = int(len(raw_motion))
+    lo = max(0, int(off) - 1)
+    hi = min(n - 1, int(off) + 1)
+    if hi <= lo or n == 0:
+        return off
+    neighbor_ys = [
+        float(shaft_ys[o]) for o in (int(off) - 1, int(off) + 1) if o in shaft_ys
+    ]
+    if not neighbor_ys:
+        return off
+    margin = anchor_y - max(neighbor_ys)
+    threshold = float(y_margin_ratio) * float(club_len_px)
+    if margin >= threshold:
+        # 几何信号强：明确最低点，保持锚点（避免破坏 11.mp4 / 470057ac）
+        return off
+    # 几何信号弱：邻域 ±1 motion 峰精修
+    return lo + int(np.argmax(raw_motion[lo : hi + 1]))
+
+
 # ---------------------------------------------------------------------------
 # 评分与主入口
 # ---------------------------------------------------------------------------
@@ -933,18 +1217,64 @@ def refine_impact(
         # （v2 行为，原逻辑不变）。
         anchor_array: Optional[int] = None
         anchor_used = False
+        anchor_src = "none"
         selection: List[int] = list(range(len(candidates)))
         if config.CLUBLITE_USE_ANCHOR:
-            neighborhood = _anchor_neighborhood(
-                candidates,
-                cand_indices,
-                shaft_ys,
-                lo,
-                hi,
-                int(config.CLUBLITE_ANCHOR_WINDOW),
-            )
-            if neighborhood is not None:
-                window_sel, anchor_array, win_lo, win_hi = neighborhood
+            # ---- M2 全窗口化（方案 A）------------------------------------
+            # 锚点来源按优先级尝试两级，任一成功即收缩候选集：
+            #   1) "full"  全窗口逐帧扫描（_shaft_scan_window）挑出的杆头最低点
+            #   2) "topk"  M1 Top-K 候选里的杆头最低点（v3 原行为）
+            # 两级都失败 -> 保持全候选集（v2 行为，原逻辑不变）。
+            sources: List[Tuple[str, Dict[int, float]]] = []
+            full_scanned = 0
+            full_anchor_off: Optional[int] = None
+            if config.CLUBLITE_M2_FULL_WINDOW and club_len_px > 0.0:
+                full_shaft_ys = _shaft_scan_window(
+                    cand_frames,
+                    frames_bgr,
+                    frames,
+                    cand_indices,
+                    width,
+                    height,
+                    club_len_px,
+                    view,
+                )
+                full_scanned = len(full_shaft_ys)
+                full_off = _pick_full_window_anchor(
+                    full_shaft_ys,
+                    raw_motion,
+                    float(config.CLUBLITE_M2_FULL_MOTION_RATIO),
+                )
+                if full_off is not None:
+                    full_anchor_off = int(full_off)
+                    # 只把该帧交给 _anchor_neighborhood：锁定锚点，避免次低的
+                    # 全窗口点（可能位于下杆早期/送杆期）抢走锚定权。
+                    sources.append(
+                        ("full", {full_off: float(full_shaft_ys[full_off])})
+                    )
+                logger.info(
+                    "impact refine M2 full-window scan: %d/%d frames with shaft, "
+                    "anchor offset=%s (array=%s) (video=%s)",
+                    full_scanned,
+                    len(cand_frames),
+                    full_off,
+                    cand_indices[full_off] if full_off is not None else "n/a",
+                    video_path,
+                )
+            sources.append(("topk", dict(shaft_ys)))
+
+            for src_name, src_ys in sources:
+                neighborhood = _anchor_neighborhood(
+                    candidates,
+                    cand_indices,
+                    src_ys,
+                    lo,
+                    hi,
+                    int(config.CLUBLITE_ANCHOR_WINDOW),
+                )
+                if neighborhood is None:
+                    continue
+                window_sel, cand_anchor, win_lo, win_hi = neighborhood
                 if _anchor_window_credible(
                     scores,
                     window_sel,
@@ -952,6 +1282,19 @@ def refine_impact(
                 ):
                     selection = window_sel
                     anchor_used = True
+                    anchor_array = cand_anchor
+                    anchor_src = src_name
+                    logger.info(
+                        "impact refine anchor: src=%s array=%d window=[%d, %d] "
+                        "selection=%s (video=%s)",
+                        anchor_src,
+                        anchor_array,
+                        win_lo,
+                        win_hi,
+                        selection,
+                        video_path,
+                    )
+                    break
 
         # ---- Step 7：采纳判定 ---------------------------------------------
         # 在 selection（锚点邻域或全候选集）内取分数最高的候选；平票时按
@@ -977,32 +1320,66 @@ def refine_impact(
             # 杆头最低点 = shaft_lowest_y 的 y 值最大的候选（y 越大越贴地），
             # 与 D 方案锚点同口径（历史实现误用 min，2026-08 修正）。
             shaft_lowest_cand = max(shaft_ys, key=lambda c: float(shaft_ys[c]))
+        # 全窗口锚点生效时，用全窗口扫描到的杆头最低点覆盖（它才是真正驱动
+        # 选帧的那个锚；Top-K 版本可能只覆盖了送杆期的次优点）。
+        if anchor_src == "full" and full_anchor_off is not None:
+            shaft_lowest_cand = full_anchor_off
 
         # 系统偏移（v2 调优 -> D 方案）：运动峰帧 -> 视觉接触瞬间。
         # D 方案（2026-08 实验结论）：锚点法已把选帧拉向真实接触，偏移不再
         # 需要，CLUBLITE_IMPACT_OFFSET = 0（见 docs/VALIDATION-CLUBLITE.md §3）。
         new_array_index = peak_array_index + config.CLUBLITE_IMPACT_OFFSET
 
-        # 物理下界守卫（用户拍板硬约束）：偏移后的 impact 不得早于
-        # top + min_gap（与 locate_impact 同口径），否则 reanchor 会挤压出
-        # NO_SWING —— 此时宁可 G0（保持原 events），也不返回非法下标。
+        # ---- 物理窗口守卫（三条，任一不满足 -> G0 保持原 events）--------
+        # 1) 下界：偏移后的 impact 不得早于 top + min_gap（与 locate_impact
+        #    同口径，用户拍板硬约束），否则 reanchor 会挤压出 NO_SWING。
+        # 2) 送杆下界（2026-09-04 新增）：impact -> finish 不得短于
+        #    CLUBLITE_MIN_FOLLOW_THROUGH_SEC。根因：M1 横扫式运动峰 + M2 杆头
+        #    最低点都可能落在送杆期，把 impact 推到 finish 前仅 2~3 帧。
+        # 3) 下杆上界（2026-09-04 新增）：top -> impact 不得长于
+        #    CLUBLITE_MAX_DOWNSTROKE_SEC。真实下杆 0.20~0.30s；超过即说明
+        #    选帧落在送杆期（此时送杆下界可能因 finish 偏远而不触发）。
         top = next((e for e in events if e.key is PhaseKey.TOP), None)
+        finish = next((e for e in events if e.key is PhaseKey.FINISH), None)
         fe_eff = float(signals.fps_eff)
         if not math.isfinite(fe_eff) or fe_eff <= 0.0:
             fe_eff = 30.0
         min_gap = max(2, int(round(config.MIN_IMPACT_TOP_SEC * fe_eff)))
+        min_follow = max(
+            1, int(round(config.CLUBLITE_MIN_FOLLOW_THROUGH_SEC * fe_eff))
+        )
+        max_down = max(
+            min_gap, int(round(config.CLUBLITE_MAX_DOWNSTROKE_SEC * fe_eff))
+        )
+
+        in_range = 0 <= new_array_index < signals.n
         lower_ok = (
             top is not None
-            and 0 <= new_array_index < signals.n
+            and in_range
             and new_array_index - top.array_index >= min_gap
         )
-        if not lower_ok:
+        follow_ok = (
+            finish is None
+            or finish.array_index - new_array_index >= min_follow
+        )
+        down_ok = (
+            top is None
+            or new_array_index - top.array_index <= max_down
+        )
+        if not (lower_ok and follow_ok and down_ok):
             logger.info(
-                "impact refine rejected: offset impact %d violates top+min_gap "
-                "(%d + %d) (video=%s)",
+                "impact refine rejected: impact %d violates guard "
+                "(top=%s finish=%s | min_gap=%d min_follow=%d max_down=%d | "
+                "lower=%s follow=%s down=%s) (video=%s)",
                 new_array_index,
-                top.array_index if top is not None else -1,
+                top.array_index if top is not None else "n/a",
+                finish.array_index if finish is not None else "n/a",
                 min_gap,
+                min_follow,
+                max_down,
+                lower_ok,
+                follow_ok,
+                down_ok,
                 video_path,
             )
             result = ImpactRefineResult(
@@ -1097,3 +1474,200 @@ def refine_impact(
     except Exception:  # noqa: BLE001 - 模块级硬约束：任何失败 -> available=False
         logger.exception("impact refine failed (video=%s)", video_path)
         return ImpactRefineResult()
+
+
+def refine_impact_lowest_point(
+    video_path: str,
+    frames: Sequence[FrameLandmarks],
+    events: Sequence[SwingEvent],
+    signals: SwingSignals,
+    view: CameraView,
+    meta: VideoMeta,
+    frames_bgr: Optional[Dict[int, np.ndarray]] = None,
+) -> Optional[int]:
+    """**M3**：以「杆头离地面最近的点」直接作为击球帧，返回校正后 array 下标。
+
+    这是独立于 SwingNet 概率与规则引擎运动峰的**几何信号**。当前只用在
+    SwingNet DTL 路径——其 Impact 已 ≈1 帧误差，但杆头最低点更贴近真实接触
+    （实测 11.mp4：SwingNet impact=116、最低点=117、用户手工真值=117）。
+
+    信号链：
+    1. fresh 模式 ``_detect_hough`` 全窗口扫描（:func:`_shaft_scan_window_fresh`）；
+    2. 取杆头端点 y 最大帧（越贴地），用运动支持门槛排除静止帧 Hough 假阳性
+       （:func:`_pick_full_window_anchor`）；
+    3. 物理窗口守卫（下界 top+min_gap / 送杆下界 / 下杆上界，与
+       :func:`refine_impact` Step 7 同口径）；
+    4. 位移幅度守卫（|delta| ≤ MAX_SHIFT）。
+
+    Returns:
+        校正后 impact 的 array 下标；任何一步不可信 / 守卫拒绝 / 异常均返回
+        ``None``（调用方保持原 events 不变，与 ``refine_impact`` 的 G0 语义一致）。
+    """
+    try:
+        if not config.CLUBLITE_M3_FRESH_ANCHOR:
+            return None
+        impact = next((e for e in events if e.key is PhaseKey.IMPACT), None)
+        top = next((e for e in events if e.key is PhaseKey.TOP), None)
+        finish = next((e for e in events if e.key is PhaseKey.FINISH), None)
+        addr = next((e for e in events if e.key is PhaseKey.ADDRESS), None)
+        if impact is None or top is None or addr is None or signals is None:
+            return None
+        if not (0 <= impact.array_index < signals.n):
+            return None
+        if view not in (CameraView.FACE_ON, CameraView.DOWN_THE_LINE):
+            return None
+
+        # ---- 窗口规划 + 解码（与 refine_impact Step 1~2 同口径）----------
+        cand_frames, decode_frames = plan_refine_frames(
+            events, signals, meta, frames=frames
+        )
+        if not cand_frames:
+            return None
+
+        if frames_bgr is None:
+            frames_bgr = grab_frames(
+                video_path, decode_frames, orientation=meta.orientation
+            )
+        elif not isinstance(frames_bgr, dict):
+            return None
+        if not all(f in frames_bgr for f in cand_frames):
+            return None
+
+        index_to_array: Dict[int, int] = {
+            f.frame_index: i for i, f in enumerate(frames)
+        }
+        lo, hi = _window_indices(events, signals, None, None)
+        cand_indices = [
+            index_to_array[f] for f in cand_frames if f in index_to_array
+        ]
+        cand_indices = [i for i in cand_indices if lo <= i <= hi]
+        if not cand_indices:
+            return None
+
+        # ---- 杆长先验 + 地面 ROI ----------------------------------------
+        width = int(meta.width)
+        height = int(meta.height)
+        if width <= 0 or height <= 0:
+            return None
+        addr_lm = frames[addr.array_index]
+        nose_y = float(addr_lm.norm[geometry.NOSE, 1]) * height
+        ankle_y = (
+            float(addr_lm.norm[geometry.L_ANKLE, 1])
+            + float(addr_lm.norm[geometry.R_ANKLE, 1])
+        ) / 2.0 * height
+        body_h_px = geometry.body_height_px(nose_y, ankle_y)
+        if not math.isfinite(body_h_px) or body_h_px <= 0.0:
+            return None
+        club_len_px = body_h_px * (
+            _CLUB_LEN_RATIO_DTL
+            if view is CameraView.DOWN_THE_LINE
+            else _CLUB_LEN_RATIO_FACEON
+        )
+        roi = _ground_roi(addr_lm, width, height, body_h_px, view)
+        if roi is None:
+            return None
+
+        # ---- fresh 全窗口扫描 + 运动支持门槛 ----------------------------
+        shaft_ys = _shaft_scan_window_fresh(
+            cand_frames, frames_bgr, frames, cand_indices,
+            width, height, club_len_px, view,
+        )
+        if not shaft_ys:
+            return None
+
+        gray_frames = [
+            cv2.cvtColor(frames_bgr[f], cv2.COLOR_BGR2GRAY)
+            for f in cand_frames
+            if f in frames_bgr
+        ]
+        if len(gray_frames) < 2:
+            return None
+        raw_motion = _motion_signal(gray_frames, roi, smooth=False)
+
+        off = _pick_full_window_anchor(
+            shaft_ys, raw_motion, float(config.CLUBLITE_M2_FULL_MOTION_RATIO)
+        )
+        if off is None:
+            return None
+        # ---- 方案 B：锚点邻域 ±1 精修（几何弱信号时用 motion 峰纠偏）-----
+        off = _refine_anchor_neighborhood(
+            off,
+            shaft_ys,
+            raw_motion,
+            club_len_px,
+            float(config.CLUBLITE_M3_NEIGHBOR_Y_MARGIN_RATIO),
+        )
+        new_array_index = int(cand_indices[off])
+
+        # ---- 物理窗口守卫（与 refine_impact Step 7 同口径）--------------
+        fe_eff = float(signals.fps_eff)
+        if not math.isfinite(fe_eff) or fe_eff <= 0.0:
+            fe_eff = 30.0
+        min_gap = max(2, int(round(config.MIN_IMPACT_TOP_SEC * fe_eff)))
+        min_follow = max(
+            1, int(round(config.CLUBLITE_MIN_FOLLOW_THROUGH_SEC * fe_eff))
+        )
+        max_down = max(
+            min_gap, int(round(config.CLUBLITE_MAX_DOWNSTROKE_SEC * fe_eff))
+        )
+        in_range = 0 <= new_array_index < signals.n
+        lower_ok = in_range and new_array_index - top.array_index >= min_gap
+        follow_ok = (
+            finish is None
+            or finish.array_index - new_array_index >= min_follow
+        )
+        down_ok = new_array_index - top.array_index <= max_down
+        if not (lower_ok and follow_ok and down_ok):
+            logger.info(
+                "impact lowest-point rejected: impact %d violates guard "
+                "(top=%d finish=%s | min_gap=%d min_follow=%d max_down=%d | "
+                "lower=%s follow=%s down=%s) (video=%s)",
+                new_array_index,
+                top.array_index,
+                finish.array_index if finish is not None else "n/a",
+                min_gap,
+                min_follow,
+                max_down,
+                lower_ok,
+                follow_ok,
+                down_ok,
+                video_path,
+            )
+            return None
+
+        # ---- 位移幅度守卫 ------------------------------------------------
+        delta = new_array_index - impact.array_index
+        if not (
+            config.CLUBLITE_MIN_SHIFT_FRAMES
+            <= abs(delta)
+            <= config.CLUBLITE_MAX_SHIFT_FRAMES
+        ):
+            logger.info(
+                "impact lowest-point rejected: delta=%+d out of [%d, %d] "
+                "(video=%s)",
+                delta,
+                config.CLUBLITE_MIN_SHIFT_FRAMES,
+                config.CLUBLITE_MAX_SHIFT_FRAMES,
+                video_path,
+            )
+            return None
+
+        m_max = float(np.max(raw_motion)) if len(raw_motion) else 0.0
+        confidence = (
+            float(raw_motion[off]) / m_max if m_max > 0.0 else 0.0
+        )
+        logger.info(
+            "impact lowest-point refined: %d -> %d (delta=%+d, conf=%.2f) "
+            "(video=%s)",
+            impact.array_index,
+            new_array_index,
+            delta,
+            confidence,
+            video_path,
+        )
+        return new_array_index
+    except Exception:  # noqa: BLE001 - 模块级硬约束：任何失败 -> None
+        logger.exception(
+            "impact lowest-point refine failed (video=%s)", video_path
+        )
+        return None

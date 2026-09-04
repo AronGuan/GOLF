@@ -29,3 +29,8 @@ dependencies:
       - fastapi
       - "uvicorn[standard]"
       - python-multipart
+      # 球杆检测/关键点（GolfPose ONNX 推理）。
+      # ⚠️ 只装 onnxruntime，**不要**装 mmdet/mmpose/mmcv/ultralytics：
+      #    这些重框架会拉高 numpy 或引入冲突，破坏 mediapipe 0.10.14。
+      #    模型导出在隔离 conda 环境 golfpose 完成，这里只做推理。
+      - onnxruntime

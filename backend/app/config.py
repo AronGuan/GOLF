@@ -534,6 +534,99 @@ CLUBLITE_ANCHOR_WINDOW: Final[int] = 3
 #: 运动帧，应回退）。0.7 干净分隔两类。
 CLUBLITE_ANCHOR_MIN_SCORE_RATIO: Final[float] = 0.7
 
+#: 送杆时长下界（秒）：refine 后的 impact 距 finish 不得短于该时长，
+#: 否则拒绝校正（G0，保持 ``locate_impact`` 原值）。
+#: 依据：真实挥杆击球后到收杆 ≥0.5s。取 **0.25s 为保守下限**——finish
+#: 定位本身可能偏早（实测横屏 5->41 仅 1.2s，疑似半挥杆），阈值过严会
+#: 误伤正常样本。实测触发案例：横屏 impact=38 / finish=41，送杆仅 0.10s。
+#: 注意：该守卫**拦不住**「impact 落在送杆期但 finish 较远」的情形
+#: （如 8.8.110：impact=119 / finish=131，送杆 0.40s 达标），
+#: 此类需配合 :data:`CLUBLITE_MAX_DOWNSTROKE_SEC` 拦截。
+CLUBLITE_MIN_FOLLOW_THROUGH_SEC: Final[float] = 0.25
+
+#: 下杆时长上界（秒）：refine 后的 impact 距 top 不得长于该时长，
+#: 否则拒绝校正（G0）。
+#: 依据：真实下杆（top -> impact）**0.20~0.30s**。取 0.40s 作硬上限，
+#: 留 0.10s 余量吸收 MediaPipe 关键点抖动与采样误差。
+#: 实测触发案例：横屏 top=24 / impact=38，下杆 0.47s（超真实上限 57%）。
+#: 该守卫与 :data:`CLUBLITE_MIN_FOLLOW_THROUGH_SEC` 互补：前者管「推太晚」，
+#: 后者管「离收杆太近」，两者都命中物理窗口的边界。
+CLUBLITE_MAX_DOWNSTROKE_SEC: Final[float] = 0.40
+
+#: **M2 全窗口化**总开关（2026-09-04 用户拍板「方案 A」）。
+#: True = 锚点来源由「M1 Top-K 候选」扩大为「refine 窗口内全部帧」
+#: （``[impact - SEARCH_BACK_SEC, impact + SEARCH_FWD_SEC]``，30fps 下约 11 帧），
+#: 自己找杆头最低点；False = 回退原行为（只在 Top-K 候选里找锚点）。
+#:
+#: **默认 False 的原因（2026-09-04 实测，勿改回 True 除非素材升级）**：
+#: 全窗口扫描依赖 ``_shaft_lowest_y`` 在窗口内每帧给出可信「杆头最低点」，
+#: 但实测（``.workbuddy/diag_m2_full_window.py`` / ``probe_shaft_lines.py``）证明：
+#:
+#: - 该函数的「延长线过握把」过滤（垂距 < 0.12×杆长）**不足以排除背景直线**——
+#:   只要直线的延长线指向握把就算"过握把"，端点到握把的距离完全不约束；
+#: - 横屏 1446d1b9 击球窗口（array 29~39）内检出的"过握把"线段，
+#:   端点到握把距离普遍 500~1000px（杆长先验仅 163px）、方向 44°~86°（非竖直），
+#:   全是广告牌/网笼/草地边的背景假阳性，**没有一条真杆身线**；
+#: - 因此全窗口锚点被背景线污染（横屏锚到 array 31、竖屏锚到 array 170），
+#:   与 ADR-002「击球段杆头 >30 m/s 模糊、Hough 物理不可检测」结论一致。
+#:
+#: 结论：方案 A 的「扩大锚点来源」思路正确，但**信号源不可信**，当前素材上
+#: 无收益（``_anchor_window_credible`` 守卫把假锚点全部拦回，最终结果与关闭
+#: 时一致）。保留该开关：待 **120fps / 高质量素材**（杆头清晰可见，如历史样本
+#: 22030124）到位后，配合 ``_shaft_lowest_y`` 的杆长约束修复，再开启验证。
+CLUBLITE_M2_FULL_WINDOW: Final[bool] = False
+
+#: 全窗口扫描的帧数上限（成本控制）。窗口超过该值时**等距抽帧**降采样，
+#: 保证最坏情况下的耗时可预测（默认 48 帧 ≈ 0.5s @10ms/帧）。
+CLUBLITE_M2_FULL_MAX_FRAMES: Final[int] = 48
+
+#: 全窗口锚点的**运动支持门槛**（= 该比例 × 窗口内最大运动强度）。
+#: 杆头 y 最大不代表是击球帧——下杆早期/送杆期杆头也可能很低，且 Hough 在
+#: 静态背景上会给出假阳性直线。要求锚点帧自身的帧差运动强度达标，可排除
+#: 「完全静止帧上的 Hough 假阳性」。与 :data:`CLUBLITE_MOTION_MIN_RATIO`
+#: 同口径（0.20），刻意保持一致：低于该强度的帧 M1 也不会选为候选。
+CLUBLITE_M2_FULL_MOTION_RATIO: Final[float] = 0.20
+
+#: **M3「杆头最低点」击球帧校正**总开关（2026-09-04 用户拍板「方案 A」）。
+#: True = 用 fresh 模式 :func:`app.club_detector._detect_hough` 全窗口扫描
+#: 「杆头离地面最近的点」（head_y 最大帧），直接作为击球帧；False = 不启用
+#: （默认）。
+#:
+#: 与 M2 全窗口化（:data:`CLUBLITE_M2_FULL_WINDOW`，用简化 ``_shaft_lowest_y``）
+#: 的本质区别是**信号源不同**：M2 的 ``_shaft_lowest_y`` 无 ROI 扇形、无骨架
+#: 共线过滤，击球窗口内被背景直线假阳性淹没（实测 11.mp4 0/49 命中）；M3 改
+#: 用路径 A 的完整 ``_detect_hough``（ROI + 扇形 + body_mask + skeleton 四道
+#: 过滤），并以 fresh 模式（``fan_deg``/``dir_tol`` 拉满让方向约束失效）逐帧
+#: 独立检测，实测 11.mp4 49/49 命中、杆头最低点 = **117**（用户手工真值），
+#: 而 SwingNet impact = 116（偏早 1 帧）。
+#:
+#: **适用域**（2026-09-04 用户拍板「只接 DTL」）：M3 只接在 **DTL 机位**——
+#: SwingNet DTL 路径（``used_swingnet=True``，Impact 已 ≈1 帧误差，最低点再贴
+#: 真 1 帧）+ DTL 回退规则引擎路径（``used_swingnet=False``，M3 优先于老
+#: CLUBLITE 主流程，失败回退）。**face-on 机位不走 M3**：M3 的 fresh Hough 只
+#: 在 DTL 素材（11.mp4 / 470057ac）上验证过，face-on 从未实测；face-on 保持
+#: 已验证的 CLUBLITE 主流程（3/3 专项 + 9 段回归），避免未验证信号接管已验证
+#: 校正。
+#:
+#: **当前默认 True**（2026-09-04 用户拍板启用）：11.mp4 SwingNet 116 → M3 117、
+#: 470057ac 规则 97 → M3 100（均与用户手工真值一致）。规则法失败 / 物理守卫
+#: 拒收一律返回 ``None`` 保持原值（G0，不阻断主链路），不构成回退风险。如未来
+#: 真实素材回归出现误改 case，关回 ``False`` 即可止血。
+CLUBLITE_M3_FRESH_ANCHOR: Final[bool] = True
+
+#: **方案 B 邻域精修门槛**：锚点帧的杆头 y 比邻域（±1）最低 y 的优势，
+#: 相对杆长的比例。低于该比例 → 几何信号弱（最低点可能落在两帧之间，
+#: Hough ±1 帧噪声主导）→ 用邻域 ±1 motion 峰精修；高于该比例 → 明确
+#: 最低点，信几何、保持锚点不动。
+#:
+#: 实测 DTL 三素材（2026-09-04）：
+#:   - c6f67f38：margin/club_len = 0.077（弱）→ 精修 178 → 179（真值）
+#:   - 11.mp4：    margin/club_len = 0.340（强）→ 保持 117（真值）
+#:   - 470057ac：  margin/club_len = 0.305（强）→ 保持 100（真值）
+#: 0.20 落在 0.077 与 0.305 之间，留足间隔；与
+#: :data:`CLUBLITE_MOTION_MIN_RATIO` 同口径（0.20），刻意一致。
+CLUBLITE_M3_NEIGHBOR_Y_MARGIN_RATIO: Final[float] = 0.20
+
 #: 校正幅度 ≥ 该帧数时追加 warning（WARN_IMPACT_REFINED）
 CLUBLITE_WARN_THRESHOLD_FRAMES: Final[int] = 3
 
@@ -644,3 +737,81 @@ SWINGNET_ENABLED: Final[bool] = True
 #: 不可信，pipeline 回退规则引擎（SwingNet 在非单次挥杆 / 画面异常 / 多人入镜时
 #: 概率分布会被摊薄，argmax 得到的 Impact 不再可靠）。默认 0.3。
 SWINGNET_MIN_IMPACT_CONF: Final[float] = 0.3
+
+
+# ---------------------------------------------------------------------------
+# 12. GolfPose ONNX（球杆检测器 + 5 关键点，生产环境推理用）
+# ---------------------------------------------------------------------------
+#: 球杆检测器 ONNX 路径（YOLOX-s 2cls，35.7 MB），从隔离环境导出（.workbuddy/export_golfpose_onnx.py）。
+#: ONNX 不入 git（backend/models/ 已在 .gitignore 忽略），首次部署需手动 scp 上传。
+#: 可用 ``GOLF_CLUB_DET_ONNX`` 环境变量覆盖。文件缺失时模块自动回退到规则法（club_detector.py）。
+CLUB_DET_ONNX: Final[Path] = Path(
+    os.getenv("GOLF_CLUB_DET_ONNX", str(BASE_DIR / "models" / "golfpose_detector_2cls_yolox_s.onnx"))
+).resolve()
+
+#: 球杆关键点 ONNX 路径（HRNet-w48 club，254.4 MB），同源导出。
+#: 可用 ``GOLF_CLUB_POSE_ONNX`` 环境变量覆盖。
+CLUB_POSE_ONNX: Final[Path] = Path(
+    os.getenv("GOLF_CLUB_POSE_ONNX", str(BASE_DIR / "models" / "golfpose_club_hrnetw48.onnx"))
+).resolve()
+
+#: GolfPose ONNX 总开关（与 SWINGNET_ENABLED 同构）。False 时 pipeline 跳过 ONNX 推理
+#: 一直走规则法，可作为线上止血阀。
+CLUB_ONNX_ENABLED: Final[bool] = True
+
+#: 关键点水平翻转 TTA（对齐 GolfPose 官方 test_cfg.flip_test=True）。
+#: 开启后每个 bbox 推理两次（原图 + 翻转图），精度略升但耗时翻倍
+#: （HRNet-w48 CPU 实测 865ms -> 1500ms）。生产建议保留 True 以对齐官方指标口径。
+CLUB_POSE_FLIP_TEST: Final[bool] = True
+
+#: 球杆检测置信度阈值（YOLOX 输出 score = cls × objectness）。
+#: 实测：慢速段（address/top）真球杆 0.56~0.90；竖屏 DTL 误检目标仅 0.06~0.17。
+#: 0.30 能挡住误检且不误杀真杆。
+CLUB_ONNX_SCORE_THR: Final[float] = 0.30
+
+#: 关键点置信度阈值（heatmap 峰值）。低于此值视为漏检 -> 该阶段观测不可用。
+CLUB_ONNX_KP_THR: Final[float] = 0.20
+
+#: ⭐ 真值采信门控（质量三闸门，全部满足才把 ``swing_plane`` 从代理升级为实测）。
+#: 这三个闸门是 2026-09-04 在真实素材上实测标定出来的，不是拍脑袋定的：
+#: 在横屏 DTL 视频上，7 个检出帧中 **只有 1 帧** 的关键点全部 ≥ 0.30，
+#: 其余帧 kp_min 仅 0.10~0.26（模型对自己输出的点几乎没有信心），
+#: 且 shaft→hosel 角度帧间差 median 达 21.6° / max 44.6°（真实挥杆在 4 帧
+#: 间隔内杆身角度不可能变这么多）。因此必须**只在模型确有信心时采信真值**。
+#:
+#:   1. ``CLUB_ONNX_MIN_KP_SCORE``   : 5 个关键点得分**全部** ≥ 此值
+#:   2. ``CLUB_ONNX_MIN_SKELETON_PX``: 骨架总长下限（挡掉"杆头特写"式误检，
+#:      实测误检帧骨架仅 39.8px，正常球杆 180~270px）
+#:   3. ``CLUB_ONNX_MIN_BASELINE_PX``: shaft→hosel 基线长度下限（角度计算的
+#:      实际基线太短则方向纯属噪声，实测 address 帧基线仅 3.8px -> 角度 90°）
+#:
+#: 任一闸门不满足 -> 该阶段回退 L1 代理指标（左肩→左腕），绝不拿噪声当真值。
+CLUB_ONNX_MIN_KP_SCORE: Final[float] = 0.50
+CLUB_ONNX_MIN_SKELETON_PX: Final[float] = 120.0
+CLUB_ONNX_MIN_BASELINE_PX: Final[float] = 40.0
+
+#: 只在哪些阶段跑 ONNX 球杆检测（其余阶段直接跳过，观测为 unavailable）。
+#: ⚠️ 这是**性能铁律**：GolfPose 的训练数据偏向静态姿态，实测高速段
+#: （downswing / impact / follow_through）因运动模糊 100% 漏检，跑也是白跑。
+#: 全帧方案成本 35ms×238 ≈ 8.3s（冷机）/ 63s（持续负载，CPU 降频），不可接受；
+#: 只跑 3 个慢速阶段 ≈ 3 次检测 + 3 次关键点，成本可控。
+CLUB_ONNX_PHASES: Final[Tuple[str, ...]] = ("address", "top", "finish")
+
+#: 整个视频在球杆 ONNX 上的推理总预算（秒）。超时后剩余阶段一律放弃观测
+#: （回退代理指标）。双保险：阶段白名单控常态成本，预算兜住异常机器（如 CPU 降频）。
+CLUB_ONNX_BUDGET_SEC: Final[float] = 12.0
+
+# ---- 13. 规则法 Hough 真值源（方案 A 零标注过渡，2026-09-04）----
+#: 总开关（与 SwingNet 同构）。关掉则规则法不入观测链（回退到原行为）。
+CLUB_RULE_ENABLED: Final[bool] = True
+
+#: 规则法采信阈值（单帧检测 confidence）。实测分布：
+#: - 已知有球杆的 7 帧  conf 0.42~0.66（hough 直接成功）
+#: - 真实 events 13 帧 conf 0.00 / 0.288 / 0.649（连锁失败导致大量 0）
+#: 设 0.30 能挡掉"conf=0 的失败帧"并放行所有成功的检出。
+CLUB_RULE_MIN_CONF: Final[float] = 0.30
+
+#: 规则法方向搜索扇形张角（度）。真实实现里用 25° (fan_track)，
+#: 太窄容易连锁失败；放宽到 35° 能在「错一帧方向预测」时仍能命中下一帧。
+#: ⚠️ 这是经验值，与 ``CLUB_ROI_FAN_DEG`` 的 (45, 25) 中的 track 取值不同。
+CLUB_RULE_FAN_DEG: Final[float] = 35.0

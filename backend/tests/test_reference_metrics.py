@@ -16,6 +16,7 @@ from app import config, geometry, metrics, reference, segmenter
 from app.schemas import (
     CameraView,
     PHASE_ORDER,
+    MetricSource,
     MetricStatus,
     PhaseKey,
 )
@@ -480,7 +481,68 @@ class TestSwingPlane:
         value = items["swing_plane"].value
         assert math.isfinite(value)
         assert 0.0 <= value <= 90.0
-        assert not items["swing_plane"].estimated
+        # 方案 A（2026-09-04）：无 club_obs 时走 L1 代理（左肩→左腕），
+        # source=PROXY 且 estimated=True，前端展示「估算」标记。
+        assert items["swing_plane"].source is MetricSource.PROXY
+        assert items["swing_plane"].estimated is True
+
+    def test_measured_path_uses_club_obs_when_accepted(self, ctx_dtl):
+        """ClubProbe 已采信（accepted=True）时，swing_plane 上报真值 + source=MEASURED。"""
+        from app.ai.club_probe import ClubObservation, PhaseKey as _PK
+        from app.schemas import MetricSource
+
+        # ONNX 源：confidence = 最低关键点得分
+        obs = ClubObservation(
+            available=True, accepted=True, source="onnx",
+            confidence=0.83, min_kp_score=0.83,
+            shaft_angle_deg=57.3, club_len_px=180.0, baseline_px=120.0,
+        )
+        ctx_dtl.club_obs = {_PK.TOP: obs}
+        ctx_dtl.phase = _PK.TOP
+        ctx_dtl.cache.clear()
+        items = {m.key: m for m in metrics.compute_phase_metrics(ctx_dtl)}
+        sp = items["swing_plane"]
+        assert sp.value == pytest.approx(57.3, abs=0.01)
+        assert sp.source is MetricSource.MEASURED
+        assert sp.estimated is False
+        assert sp.confidence == pytest.approx(0.83, abs=0.01)
+
+    def test_rule_source_measured_path(self, ctx_dtl):
+        """规则法 Hough 源（source="rule"）采信时同样上报 MEASURED。"""
+        from app.ai.club_probe import ClubObservation, PhaseKey as _PK
+        from app.schemas import MetricSource
+
+        obs = ClubObservation(
+            available=True, accepted=True, source="rule",
+            confidence=0.52, shaft_angle_deg=61.4, club_len_px=160.3,
+        )
+        ctx_dtl.club_obs = {_PK.TOP: obs}
+        ctx_dtl.phase = _PK.TOP
+        ctx_dtl.cache.clear()
+        items = {m.key: m for m in metrics.compute_phase_metrics(ctx_dtl)}
+        sp = items["swing_plane"]
+        assert sp.value == pytest.approx(61.4, abs=0.01)
+        assert sp.source is MetricSource.MEASURED
+        assert sp.estimated is False
+        assert sp.confidence == pytest.approx(0.52, abs=0.01)
+
+    def test_unaccepted_obs_falls_back_to_proxy(self, ctx_dtl):
+        """ClubProbe 拿到了 5 点但 quality_gate 拒绝时（accepted=False），回退代理。"""
+        from app.ai.club_probe import ClubObservation, PhaseKey as _PK
+        from app.schemas import MetricSource
+
+        obs = ClubObservation(
+            available=True, accepted=False,
+            accept_reason="min_kp=0.10<0.50",
+            shaft_angle_deg=89.0, min_kp_score=0.10,
+        )
+        ctx_dtl.club_obs = {_PK.TOP: obs}
+        ctx_dtl.phase = _PK.TOP
+        ctx_dtl.cache.clear()
+        items = {m.key: m for m in metrics.compute_phase_metrics(ctx_dtl)}
+        sp = items["swing_plane"]
+        assert sp.source is MetricSource.PROXY
+        assert sp.estimated is True
 
     def test_visibility_guard_drops_metric(self, ctx_dtl):
         """左肩/左腕可见度 < 0.5 -> nan -> allow_drop 剔除（不造假绿值）。"""

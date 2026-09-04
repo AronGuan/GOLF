@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import os
 
+import numpy as np
 import pytest
 
 from app import config
@@ -126,3 +127,94 @@ def test_real_inference_optional():
     assert result["Top"]["frame_index"] < result["Impact"]["frame_index"] < result["Finish"]["frame_index"]
     # Address 不晚于击球（物理必然）
     assert result["Address"]["frame_index"] <= result["Impact"]["frame_index"]
+
+
+# ---------------------------------------------------------------------------
+# _constrained_events 纯逻辑测试（不加载权重，秒级）
+# ---------------------------------------------------------------------------
+
+
+def _probs(n_frames: int, peaks: dict) -> "np.ndarray":
+    """构造 ``(n_frames, 9)`` 概率矩阵：每列在 ``peaks[cls]`` 帧放 1.0，其余 0.0。
+
+    ``_constrained_events`` 只做 argmax，不依赖概率归一化，故用 one-hot 峰值即可。
+    """
+    probs = np.zeros((n_frames, 9), dtype=np.float32)
+    for cls, frame in peaks.items():
+        probs[frame, cls] = 1.0
+    return probs
+
+
+def _frames_of(result) -> list:
+    return [result[name]["frame_index"] for name in EVENT_NAMES]
+
+
+def test_constrained_events_relocates_out_of_order_transition():
+    """过渡事件全视频 argmax 跑到视频开头/与 Address 同帧时，区间约束拉回锚点内。
+
+    复现 11.mp4 实况：锚点 Address=100/Top=109/Impact=116/Finish=157 单调，但
+    Toe-up 假峰在帧 17、Mid-backswing 假峰在帧 100（与 Address 同帧）。
+    """
+    probs = _probs(200, {
+        0: 100, 1: 17, 2: 100, 3: 109, 4: 113, 5: 116, 6: 118, 7: 157,
+    })
+    result = SwingNetDetector._constrained_events(probs)
+    frames = _frames_of(result)
+
+    # 结果必须严格递增（这是 pipeline 单调守卫通过的硬前提）
+    assert frames == sorted(frames)
+    assert len(set(frames)) == len(frames)
+
+    # 过渡事件被约束到锚点区间内，而非跑到视频开头（17）/ 与 Address 同帧（100）
+    assert 100 < result["Toe-up"]["frame_index"] < 109
+    assert result["Toe-up"]["frame_index"] < result["Mid-backswing"]["frame_index"] < 109
+    # 主锚点不受影响
+    assert result["Address"]["frame_index"] == 100
+    assert result["Top"]["frame_index"] == 109
+    assert result["Impact"]["frame_index"] == 116
+    assert result["Finish"]["frame_index"] == 157
+
+
+def test_constrained_events_anchor_disorder_returns_global():
+    """锚点本身乱序（Finish 跑到 Top 前）→ 返回全局 argmax 原结果，交由调用方回退。"""
+    probs = _probs(200, {
+        0: 100, 1: 25, 2: 35, 3: 109, 4: 113, 5: 116, 6: 118, 7: 50,  # Finish=50 < Top=109
+    })
+    result = SwingNetDetector._constrained_events(probs)
+    # 锚点乱序：不重定位，返回全局 argmax（Finish 仍是 50，保持乱序供守卫识别）
+    assert result["Finish"]["frame_index"] == 50
+    assert result["Top"]["frame_index"] == 109
+
+
+def test_constrained_events_strictly_increasing_on_tie():
+    """相邻过渡事件 argmax 到同一帧时，严格递增强制把后者后推 1 帧。
+
+    竖屏 DTL 上 Toe-up 与 Mid-backswing 区分度低，可能同帧（如都落在 102）。
+    """
+    probs = _probs(200, {
+        0: 100, 1: 102, 2: 102, 3: 109, 4: 113, 5: 116, 6: 118, 7: 157,
+    })
+    result = SwingNetDetector._constrained_events(probs)
+    frames = _frames_of(result)
+    assert frames == sorted(frames)
+    assert len(set(frames)) == len(frames)
+    # Toe-up 与 Mid-backswing 不得同帧
+    assert result["Toe-up"]["frame_index"] < result["Mid-backswing"]["frame_index"]
+
+
+def test_constrained_events_preserves_valid_order():
+    """本就严格递增的正常输入：区间约束不应破坏正确结果。"""
+    probs = _probs(200, {
+        0: 10, 1: 25, 2: 35, 3: 43, 4: 50, 5: 54, 6: 60, 7: 75,
+    })
+    result = SwingNetDetector._constrained_events(probs)
+    frames = _frames_of(result)
+    assert frames == sorted(frames)
+    assert len(set(frames)) == len(frames)
+    # 各事件仍落在合理区间（未被重定位到异常位置）
+    assert result["Address"]["frame_index"] == 10
+    assert result["Top"]["frame_index"] == 43
+    assert result["Impact"]["frame_index"] == 54
+    assert result["Finish"]["frame_index"] == 75
+    assert 10 < result["Toe-up"]["frame_index"] < 43
+    assert result["Toe-up"]["frame_index"] < result["Mid-backswing"]["frame_index"] < 43

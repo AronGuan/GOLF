@@ -230,6 +230,46 @@ def _segment_events(
     return events, False
 
 
+def _try_m3_lowest_point(
+    video_path: str,
+    frames: Sequence[FrameLandmarks],
+    events: Sequence[SwingEvent],
+    signals: SwingSignals,
+    view: CameraView,
+    meta: VideoMeta,
+    frames_bgr: Dict[int, np.ndarray],
+    task_id: str,
+) -> Optional[Sequence[SwingEvent]]:
+    """**M3 尝试**：fresh Hough 全窗口扫描「杆头离地面最近的点」→ reanchor。
+
+    几何信号源（与运动信号 M1/M2 解耦），仅在 **DTL 机位**生效（face-on 从未
+    验证，直接返回 ``None`` 保持 CLUBLITE 主流程）。实测 11.mp4（SwingNet）/
+    470057ac（规则）上均命中用户真值。失败 / 守卫拒绝 / reanchor 冲突一律返回
+    ``None``，调用方保持 events 不变。
+    """
+    try:
+        if view is not CameraView.DOWN_THE_LINE:
+            return None
+        _m3_idx = impact_refiner.refine_impact_lowest_point(
+            video_path, frames, events, signals, view, meta, frames_bgr=frames_bgr,
+        )
+        if _m3_idx is None:
+            return None
+        _m3_events = segmenter.reanchor_impact(
+            frames, signals, events, _m3_idx, view=view
+        )
+        if _m3_events is None:
+            return None
+        logger.info(
+            "M3 impact refined (task=%s): -> %d method=fresh_anchor",
+            task_id, _m3_idx,
+        )
+        return _m3_events
+    except Exception:  # noqa: BLE001 - 模块级硬约束：永不抛异常给 pipeline
+        logger.exception("M3 lowest-point refine crashed: %s", task_id)
+        return None
+
+
 def run_analysis(task_id: str) -> None:
     """后台分析任务入口（由 ``BackgroundTasks`` 调度）。
 
@@ -356,39 +396,85 @@ def _run(task_id: str) -> None:
             sorted(set(event_frames) | set(_decode_frames) | set(_possible_frames)),
             orientation=meta.orientation,
         )
-        refine = impact_refiner.refine_impact(
-            video_path, frames, events, signals, view, meta, frames_bgr=frames_bgr,
-        )
-        if refine.available and (
-            config.CLUBLITE_MIN_SHIFT_FRAMES
-            <= abs(refine.delta_frames)
-            <= config.CLUBLITE_MAX_SHIFT_FRAMES
-        ):
-            new_events = segmenter.reanchor_impact(
-                frames, signals, events, refine.new_array_index, view=view
+
+        # ---- M3 优先，仅限 DTL（2026-09-04 用户拍板）----------------------
+        # 几何信号 fresh Hough 杆头最低点（实测 DTL 470057ac：M3 100 命中真值
+        # vs 老 CLUBLITE M1+M2+D 103 偏晚 3 帧）。失败一律回退到下方 CLUBLITE
+        # 主流程（M1+M2+D）。face-on 由 helper 内部 gate 掉（返回 None），保持
+        # 已验证的 CLUBLITE 主流程（3/3 专项 + 9 段回归）。
+        m3_events: Optional[Sequence[SwingEvent]] = None
+        if config.CLUBLITE_M3_FRESH_ANCHOR:
+            m3_events = _try_m3_lowest_point(
+                video_path, frames, events, signals, view, meta, frames_bgr, task_id,
             )
-            if new_events is not None:
-                events = new_events
-                if abs(refine.delta_frames) >= config.CLUBLITE_WARN_THRESHOLD_FRAMES:
-                    refine_warning = config.WARN_IMPACT_REFINED
-                logger.info(
-                    "impact refined (task=%s): %d -> %d delta=%+d method=%s conf=%.2f",
-                    task_id, refine.old_array_index, refine.new_array_index,
-                    refine.delta_frames, refine.method, refine.confidence,
+
+        if m3_events is not None:
+            events = m3_events
+            refine_warning = config.WARN_IMPACT_REFINED
+            # M3 命中：跳过原 CLUBLITE 主流程（M1+M2+D）
+        else:
+            # ---- CLUBLITE 主流程（M1+M2+D）作为 fallback -------------------
+            refine = impact_refiner.refine_impact(
+                video_path, frames, events, signals, view, meta, frames_bgr=frames_bgr,
+            )
+            if refine.available and (
+                config.CLUBLITE_MIN_SHIFT_FRAMES
+                <= abs(refine.delta_frames)
+                <= config.CLUBLITE_MAX_SHIFT_FRAMES
+            ):
+                new_events = segmenter.reanchor_impact(
+                    frames, signals, events, refine.new_array_index, view=view
                 )
-        if config.CLUBLITE_DRAW_MARKER and refine.ball_center_px is not None:
-            impact_event = next(
-                (e for e in events if e.key is PhaseKey.IMPACT), None
-            )
-            if impact_event is not None:
-                refine_markers = {impact_event.frame_index: refine.ball_center_px}
+                if new_events is not None:
+                    events = new_events
+                    if abs(refine.delta_frames) >= config.CLUBLITE_WARN_THRESHOLD_FRAMES:
+                        refine_warning = config.WARN_IMPACT_REFINED
+                    logger.info(
+                        "impact refined (task=%s): %d -> %d delta=%+d method=%s conf=%.2f",
+                        task_id, refine.old_array_index, refine.new_array_index,
+                        refine.delta_frames, refine.method, refine.confidence,
+                    )
+            if config.CLUBLITE_DRAW_MARKER and refine.ball_center_px is not None:
+                impact_event = next(
+                    (e for e in events if e.key is PhaseKey.IMPACT), None
+                )
+                if impact_event is not None:
+                    refine_markers = {impact_event.frame_index: refine.ball_center_px}
         # 校正可能移动 impact / 中间帧 → 以校正后的 8 事件帧为准
         event_frames = [e.frame_index for e in events]
     else:
-        # 球杆检测下线：只解码 8 个事件帧供 renderer，解码趟数锁 1 趟（共享）
+        # DTL + SwingNet（used_swingnet=True）或 CLUBLITE 关闭：默认只解码 8 个
+        # 事件帧供 renderer（解码趟数锁 1 趟，共享）。
         frames_bgr = frame_reader.grab_frames(
             video_path, event_frames, orientation=meta.orientation
         )
+        # M3（CLUBLITE_M3_FRESH_ANCHOR）：SwingNet DTL 路径追加「杆头最低点」
+        # 校正。SwingNet Impact 已 ≈1 帧误差，但杆头离地面最近点是更贴近真实
+        # 接触的几何信号（实测 11.mp4：SwingNet 116 → 最低点 117 = 用户真值）。
+        # 失败 / 守卫拒绝一律保持 SwingNet 原值（G0，不阻断主链路）。
+        if (
+            config.CLUBLITE_ENABLED
+            and config.CLUBLITE_M3_FRESH_ANCHOR
+            and used_swingnet
+        ):
+            _cand, _decode = impact_refiner.plan_refine_frames(
+                events, signals, meta, frames=frames
+            )
+            _possible = impact_refiner.plan_reanchor_frames(
+                events, signals, meta, frames=frames, cand_frames=_cand, view=view
+            )
+            _m3_bgr = frame_reader.grab_frames(
+                video_path,
+                sorted(set(event_frames) | set(_decode) | set(_possible)),
+                orientation=meta.orientation,
+            )
+            _new_events = _try_m3_lowest_point(
+                video_path, frames, events, signals, view, meta, _m3_bgr, task_id,
+            )
+            if _new_events is not None:
+                events = _new_events
+                event_frames = [e.frame_index for e in events]
+                frames_bgr = _m3_bgr  # 之后统一裁剪到 8 事件帧
 
     # 🔑 只保留 8 个事件帧，内存峰值锁 8 帧
     frames_bgr = {k: v for k, v in frames_bgr.items() if k in set(event_frames)}
@@ -396,6 +482,18 @@ def _run(task_id: str) -> None:
     # ---- step 4b：指标计算（机位过滤 + fn_key 分派 + 五态判定）------------
     task_store.set_progress(task_id, 4, _P_SEGMENT_END + 4, "正在计算姿态指标...")
     ctx = metrics.build_context(frames, events, signals, meta, view=view)
+
+    # ---- step 4b-1：球杆真值采集（方案 A）--------------------------------
+    # 在白名单阶段（默认 ADDRESS/TOP/FINISH）的事件帧上跑 GolfPose ONNX，
+    # 严格三闸门质控后注入 ctx.club_obs；指标函数按 obs.accepted 决定是否采信
+    # 真值。失败/未采信一律回退代理指标，零风险。详见 app.ai.club_probe。
+    task_store.set_progress(task_id, 4, _P_SEGMENT_END + 3, "正在采集球杆真值...")
+    from app.ai.club_probe import ClubProbe
+
+    club_obs = ClubProbe().observe(
+        frames_bgr, events, view, landmarks=frames, meta=meta,
+    )
+    ctx.club_obs = club_obs
 
     phase_metrics: Dict[PhaseKey, list] = {}
     total_phases = len(PHASE_ORDER)

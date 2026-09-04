@@ -85,15 +85,28 @@ class ApiError(Exception):
 
 
 def _parse_camera_view(raw: Optional[str]) -> CameraView:
-    """解析 ``camera_view`` 表单值；非法值/缺省一律按 ``face_on`` 落值（不硬拒）。"""
-    if raw is None:
-        return CameraView.FACE_ON
-    value = str(raw).strip().lower()
+    """解析 ``camera_view`` 表单值。
+
+    契约（2026-09-04 调整为「无值默认 AUTO」）：
+
+    - ``"auto"`` / 缺省 / ``None`` → :attr:`CameraView.AUTO`
+      （由 :func:`app.view_detector.resolve` 自动判定：9/9 命中实测）。
+    - ``"face_on"`` / ``"down_the_line"`` → 显式对应机位；
+      后端做一致性校验，不一致会返回 :data:`config.WARN_VIEW_MISMATCH`。
+    - 其它非法值 → 回退 ``AUTO``（不硬拒）。
+
+    改默认值的原因：之前的 ``face_on`` 默认让 DTL 视频被错判为 face_on，
+    ClubProbe 的 DTL 门控永远不触发；改 AUTO 后真实 DTL 视频能自动识别，
+    ClubProbe / view-dependent 指标都能正确生效。
+    """
+    value = str(raw).strip().lower() if raw is not None else ""
+    if not value or value == "auto":
+        return CameraView.AUTO
     for candidate in CameraView:
         if candidate.value == value:
             return candidate
-    logger.warning("非法 camera_view=%r，回退 face_on", raw)
-    return CameraView.FACE_ON
+    logger.warning("非法 camera_view=%r，回退 AUTO", raw)
+    return CameraView.AUTO
 
 
 # ---------------------------------------------------------------------------
@@ -197,7 +210,7 @@ async def create_task(
     background_tasks: BackgroundTasks,
     video: UploadFile = File(None),
     file: UploadFile = File(None),
-    camera_view: str = Form("face_on"),
+    camera_view: str = Form("auto"),  # 2026-09-04：默认从 face_on 改为 auto
 ) -> JSONResponse:
     """上传视频并创建分析任务（PDD 主路径 + 旧路径双注册）。
 

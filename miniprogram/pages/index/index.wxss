@@ -22,13 +22,13 @@
 
 .view-grid {
   display: flex;
-  gap: 20rpx;
+  gap: 16rpx;
 }
 
 .view-option {
   position: relative;
   flex: 1;
-  padding: 24rpx 12rpx 20rpx;
+  padding: 20rpx 8rpx 16rpx;
   border-radius: 16rpx;
   background: #1f2630;
   border: 2rpx solid #2a323e;
@@ -47,15 +47,35 @@
   margin: 0 auto 4rpx;
 }
 
+/* emoji 占位（替代被移除的 view_*.png 图标） */
+.view-emoji {
+  font-size: 80rpx;
+  line-height: 96rpx;
+  height: 96rpx;
+  margin-bottom: 4rpx;
+}
+
 .view-label {
-  margin-top: 8rpx;
-  font-size: 28rpx;
+  margin-top: 6rpx;
+  font-size: 26rpx;
   font-weight: 600;
   color: #f2f5f8;
 }
 
+/* 小字英文后缀（auto / face-on / down-the-line） */
+.view-sub {
+  margin-top: 2rpx;
+  font-size: 20rpx;
+  color: #8a96a8;
+}
+
 .view-option--on .view-label {
   color: #1fbf75;
+}
+
+.view-option--on .view-sub {
+  color: #1fbf75;
+  opacity: 0.7;
 }
 
 .view-sub {
@@ -147,10 +167,12 @@
   height: 200rpx;
 }
 
-.golfer-img {
-  display: block;
+.golfer-placeholder {
   width: 120rpx;
   height: 200rpx;
+  line-height: 200rpx;
+  text-align: center;
+  font-size: 120rpx;
 }
 
 .diagram-caption {

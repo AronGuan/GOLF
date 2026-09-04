@@ -30,6 +30,9 @@ backend/data/
 backend/models/*
 !backend/models/.gitkeep
 
+# ===== 隔离环境参考源码（GolfPose 官方仓库 clone，仅用于导出 ONNX 权重，不入主仓库） =====
+GolfPose/
+
 # ===== 日志 =====
 *.log
 
