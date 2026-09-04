@@ -801,62 +801,6 @@ def _pick_full_window_anchor(
     return None
 
 
-def _refine_anchor_neighborhood(
-    off: int,
-    shaft_ys: Mapping[int, float],
-    raw_motion: np.ndarray,
-    club_len_px: float,
-    y_margin_ratio: float,
-) -> int:
-    """方案 B：几何锚点邻域 ±1 精修（几何弱信号时用 motion 峰纠偏）。
-
-    「杆头离地面最近的点」（几何锚）在多数 DTL 素材上 = 击球帧，但存在
-    「最低点 ≠ 击球瞬间」的 1 帧偏差（实测 c6f67f38：杆头先触地、球晚 1 帧
-    离杆，最低点 178 vs 击球 179）。朴素地对锚点邻域做 motion 峰 argmax 会
-    **破坏**几何信号强的素材（11.mp4：锚点 117 已命中，但邻域 motion 峰在
-    118，会把它推偏 1 帧）。故用「最低点显著度」门控：
-
-    - 锚点 y 比邻域最低 y 低 ≥ ``y_margin_ratio × club_len_px`` → 明确最低
-      点，几何信号强，**保持锚点**（不精修）；
-    - 否则最低点落在两帧之间、Hough ±1 帧噪声主导，用邻域 ±1 motion 峰
-      精修。
-
-    物理语义：杆头快速下插到最低点即击球（先打球后打地）时，锚点帧的杆头
-    是「尖锐 V 形」最低点（margin 大）；杆头在底部区域缓慢经过（打厚、球晚
-    1 帧离杆）时，最低点平缓（margin 小），击球瞬间由运动峰表征。
-
-    Args:
-        off: :func:`_pick_full_window_anchor` 的锚点偏移。
-        shaft_ys: 偏移 -> 杆头 y（与 :func:`_shaft_scan_window_fresh` 同构）。
-        raw_motion: 未平滑运动信号（与偏移同索引）。
-        club_len_px: 杆长像素先验（margin 归一化基准）。
-        y_margin_ratio: 最低点显著度门槛（相对杆长）。
-
-    Returns:
-        精修后的偏移（可能等于 ``off`` 表示保持不动）。
-    """
-    if off not in shaft_ys:
-        return off
-    anchor_y = float(shaft_ys[off])
-    n = int(len(raw_motion))
-    lo = max(0, int(off) - 1)
-    hi = min(n - 1, int(off) + 1)
-    if hi <= lo or n == 0:
-        return off
-    neighbor_ys = [
-        float(shaft_ys[o]) for o in (int(off) - 1, int(off) + 1) if o in shaft_ys
-    ]
-    if not neighbor_ys:
-        return off
-    margin = anchor_y - max(neighbor_ys)
-    threshold = float(y_margin_ratio) * float(club_len_px)
-    if margin >= threshold:
-        # 几何信号强：明确最低点，保持锚点（避免破坏 11.mp4 / 470057ac）
-        return off
-    # 几何信号弱：邻域 ±1 motion 峰精修
-    return lo + int(np.argmax(raw_motion[lo : hi + 1]))
-
-
 # ---------------------------------------------------------------------------
 # 评分与主入口
 # ---------------------------------------------------------------------------
@@ -1589,14 +1533,6 @@ def refine_impact_lowest_point(
         )
         if off is None:
             return None
-        # ---- 方案 B：锚点邻域 ±1 精修（几何弱信号时用 motion 峰纠偏）-----
-        off = _refine_anchor_neighborhood(
-            off,
-            shaft_ys,
-            raw_motion,
-            club_len_px,
-            float(config.CLUBLITE_M3_NEIGHBOR_Y_MARGIN_RATIO),
-        )
         new_array_index = int(cand_indices[off])
 
         # ---- 物理窗口守卫（与 refine_impact Step 7 同口径）--------------

@@ -614,19 +614,6 @@ CLUBLITE_M2_FULL_MOTION_RATIO: Final[float] = 0.20
 #: 真实素材回归出现误改 case，关回 ``False`` 即可止血。
 CLUBLITE_M3_FRESH_ANCHOR: Final[bool] = True
 
-#: **方案 B 邻域精修门槛**：锚点帧的杆头 y 比邻域（±1）最低 y 的优势，
-#: 相对杆长的比例。低于该比例 → 几何信号弱（最低点可能落在两帧之间，
-#: Hough ±1 帧噪声主导）→ 用邻域 ±1 motion 峰精修；高于该比例 → 明确
-#: 最低点，信几何、保持锚点不动。
-#:
-#: 实测 DTL 三素材（2026-09-04）：
-#:   - c6f67f38：margin/club_len = 0.077（弱）→ 精修 178 → 179（真值）
-#:   - 11.mp4：    margin/club_len = 0.340（强）→ 保持 117（真值）
-#:   - 470057ac：  margin/club_len = 0.305（强）→ 保持 100（真值）
-#: 0.20 落在 0.077 与 0.305 之间，留足间隔；与
-#: :data:`CLUBLITE_MOTION_MIN_RATIO` 同口径（0.20），刻意一致。
-CLUBLITE_M3_NEIGHBOR_Y_MARGIN_RATIO: Final[float] = 0.20
-
 #: 校正幅度 ≥ 该帧数时追加 warning（WARN_IMPACT_REFINED）
 CLUBLITE_WARN_THRESHOLD_FRAMES: Final[int] = 3
 
