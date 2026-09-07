@@ -89,13 +89,24 @@
 }
 
 /* avatar button（chooseAvatar 必须用 button，不能用 view/image）
-   ⚠️ button 默认有 padding / border / line-height，会破坏圆形布局 —— 重置 */
+   ⚠️ button 默认有 padding / border / line-height / min-height，
+   任何一项不重置都会让 button 元素按内容撑高，导致 width ≠ height，
+   50% border-radius 退化成椭圆。**全部显式锁死**。 */
 .avatar-btn {
+  width: 120rpx;          /* 显式锁死尺寸（与 .avatar 一致） */
+  height: 120rpx;
+  min-width: 120rpx;      /* 关键：覆盖 button 默认 min-height 撑高 */
+  min-height: 120rpx;
+  max-width: 120rpx;
+  max-height: 120rpx;
+  box-sizing: border-box;
+  padding: 0;
+  margin: 0;
   background: transparent;
   border: none;
-  padding: 0;
-  line-height: normal;
-  margin: 0;
+  line-height: 0;         /* 关键：内部 text 行高不再撑高 button */
+  font-size: 0;           /* 同上，避免 button 默认 font-size 参与 line-height */
+  overflow: hidden;       /* 兜底：圆外的任何溢出都裁掉 */
   display: flex;
   align-items: center;
   justify-content: center;
