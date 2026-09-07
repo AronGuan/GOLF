@@ -481,3 +481,85 @@ class TestStaticAndFallback:
         body = resp.json()
         assert body["code"] == config.PDD_CODE_TASK_NOT_FOUND  # 20001
         assert body["data"] is None
+
+
+class TestLoginDegradationHTTPStatus:
+    """登录失败的**降级响应必须 HTTP 200**，不能是 500。
+
+    背景（2026-09-07 线上事故）：
+        登录失败时后端 ``err(5000, ...)`` 走 ``_CODE_TO_HTTP[5000] = 500``，
+        而微信 ``wx.request`` 只在 2xx/3xx 时进 ``success`` 回调——HTTP 500
+        会直接落到 ``fail``，前端收到的是「网络连接失败，请检查后端服务是否已启动」，
+        根本读不到业务码 10004，**降级为匿名用户的逻辑从未被执行**。
+
+    修复：``err()`` 新增 ``http_status`` 参数，登录降级显式传 200。
+    本组用例同时锁住「其它 5000 真异常仍必须 500」，防止把修复扩大化。
+    """
+
+    def test_login_failure_returns_http_200(self, api_client, monkeypatch):
+        """登录失败 -> HTTP 200 + 业务码 10004（前端才进得了解降级分支）。"""
+        from app import auth as auth_module
+
+        monkeypatch.setattr(auth_module, "login", lambda *a, **k: None)
+
+        resp = api_client.post("/api/v1/auth/login", json={"code": "any-code"})
+
+        assert resp.status_code == 200, (
+            "登录降级必须 HTTP 200；返回 500 会让 wx.request 走 fail 回调，"
+            "前端读不到业务码 10004，匿名降级形同虚设"
+        )
+        body = resp.json()
+        assert body["code"] == config.PDD_CODE_INTERNAL  # 10004
+        assert body["data"] is None
+
+    def test_login_failure_message_mentions_guest(self, api_client, monkeypatch):
+        """降级文案要让用户知道「仍可继续用」，不是报错口吻。"""
+        from app import auth as auth_module
+
+        monkeypatch.setattr(auth_module, "login", lambda *a, **k: None)
+
+        body = api_client.post("/api/v1/auth/login", json={"code": "x"}).json()
+        assert "游客" in (body["message"] or "")
+
+    def test_other_5000_errors_still_return_500(self, monkeypatch):
+        """防回归：登录之外的 5000（真内部错误）**必须**保持 HTTP 500。
+
+        注意用 ``raise_server_exceptions=False`` 的 TestClient——否则异常直接
+        冒泡，走不到 FastAPI 的兜底处理器（与 test_internal_5000_maps_10004
+        同一手法）。
+        """
+        from fastapi.testclient import TestClient
+
+        from app import auth as auth_module
+        from app.main import app
+
+        def _boom(*a, **k):
+            raise RuntimeError("db down")
+
+        monkeypatch.setattr(auth_module, "openid_from_headers", _boom)
+
+        # /auth/me 内部异常 -> 兜底 5000 -> HTTP 500（不得被降级修复波及）
+        with TestClient(app, raise_server_exceptions=False) as client:
+            resp = client.get(
+                "/api/v1/auth/me", headers={"Authorization": "Bearer t"}
+            )
+        assert resp.status_code == 500
+        assert resp.json()["code"] == config.PDD_CODE_INTERNAL
+
+    def test_err_default_status_still_from_mapping(self):
+        """``err()`` 不传 http_status 时，状态码仍由内部码映射决定。"""
+        from app.main import err
+
+        assert err(0, "ok").status_code == 200
+        assert err(4001, "bad").status_code == 400
+        assert err(4004, "nf").status_code == 404
+        assert err(5000, "boom").status_code == 500, "真异常默认仍须 500"
+
+    def test_err_http_status_override_only_when_explicit(self):
+        """只有显式传 http_status 才会覆盖（降级专用，不默认生效）。"""
+        from app.main import err
+
+        resp = err(5000, "登录失败，将以游客身份继续",
+                   config.PDD_CODE_INTERNAL, http_status=200)
+        assert resp.status_code == 200
+        assert resp.body  # 有响应体

@@ -34,3 +34,10 @@ dependencies:
       #    这些重框架会拉高 numpy 或引入冲突，破坏 mediapipe 0.10.14。
       #    模型导出在隔离 conda 环境 golfpose 完成，这里只做推理。
       - onnxruntime
+      # MySQL 驱动 + 连接池（M1/M2.5 登录/用户资料依赖）。
+      # cryptography 是 PyMySQL 8.0+ 跑 caching_sha2_password（MySQL 8.0
+      # 默认认证）必须的；缺它会报 "RuntimeError: 'cryptography' package
+      # is required for sha256_password or caching_sha2_password auth methods"。
+      - pymysql
+      - dbutils
+      - cryptography

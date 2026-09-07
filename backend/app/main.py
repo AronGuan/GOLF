@@ -55,15 +55,33 @@ def ok(data: Any, status_code: int = 200) -> JSONResponse:
     )
 
 
-def err(code: int, message: str, pdd_code: Optional[int] = None) -> JSONResponse:
+def err(
+    code: int,
+    message: str,
+    pdd_code: Optional[int] = None,
+    http_status: Optional[int] = None,
+) -> JSONResponse:
     """失败响应。对外码 = ``pdd_code``（PDD 风格）或 ``code``（legacy 风格）。
 
-    HTTP 状态码始终由**内部语义码**决定（4001->400 / 4004->404 / 4009->409 /
+    HTTP 状态码默认由**内部语义码**决定（4001->400 / 4004->404 / 4009->409 /
     5000->500），与对外码无关——保证新旧两套码的 HTTP 语义一致。
+
+    Args:
+        code: 内部语义码（0/4001/4004/4009/5000）。
+        message: 对前端/用户展示的文案。
+        pdd_code: PDD 风格对外码，None 则用内部码。
+        http_status: **显式覆盖** HTTP 状态码。仅用于「业务失败但前端要走
+            正常分支」的**降级场景**——典型如登录失败降级为匿名：此时业务码
+            仍是 10004，但 HTTP 必须 200，否则 ``wx.request`` 会当成网络错误，
+            根本进不了前端的降级逻辑。
+
+            除降级外**不要**使用本参数：真异常（5000）保持 500，否则前端会把
+            「头像保存失败」「昵称保存失败」误判为成功。
     """
     out_code = pdd_code if config.API_CODE_STYLE == "pdd" else code
+    status = http_status if http_status is not None else _CODE_TO_HTTP.get(code, 500)
     return JSONResponse(
-        status_code=_CODE_TO_HTTP.get(code, 500),
+        status_code=status,
         content={"code": out_code, "data": None, "message": message},
     )
 
@@ -221,9 +239,18 @@ async def auth_login(
         user_agent=(request.headers.get("user-agent") or "")[:512],
     )
     if result is None:
-        # 不抛 ApiError —— 登录失败属于可降级场景，用 5000 让前端走匿名分支
+        # 不抛 ApiError —— 登录失败属于可降级场景，业务码 10004 让前端走匿名分支。
+        #
+        # ⚠️ HTTP 必须显式 200：默认 5000->500 会让 wx.request 判定为网络错误，
+        #    前端根本进不到「读业务码 → 降级匿名」的分支，用户会被卡在未登录态。
+        #    业务码保持 10004（PDD 内部错误码），语义仍是「登录失败」。
         logger.warning("auth_login failed (降级为匿名)")
-        return err(5000, "登录失败，将以游客身份继续", config.PDD_CODE_INTERNAL)
+        return err(
+            5000,
+            "登录失败，将以游客身份继续",
+            config.PDD_CODE_INTERNAL,
+            http_status=200,
+        )
     return ok(result)
 
 
