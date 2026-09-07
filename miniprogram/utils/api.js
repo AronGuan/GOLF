@@ -166,12 +166,19 @@ function request(options) {
 function uploadVideo(filePath, cameraView, onProgress) {
   // 2026-09-04：默认从 'face_on' 改为 'auto'，与后端 _parse_camera_view 默认对齐
   const view = cameraView || 'auto';
+  // 2026-09-07：补注入 Authorization 头。之前漏写导致即使已登录，
+  // 后端 create_task 也读不到 openid，operation_logs.upload 行是 NULL，
+  // state.openid 也是 NULL——任务就成「孤儿」，查不到归属。
+  // 修法对齐 uploadAvatar：token 来自 _readToken()，空 token 不发头（匿名）。
+  const token = _readToken();
+  const authHeader = token ? { Authorization: 'Bearer ' + token } : {};
   return new Promise((resolve, reject) => {
     const task = wx.uploadFile({
       url: BASE_URL + API_PREFIX + '/task/create',
       filePath,
       name: 'video',
       formData: { camera_view: view },
+      header: authHeader,
       timeout: 120000,
       success(res) {
         // 注意：wx.uploadFile 的 res.data 是字符串，必须 JSON.parse
