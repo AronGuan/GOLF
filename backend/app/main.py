@@ -27,7 +27,7 @@ from fastapi.responses import JSONResponse, Response
 from fastapi.staticfiles import StaticFiles
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
-from . import auth, config, user
+from . import audit, auth, config, user
 from .frame_service import FrameError, phase_metrics, render_frame
 from .pipeline import run_analysis
 from .schemas import AnalysisError, CameraView, TaskStatus
@@ -456,6 +456,21 @@ async def create_task(
         "upload ok: %s (%d bytes) view=%s", state.task_id, written, parsed_view.value
     )
 
+    # 操作记录：上传分析（审计旁路，写入失败不影响已创建的任务）
+    # 匿名上传也记（openid=None），这样「未登录用户的上传量」能进运营看板。
+    audit.log_operation(
+        audit.UPLOAD,
+        openid=openid,
+        task_id=state.task_id,
+        detail={
+            "bytes": written,
+            "camera_view": parsed_view.value,
+            "filename": upload.filename or "",
+        },
+        ip=_client_ip(request),
+        user_agent=request.headers.get("user-agent"),
+    )
+
     return ok(
         {"task_id": state.task_id, "status": TaskStatus.PENDING.value},
         status_code=201,
@@ -477,7 +492,7 @@ async def get_task(task_id: str) -> JSONResponse:
 
 @app.get(f"{API_PREFIX}/task/result/{{task_id}}")
 @app.get(f"{API_PREFIX}/tasks/{{task_id}}/result")
-async def get_result(task_id: str) -> JSONResponse:
+async def get_result(task_id: str, request: Request) -> JSONResponse:
     """获取完整分析结果。"""
     state = task_store.get(task_id)
     if state is None:
@@ -488,6 +503,18 @@ async def get_result(task_id: str) -> JSONResponse:
         raise ApiError(
             4009, "任务尚未完成", config.PDD_CODE_TASK_PENDING
         )
+
+    # 操作记录：查看结果（审计旁路）
+    # openid 优先取当前登录态，取不到则回落到任务创建者（结果页可能是别人
+    # 分享后打开，此时记到创建者身上比记匿名更有统计价值）。
+    audit.log_operation(
+        audit.VIEW_RESULT,
+        openid=(auth.openid_from_headers(request.headers) or state.openid),
+        task_id=task_id,
+        ip=_client_ip(request),
+        user_agent=request.headers.get("user-agent"),
+    )
+
     return ok(state.result.model_dump(mode="json"))
 
 

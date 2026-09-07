@@ -10,6 +10,7 @@ v2 覆盖：PDD 双路径注册、错误码映射（10001/10002/10003/10005/2000
 
 from __future__ import annotations
 
+import json
 import os
 import re
 import time
@@ -357,6 +358,110 @@ class TestTaskResult:
 # ---------------------------------------------------------------------------
 # 错误码映射 / legacy 回滚
 # ---------------------------------------------------------------------------
+
+
+class TestOperationLogAudit:
+    """操作记录（operation_logs）的路由层写入。
+
+    与 4 张 task 业务表正交：本表记「用户做了什么」，业务表记「分析结果是什么」。
+    2026-09-07 补齐 login / upload / view_result 三个 action（此前只有
+    update_avatar / update_nickname 落地）。
+    """
+
+    @staticmethod
+    def _capture(monkeypatch):
+        """把 audit 的 DB 换成记录型假对象，返回 captured 列表。"""
+        from app import audit
+
+        captured = []
+
+        class FakeDB:
+            def execute(self, sql, args=None):
+                captured.append((sql, args))
+                return 1
+
+        monkeypatch.setattr(audit, "db", FakeDB())
+        return captured
+
+    def test_upload_writes_log_with_task_id(self, api_client, probe_bytes, monkeypatch):
+        """上传成功 -> 写 action='upload'，并关联 task_id。"""
+        from app import auth
+
+        captured = self._capture(monkeypatch)
+        monkeypatch.setattr(auth, "openid_from_headers", lambda h: "oUPLOAD123")
+
+        task_id = create_task(api_client, probe_bytes).json()["data"]["task_id"]
+
+        logs = [a for s, a in captured if "INSERT INTO operation_logs" in s]
+        assert logs, "上传成功必须写一条操作记录"
+        args = logs[0]
+        assert args[0] == "oUPLOAD123"          # openid
+        assert args[1] == "upload"              # action
+        assert args[2] == "上传分析"             # action_name
+        assert args[3] == task_id               # task_id 关联（关键：能回溯到任务）
+        assert json.loads(args[4])["bytes"] > 0  # detail 带文件大小
+
+    def test_anonymous_upload_still_writes_log(self, api_client, probe_bytes, monkeypatch):
+        """未登录上传 -> 仍写记录（openid=NULL），「匿名上传量」要看板用。"""
+        from app import auth
+
+        captured = self._capture(monkeypatch)
+        monkeypatch.setattr(auth, "openid_from_headers", lambda h: None)
+
+        create_task(api_client, probe_bytes)
+
+        logs = [a for s, a in captured if "INSERT INTO operation_logs" in s]
+        assert logs, "匿名上传也要记（schema 允许 openid NULL）"
+        assert logs[0][0] is None
+
+    def test_view_result_writes_log(self, api_client, monkeypatch):
+        """查看结果 -> 写 action='view_result'。"""
+        from app import auth
+        from app import main as main_module
+        from app.schemas import TaskStatus
+
+        captured = self._capture(monkeypatch)
+        monkeypatch.setattr(auth, "openid_from_headers", lambda h: "oVIEW123")
+
+        # 伪造一个已成功完成的任务（真实跑分析太慢且与本用例无关）。
+        # 注意：main.py 是 ``from .task_store import task_store``——导入的是
+        # **实例**而非模块，所以必须打在 ``main.task_store`` 上。
+        class FakeResult:
+            def model_dump(self, mode="json"):
+                return {"ok": True}
+
+        class FakeState:
+            task_id = "deadbeefcafe"
+            status = TaskStatus.SUCCESS
+            openid = "oVIEW123"
+            result = FakeResult()
+
+        monkeypatch.setattr(main_module.task_store, "get", lambda tid: FakeState())
+
+        resp = api_client.get("/api/v1/tasks/deadbeefcafe/result")
+        assert resp.status_code == 200, resp.text
+
+        logs = [a for s, a in captured if "INSERT INTO operation_logs" in s]
+        assert logs, "查看结果必须写一条操作记录"
+        args = logs[0]
+        assert args[1] == "view_result"
+        assert args[2] == "查看结果"
+        assert args[3] == "deadbeefcafe"
+
+    def test_view_result_unknown_task_writes_no_log(self, api_client, monkeypatch):
+        """任务不存在 -> 4004 早退，不应写日志（避免脏数据）。"""
+        from app import main as main_module
+
+        captured = self._capture(monkeypatch)
+        monkeypatch.setattr(main_module.task_store, "get", lambda tid: None)
+
+        resp = api_client.get("/api/v1/tasks/nosuch/result")
+        # 4004「任务不存在」映射 HTTP 404，业务码在 body 里（20001）
+        assert resp.status_code == 404
+        assert resp.json()["code"] == 20001
+
+        logs = [a for s, a in captured if "INSERT INTO operation_logs" in s]
+        assert not logs, "任务不存在时早退，不应写操作记录"
 
 
 class TestErrorCodeMapping:

@@ -29,7 +29,7 @@ import logging
 from datetime import datetime
 from typing import Any, Dict, Optional
 
-from . import config, db
+from . import audit, config, db
 
 logger = logging.getLogger(__name__)
 
@@ -187,10 +187,10 @@ def update_avatar(openid: str, data: bytes) -> Optional[Dict[str, Any]]:
         return None
 
     # 操作日志（一举两得：审计 + 频率计数）
-    db.execute(
-        "INSERT INTO operation_logs (openid, action, action_name, detail) "
-        "VALUES (%s, 'update_avatar', '修改头像', %s)",
-        (openid, _detail_json({"size": len(data), "ext": ext})),
+    audit.log_operation(
+        audit.UPDATE_AVATAR,
+        openid=openid,
+        detail={"size": len(data), "ext": ext},
     )
 
     logger.info(
@@ -224,10 +224,10 @@ def update_nickname(openid: str, nickname: str) -> Optional[Dict[str, Any]]:
     if not ok:
         return None
 
-    db.execute(
-        "INSERT INTO operation_logs (openid, action, action_name, detail) "
-        "VALUES (%s, 'update_nickname', '修改昵称', %s)",
-        (openid, _detail_json({"length": len(nickname)})),
+    audit.log_operation(
+        audit.UPDATE_NICKNAME,
+        openid=openid,
+        detail={"length": len(nickname)},
     )
 
     row = db.fetchone(
@@ -263,17 +263,3 @@ def _today_action_count(openid: str, action: str) -> int:
         return 0
 
 
-def _detail_json(payload: Dict[str, Any]) -> str:
-    """手搓 JSON 字符串，避免引入 json 模块依赖。"""
-    parts = []
-    for k, v in payload.items():
-        if isinstance(v, str):
-            v_str = '"' + v.replace("\\", "\\\\").replace('"', '\\"') + '"'
-        elif isinstance(v, bool):
-            v_str = "true" if v else "false"
-        elif isinstance(v, (int, float)):
-            v_str = str(v)
-        else:
-            v_str = '"' + str(v) + '"'
-        parts.append('"' + k + '":' + v_str)
-    return "{" + ",".join(parts) + "}"

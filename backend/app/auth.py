@@ -34,7 +34,7 @@ import urllib.parse
 import urllib.request
 from typing import Any, Dict, Mapping, Optional, Tuple
 
-from . import config, db
+from . import audit, config, db
 
 logger = logging.getLogger(__name__)
 
@@ -387,6 +387,16 @@ def login(
     logger.info(
         "login ok: openid=%.6s... uid=%s is_new=%s", openid, user_id, is_new_user
     )
+
+    # 操作记录（审计旁路：写入失败不影响登录结果）
+    audit.log_operation(
+        audit.LOGIN,
+        openid=openid,
+        detail={"is_new_user": is_new_user, "user_id": user_id},
+        ip=ip,
+        user_agent=user_agent,
+    )
+
     return {
         "token": token,
         "expires_at": expires_at,

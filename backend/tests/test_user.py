@@ -14,7 +14,7 @@ import json
 
 import pytest
 
-from app import user
+from app import audit, user
 
 
 # ---------------------------------------------------------------------------
@@ -105,8 +105,16 @@ class FakeDB:
 
 @pytest.fixture
 def fake_db(monkeypatch):
+    """替换 DB 层为假实现。
+
+    ⚠️ 必须同时 patch ``user.db`` 和 ``audit.db``：
+    操作记录已收敛到 ``app.audit``（2026-09-07），若只替换 user.db，
+    审计写入会走**真的** db 模块（测试环境静默降级），fake_db.calls 里
+    就看不到 INSERT INTO operation_logs，断言会以假阴性失败。
+    """
     db = FakeDB()
     monkeypatch.setattr(user, "db", db)
+    monkeypatch.setattr(audit, "db", db)
     return db
 
 
@@ -160,8 +168,13 @@ def test_update_avatar_success(fake_db, monkeypatch, tmp_path):
     assert files[0].read_bytes() == PNG_1x1
     # UPDATE + 写日志
     assert any("UPDATE users SET avatar_url" in s for s, _ in fake_db.calls)
-    # SQL 字面量里含 'update_avatar'（注意：当前是硬编码，不是参数化）
-    assert any("update_avatar" in s for s, _ in fake_db.calls)
+    # action 已参数化（2026-09-07 收敛到 app.audit，列顺序：
+    # openid, action, action_name, task_id, detail, result, ...），
+    # 因此 'update_avatar' 出现在 args[1] 而非 SQL 字面量
+    assert any(
+        "INSERT INTO operation_logs" in s and a and a[1] == "update_avatar"
+        for s, a in fake_db.calls
+    )
 
 
 def test_update_avatar_jpeg(fake_db, monkeypatch, tmp_path):
@@ -349,10 +362,11 @@ def test_update_nickname_writes_log(fake_db):
     fake_db.count_result = 0
     user.update_nickname("oABC", "老虎")
     insert_sql, insert_args = next((s, a) for s, a in fake_db.calls if "INSERT INTO operation_logs" in s)
-    # SQL 字面量含 'update_nickname'
-    assert "update_nickname" in insert_sql
-    # 参数：(openid, detail_json) → index 1 是 detail
-    detail = json.loads(insert_args[1])
+    # action 已参数化（列顺序见 audit.log_operation）：
+    #   (openid, action, action_name, task_id, detail, result, ...)
+    assert insert_args[1] == "update_nickname"
+    assert insert_args[2] == "修改昵称"
+    detail = json.loads(insert_args[4])
     assert detail["length"] == 2
 
 
@@ -373,26 +387,6 @@ def test_update_nickname_returns_updated_at_iso(fake_db):
     result = user.update_nickname("oABC", "老虎")
 
     assert result["updated_at"].startswith("2026-09-05T11:00:00")
-
-
-# ---------------------------------------------------------------------------
-# 五、_detail_json 边界
-# ---------------------------------------------------------------------------
-
-
-def test_detail_json_handles_strings_safely():
-    """字符串中的引号必须转义，避免日志 JSON 损坏。"""
-    payload = {"note": 'has "quotes" and \\backslashes'}
-    json_str = user._detail_json(payload)
-    # 必须可被 json.loads 解析
-    parsed = json.loads(json_str)
-    assert parsed == payload
-
-
-def test_detail_json_handles_bool_and_int():
-    s = user._detail_json({"flag": True, "n": 42, "x": 1.5})
-    parsed = json.loads(s)
-    assert parsed == {"flag": True, "n": 42, "x": 1.5}
 
 
 # ---------------------------------------------------------------------------

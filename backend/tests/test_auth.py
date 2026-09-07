@@ -18,7 +18,7 @@ from datetime import datetime
 
 import pytest
 
-from app import auth, config
+from app import audit, auth, config
 
 
 # ---------------------------------------------------------------------------
@@ -88,8 +88,14 @@ class FakeDB:
 
 @pytest.fixture
 def fake_db(monkeypatch):
+    """替换 DB 层为假实现。
+
+    ⚠️ 必须同时 patch ``auth.db`` 和 ``audit.db``：登录后写 operation_logs
+    走 ``app.audit``（2026-09-07），只 patch auth.db 会漏掉审计写入。
+    """
     db = FakeDB()
     monkeypatch.setattr(auth, "db", db)
+    monkeypatch.setattr(audit, "db", db)
     return db
 
 
@@ -388,6 +394,40 @@ def test_login_success(monkeypatch, wx_enabled, fake_db):
     assert result["expires_at"] == fake_db.token_expiry.isoformat()
     assert result["user"]["nickname"] == "球手 0007"
     assert result["is_new_user"] is False
+
+
+def test_login_writes_operation_log(monkeypatch, wx_enabled, fake_db):
+    """登录成功 -> 写 operation_logs(action='login')，含 openid / ip / UA。
+
+    列顺序见 audit.log_operation：
+    (openid, action, action_name, task_id, detail, result, fail_reason,
+     ip, user_agent, duration_ms)
+    """
+    _mock_wx(monkeypatch, {"openid": "oLOGIN123", "session_key": "sk"})
+
+    assert auth.login("code", ip="1.2.3.4", user_agent="UA/1.0") is not None
+
+    logs = [(s, a) for s, a in fake_db.calls if "INSERT INTO operation_logs" in s]
+    assert logs, "登录成功必须写一条操作记录（审计 + 运营看板数据源）"
+    _, args = logs[0]
+    assert args[0] == "oLOGIN123"    # openid
+    assert args[1] == "login"        # action
+    assert args[2] == "微信登录"      # action_name
+    assert args[5] == "success"      # result
+    assert args[7] == "1.2.3.4"      # ip
+    assert args[8] == "UA/1.0"       # user_agent
+    # detail 里带 is_new_user，便于看板区分新/老用户
+    assert json.loads(args[4])["is_new_user"] is False
+
+
+def test_login_failure_writes_no_log(monkeypatch, wx_enabled, fake_db):
+    """登录失败（微信接口失败）-> 不写操作记录（没有可记的成功事件）。"""
+    _mock_wx(monkeypatch, {"errcode": 40029, "errmsg": "invalid code"})
+
+    assert auth.login("bad-code") is None
+    assert not any(
+        "INSERT INTO operation_logs" in s for s, _ in fake_db.calls
+    )
 
 
 def test_login_marks_new_user(monkeypatch, wx_enabled, fake_db):
