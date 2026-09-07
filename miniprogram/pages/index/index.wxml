@@ -14,7 +14,7 @@
         class="view-option {{cameraView === 'auto' ? 'view-option--on' : ''}}"
         data-view="auto"
         bindtap="onSelectView">
-        <view class="view-emoji">{{views.auto.icon}}</view>
+        <image class="view-icon" src="{{views.auto.icon}}" mode="aspectFit"/>
         <view class="view-label">自动判定</view>
         <view class="view-sub">推荐</view>
         <view class="view-dot" wx:if="{{cameraView === 'auto'}}">✓</view>
@@ -23,7 +23,7 @@
         class="view-option {{cameraView === 'face_on' ? 'view-option--on' : ''}}"
         data-view="face_on"
         bindtap="onSelectView">
-        <view class="view-emoji">{{views.face_on.icon}}</view>
+        <image class="view-icon" src="{{views.face_on.icon}}" mode="aspectFit"/>
         <view class="view-label">正面机位</view>
         <view class="view-sub">face-on</view>
         <view class="view-dot" wx:if="{{cameraView === 'face_on'}}">✓</view>
@@ -32,7 +32,7 @@
         class="view-option {{cameraView === 'down_the_line' ? 'view-option--on' : ''}}"
         data-view="down_the_line"
         bindtap="onSelectView">
-        <view class="view-emoji">{{views.down_the_line.icon}}</view>
+        <image class="view-icon" src="{{views.down_the_line.icon}}" mode="aspectFit"/>
         <view class="view-label">侧面机位</view>
         <view class="view-sub">down-the-line</view>
         <view class="view-dot" wx:if="{{cameraView === 'down_the_line'}}">✓</view>
@@ -53,7 +53,7 @@
       </view>
 
       <view class="golfer">
-        <view class="golfer-placeholder">{{views[cameraView].icon}}</view>
+        <image class="golfer-figure" src="{{views[cameraView].figure}}" mode="aspectFit"/>
       </view>
     </view>
     <view class="diagram-caption">

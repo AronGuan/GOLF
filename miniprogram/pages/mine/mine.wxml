@@ -1,0 +1,104 @@
+<view class="page">
+
+  <!-- 用户信息卡（头像/昵称均支持修改，M2.5 隐私指引审核已通过） -->
+  <view class="card user-card">
+
+    <!-- 已登录 -->
+    <block wx:if="{{loggedIn && user}}">
+      <view class="user-row">
+        <!-- 头像：avatar_url 非空用图片 + chooseAvatar 触发选图；为空用色块占位 + chooseAvatar -->
+        <!--
+          注意：chooseAvatar 必须用 <button>（不能用 view/image）。
+          ⚠️ 内容安全检测违规时微信**静默不回调 bindchooseavatar** —— 用 3 秒
+          兜底定时器给提示，否则用户点了无反应像 bug。
+        -->
+        <block wx:if="{{user.hasAvatar}}">
+          <button
+            class="avatar avatar-btn"
+            open-type="chooseAvatar"
+            bindchooseavatar="onChooseAvatar"
+            hover-class="none">
+            <image class="avatar-img" src="{{user.avatarUrl}}" mode="aspectFill" />
+          </button>
+        </block>
+        <block wx:else>
+          <button
+            class="avatar avatar--color avatar-btn"
+            open-type="chooseAvatar"
+            bindchooseavatar="onChooseAvatar"
+            style="{{user.avatarStyle}}"
+            hover-class="none">
+            <text class="avatar-text">{{user.avatarText}}</text>
+          </button>
+        </block>
+
+        <view class="user-info">
+          <view class="user-name-row">
+            <!--
+              昵称输入：type="nickname" 唤起微信键盘昵称模式；
+              bindblur 在用户失焦时保存（避免每个按键都发请求）。
+              ⚠️ 微信异步检测违规昵称时会清空输入框，不返回错误事件 —— 兜底：
+              与上一次提交值对比，若被清空则回填旧值 + 提示。
+            -->
+            <input
+              type="nickname"
+              class="user-name-input"
+              value="{{user.nickname}}"
+              bindblur="onNicknameBlur"
+              placeholder="点击输入昵称"
+              maxlength="16"
+              confirm-type="done" />
+            <text class="tag-default" wx:if="{{!user.nicknameCustom}}">默认</text>
+          </view>
+          <view class="user-openid">{{user.openidMasked}}</view>
+        </view>
+      </view>
+
+      <view class="user-stats">
+        <view class="stat">
+          <view class="stat-value">{{user.loginCount}}</view>
+          <view class="stat-label">登录次数</view>
+        </view>
+        <view class="stat">
+          <view class="stat-value">{{user.createdText}}</view>
+          <view class="stat-label">注册时间</view>
+        </view>
+      </view>
+    </block>
+
+    <!-- 未登录降级态：正常状态，不弹错误 toast，页面其余部分照常展示 -->
+    <block wx:else>
+      <view class="user-row">
+        <view class="avatar avatar--guest">
+          <!-- 人形剪影占位（CSS 绘制，与「我的」tab 图标视觉一致） -->
+          <view class="avatar-guest-figure"></view>
+        </view>
+        <view class="user-info">
+          <view class="user-name user-name--guest">未登录</view>
+          <view class="user-openid">登录信息未就绪，历史记录暂不可用</view>
+        </view>
+      </view>
+      <view class="retry {{loadingMe ? 'retry--off' : ''}}" bindtap="onRetryLogin">
+        {{loadingMe ? '重试中...' : '重新登录'}}
+      </view>
+    </block>
+  </view>
+
+  <!-- 历史分析：后端接口未实现，本期固定空态 -->
+  <view class="card history-card">
+    <view class="card-title">我的分析</view>
+    <view class="empty">
+      <view class="empty-icon"></view>
+      <view class="empty-title">还没有分析记录</view>
+      <view class="empty-sub">拍一段挥杆视频，30 秒拿到 8 阶段姿态报告</view>
+      <view class="btn btn-primary empty-btn" bindtap="onGoAnalyze">去分析</view>
+    </view>
+  </view>
+
+  <!-- 退出登录 -->
+  <view class="card logout-card" wx:if="{{loggedIn}}">
+    <view class="logout {{loggingOut ? 'logout--off' : ''}}" bindtap="onLogout">
+      {{loggingOut ? '退出中...' : '退出登录'}}
+    </view>
+  </view>
+</view>

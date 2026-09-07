@@ -20,13 +20,16 @@ const MAX_SIZE = 40 * 1024 * 1024;
  * - auto：默认；由后端 view_detector 自动判定（实测 9/9 命中）。
  *   改默认值的原因：之前默认 face_on 让 DTL 视频被错判为 face_on，
  *   ClubProbe 等机位相关链路永远不触发。
+ * - icon / figure 都是本地 PNG（miniprogram/assets/icons/），2026-09-05 落地
+ *   （原 emoji 占位因 MvpDevExpertTeam P0「禁止 emoji 作功能图标」被替换）。
  */
 const VIEWS = {
   auto: {
     key: 'auto',
     label: '自动判定',
     sub: '系统根据画面自动识别（推荐）',
-    icon: '✨',
+    icon: '/assets/icons/view_auto.png',
+    figure: '/assets/icons/golfer_auto.png',
     requirements: [
       '选择此项后由系统自动判定机位',
       '请保持机位单一，不要中途切换',
@@ -40,7 +43,8 @@ const VIEWS = {
     key: 'face_on',
     label: '正面机位',
     sub: '正对身体拍摄 · 竖持手机',
-    icon: '🙋',
+    icon: '/assets/icons/view_face_on.png',
+    figure: '/assets/icons/golfer_face_on.png',
     requirements: [
       '正面机位：镜头正对身体（面向你）',
       '手机竖持固定，不要手持晃动',
@@ -55,7 +59,8 @@ const VIEWS = {
     key: 'down_the_line',
     label: '侧面机位',
     sub: '垂直于目标线拍摄 · 竖持手机',
-    icon: '🏌️',
+    icon: '/assets/icons/view_down_the_line.png',
+    figure: '/assets/icons/golfer_down_the_line.png',
     requirements: [
       '侧面机位：镜头垂直于目标线',
       '球手侧面面对镜头（右肩侧朝向镜头）',
@@ -234,33 +239,50 @@ Page({
     const cameraView = this.data.cameraView;
     this.setData({ uploading: true, uploadPercent: 0, canSubmit: false });
 
-    api
-      .uploadVideo(filePath, cameraView, (percent) => {
-        this.setData({ uploadPercent: percent });
-      })
-      .then((data) => {
-        const app = getApp();
-        app.globalData.taskId = data.task_id;
-        app.globalData.result = null;
-        this.setData({ uploading: false, uploadPercent: 100 });
-        this._refreshSubmit();
-        wx.navigateTo({ url: '/pages/analyzing/analyzing?task_id=' + data.task_id });
-      })
-      .catch((error) => {
-        this.setData({ uploading: false, uploadPercent: 0 });
-        this._refreshSubmit();
-        wx.showModal({
-          title: '上传失败',
-          content: (error && error.message) || '请稍后重试',
-          showCancel: true,
-          cancelText: '取消',
-          confirmText: '重试',
-          success: (res) => {
-            if (res.confirm) {
-              this.onSubmit();
+    // 2026-09-05：上传前确保登录就绪。
+    //   - 有 token：立即 resolve，几乎零延迟
+    //   - 仍在跑：等 onLaunch 触发的登录完成（通常 < 1s）
+    //   - 失败：catch 兜底，不阻断上传 —— 任务照常创建，匿名归因
+    // 注意：不能 await getApp().ensureLogin() 而把 .then() 链打断 —— 必须
+    // 在现有 Promise 链里追加，使上传始终能继续。
+    const app = getApp();
+    // 2026-09-05：上传前确保登录就绪。
+    //   - 有 token：立即 resolve，几乎零延迟
+    //   - 仍在跑：等 onLaunch 触发的登录完成（通常 < 1s）
+    //   - 失败：catch 兜底，不阻断上传 —— 任务照常创建，匿名归因
+    const ready =
+      typeof app.ensureLogin === 'function'
+        ? app.ensureLogin().catch(() => null)
+        : Promise.resolve(null);
+
+    ready.then(() => {
+      api
+        .uploadVideo(filePath, cameraView, (percent) => {
+          this.setData({ uploadPercent: percent });
+        })
+        .then((data) => {
+          app.globalData.taskId = data.task_id;
+          app.globalData.result = null;
+          this.setData({ uploading: false, uploadPercent: 100 });
+          this._refreshSubmit();
+          wx.navigateTo({ url: '/pages/analyzing/analyzing?task_id=' + data.task_id });
+        })
+        .catch((error) => {
+          this.setData({ uploading: false, uploadPercent: 0 });
+          this._refreshSubmit();
+          wx.showModal({
+            title: '上传失败',
+            content: (error && error.message) || '请稍后重试',
+            showCancel: true,
+            cancelText: '取消',
+            confirmText: '重试',
+            success: (res) => {
+              if (res.confirm) {
+                this.onSubmit();
+              }
             }
-          }
+          });
         });
-      });
+    });
   }
 });

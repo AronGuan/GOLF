@@ -50,6 +50,7 @@ class TaskStore:
         video_path: Optional[str] = None,
         out_dir: Optional[str] = None,
         camera_view: CameraView = CameraView.FACE_ON,
+        openid: Optional[str] = None,
     ) -> TaskState:
         """创建任务记录并准备任务目录。
 
@@ -57,6 +58,8 @@ class TaskStore:
             video_path: 视频落盘路径；上传流程中可先留空，落盘后再 :meth:`update`。
             out_dir: 任务目录；留空则按 ``{DATA_DIR}/{task_id}`` 自动创建。
             camera_view: 用户选择的拍摄机位（v2 新增，默认 face-on 兼容旧版）。
+            openid: 归属用户（M1 登录）。``None`` 表示匿名任务 —— 分析流程
+                与登录前完全一致，只是不进「我的历史」。
 
         Returns:
             新建的 :class:`TaskState`。
@@ -75,6 +78,7 @@ class TaskStore:
             video_path=video_path,
             out_dir=str(target_dir),
             camera_view=camera_view,
+            openid=openid,
             created_at=now,
             updated_at=now,
         )

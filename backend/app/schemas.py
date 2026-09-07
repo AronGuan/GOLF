@@ -478,6 +478,9 @@ class TaskState:
     camera_view: CameraView = CameraView.FACE_ON
     #: PDD 的字符串 step（v2 新增）
     step_text: str = ""
+    #: 归属用户的 openid（M1 登录）。``None`` = 匿名任务，
+    #: 不会出现在「我的历史」里 —— 但分析流程完全不受影响。
+    openid: Optional[str] = None
     created_at: float = 0.0
     updated_at: float = 0.0
 

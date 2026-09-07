@@ -2,7 +2,8 @@
   "pages": [
     "pages/index/index",
     "pages/analyzing/analyzing",
-    "pages/result/result"
+    "pages/result/result",
+    "pages/mine/mine"
   ],
   "window": {
     "backgroundTextStyle": "light",
@@ -10,6 +11,26 @@
     "navigationBarTitleText": "挥杆分析",
     "navigationBarTextStyle": "white",
     "backgroundColor": "#0E1116"
+  },
+  "tabBar": {
+    "color": "#8B949E",
+    "selectedColor": "#1D9E75",
+    "backgroundColor": "#0E1116",
+    "borderStyle": "black",
+    "list": [
+      {
+        "pagePath": "pages/index/index",
+        "text": "挥杆分析",
+        "iconPath": "assets/icons/tab_home.png",
+        "selectedIconPath": "assets/icons/tab_home_active.png"
+      },
+      {
+        "pagePath": "pages/mine/mine",
+        "text": "我的",
+        "iconPath": "assets/icons/tab_mine.png",
+        "selectedIconPath": "assets/icons/tab_mine_active.png"
+      }
+    ]
   },
   "style": "v2",
   "sitemapLocation": "sitemap.json",

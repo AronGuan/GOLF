@@ -1193,7 +1193,8 @@ Page({
   },
 
   onRetake() {
-    wx.redirectTo({ url: '/pages/index/index' });
+    // 2026-09-05：index 已改为 tabBar 页，必须用 switchTab（redirectTo 在 tabBar 页上会报错）
+    wx.switchTab({ url: '/pages/index/index' });
   },
 
   onShareAppMessage() {

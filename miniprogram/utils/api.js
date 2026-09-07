@@ -10,13 +10,52 @@
  */
 
 /** 后端基地址 */
-const BASE_URL = 'http://127.0.0.1:8000';
+const BASE_URL = 'http://39.102.63.30:8000';
 
 /** 接口前缀 */
 const API_PREFIX = '/api/v1';
 
 /** 请求超时（毫秒） */
 const TIMEOUT = 20000;
+
+/**
+ * token 本地存储 key（与 app.js 保持一致，失效时清理）。
+ */
+const TOKEN_KEY = 'golf_token';
+
+/**
+ * 读取登录态 token。优先级：globalData > 持久化缓存。
+ * @return {string}
+ */
+function _readToken() {
+  try {
+    const app = getApp();
+    if (app && app.globalData && app.globalData.token) {
+      return app.globalData.token;
+    }
+    const cached = wx.getStorageSync(TOKEN_KEY);
+    return cached || '';
+  } catch (e) {
+    return '';
+  }
+}
+
+/**
+ * 清理登录态。token 失效（后端用匿名降级了）或用户主动登出时调用。
+ */
+function _clearToken() {
+  try {
+    const app = getApp();
+    if (app && app.globalData) {
+      app.globalData.token = '';
+      app.globalData.user = null;
+      app.globalData.expiresAt = '';
+    }
+    wx.removeStorageSync(TOKEN_KEY);
+  } catch (e) {
+    // 静默
+  }
+}
 
 /**
  * 后端业务错误码 -> 中文文案（兜底用；优先使用后端下发的 error_message）
@@ -92,13 +131,16 @@ function parseEnvelope(raw) {
  */
 function request(options) {
   const { url, method = 'GET', data = {}, header = {} } = options;
+  // 自动注入登录 token。空 token 时不发 Authorization 头（匿名调用）。
+  const token = _readToken();
+  const authHeader = token ? { Authorization: 'Bearer ' + token } : {};
   return new Promise((resolve, reject) => {
     wx.request({
       url: BASE_URL + API_PREFIX + url,
       method,
       data,
       timeout: TIMEOUT,
-      header: Object.assign({ 'content-type': 'application/json' }, header),
+      header: Object.assign({ 'content-type': 'application/json' }, authHeader, header),
       success(res) {
         const body = parseEnvelope(res.data);
         if (body.code === 0) {
@@ -274,6 +316,133 @@ function getPhaseMetrics(taskId, phase, frameIndex) {
   });
 }
 
+// ---------------------------------------------------------------------------
+// 登录与用户资料（M1）
+//
+// 设计：登录是增强项，失败一律静默降级为匿名。调用方只需
+// ``.catch(() => null)`` 兜住所有错误，不能让登录失败阻塞主流程。
+// ---------------------------------------------------------------------------
+
+/**
+ * 微信静默登录。成功后 token 自动写入 ``globalData`` + 本地缓存，
+ * **后续所有 request() 会自动带上 Authorization 头**，调用方无须重复传。
+ *
+ * @param {string} code 来自 ``wx.login({success: r => r.code})`` 的临时凭证
+ * @return {Promise<{token, expires_at, is_new_user, user}|null>}
+ *         失败时返回 ``null``（不抛异常，调用方 ``catch(() => null)``）。
+ */
+function login(code) {
+  return request({
+    url: '/auth/login',
+    method: 'POST',
+    data: { code }
+  })
+    .then((data) => {
+      try {
+        const app = getApp();
+        if (app && app.globalData) {
+          app.globalData.token = data.token;
+          app.globalData.user = data.user;
+          app.globalData.expiresAt = data.expires_at;
+          app.globalData.loginState = 'ok';
+        }
+        wx.setStorageSync(TOKEN_KEY, data.token);
+      } catch (e) {
+        // 写入失败不阻断登录成功
+      }
+      return data;
+    })
+    .catch(() => null);
+}
+
+/**
+ * 拉取当前用户。**未登录返回 ``{logged_in:false}`` 不是错误**。
+ * @return {Promise<{logged_in:boolean, user:object|null}>}
+ */
+function getMe() {
+  return request({ url: '/auth/me', method: 'GET' });
+}
+
+/**
+ * 退出登录：撤销后端 token + 清理本地缓存。
+ * 即便后端调用失败也会清理本地，保证用户视角「确实退出了」。
+ * @return {Promise<{ok:boolean}>}
+ */
+function logout() {
+  return request({ url: '/auth/logout', method: 'POST' })
+    .catch(() => null)
+    .then(() => {
+      _clearToken();
+      return { ok: true };
+    });
+}
+
+/**
+ * 拉取当前用户的历史分析任务。
+ *
+ * TODO: M3 接入 —— 当前后端 ``GET /api/v1/tasks/mine`` 尚未实现，
+ * 调用必返回 404，因此本期返回空数组使页面渲染空态。
+ * 接口就绪后只需把下面这一行换成：
+ *   return request({ url: '/tasks/mine', method: 'GET' });
+ *
+ * @return {Promise<{tasks: Array}>}
+ */
+function getMyTasks() {
+  return Promise.resolve({ tasks: [] });
+}
+
+// ---------------------------------------------------------------------------
+// 用户资料修改（M2.5）
+//
+// 与 M1 一致：失败时**不抛异常**，返回 ``null`` 让调用方统一处理。
+// 调用方可以 ``.catch(() => null)`` 或直接 await + null 检查。
+// ---------------------------------------------------------------------------
+
+/**
+ * 上传头像。M2.5 微信组件已内置内容安全检测，无需服务端 imgSecCheck。
+ *
+ * @param {string} filePath 本地临时路径（如 chooseAvatar 回调的 ``e.detail.avatarUrl``）
+ * @return {Promise<{avatar_url:string, updated_at:string}|null>}
+ */
+function uploadAvatar(filePath) {
+  return new Promise((resolve) => {
+    const token = _readToken();
+    const authHeader = token ? { Authorization: 'Bearer ' + token } : {};
+    wx.uploadFile({
+      url: BASE_URL + API_PREFIX + '/user/avatar',
+      filePath,
+      name: 'file',
+      timeout: 30000,
+      header: authHeader,
+      success(res) {
+        const body = parseEnvelope(res.data);
+        if (body.code === 0 && body.data) {
+          resolve(body.data);
+        } else {
+          // 业务码 → 中文（20005 频率超限等）
+          resolve(null);
+        }
+      },
+      fail() {
+        resolve(null);
+      }
+    });
+  });
+}
+
+/**
+ * 更新昵称。
+ * @param {string} nickname 1~16 字符（由后端做长度校验）
+ * @return {Promise<{nickname:string, nickname_custom:boolean, updated_at:string}|null>}
+ */
+function updateNickname(nickname) {
+  return request({
+    url: '/user/profile',
+    method: 'POST',
+    data: { nickname }
+  }).catch(() => null);
+}
+
 module.exports = {
   BASE_URL,
   API_PREFIX,
@@ -286,5 +455,13 @@ module.exports = {
   getResult,
   getFrameImage,
   getPhaseMetrics,
-  health
+  health,
+  // M1 登录
+  login,
+  getMe,
+  logout,
+  getMyTasks,
+  // M2.5 用户资料
+  uploadAvatar,
+  updateNickname
 };

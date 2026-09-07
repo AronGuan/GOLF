@@ -1,0 +1,296 @@
+/* 我的页面样式（深色主题，色值与首页保持一致） */
+
+/* tabBar 占位：底部留出 tabBar（约 50px）+ 安全区，内容不被遮住 */
+.page {
+  padding-bottom: calc(160rpx + env(safe-area-inset-bottom));
+}
+
+/* ---------------- 用户信息卡 ---------------- */
+
+.user-card {
+  background: #161b22;
+}
+
+.user-row {
+  display: flex;
+  align-items: center;
+}
+
+.avatar {
+  width: 120rpx;
+  height: 120rpx;
+  border-radius: 50%;
+  flex-shrink: 0;
+  background: #1f2630;
+}
+
+/* 无头像时的兜底色块：背景色由后端 avatar_hue 算出的 hsl 内联下发 */
+.avatar--color {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.avatar--guest {
+  background: #263040;
+  /* 与 .avatar--color 保持一致：flex 居中 figure 子元素 */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.avatar-text {
+  font-size: 52rpx;
+  font-weight: 600;
+  color: #ffffff;
+}
+
+.avatar-text--guest {
+  /* 已废弃：未登录态改用人形剪影占位（见 .avatar-guest-figure），
+     保留选择器仅防外部 WXML 误用，避免显示裸问号 */
+  display: none;
+}
+
+/* 未登录头像占位：人形剪影（圆头 + 弧形肩）
+   用 ::before / ::after 纯 CSS 绘制，零图片资源；与「我的」tab 图标视觉一致
+   颜色用 60% 白叠加在灰色背景上，对比清晰但不刺眼 */
+.avatar-guest-figure {
+  position: relative;
+  width: 65%;
+  height: 65%;
+}
+
+.avatar-guest-figure::before {
+  /* 头：圆，35% 直径 */
+  content: '';
+  position: absolute;
+  top: 5%;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 35%;
+  height: 35%;
+  background: rgba(255, 255, 255, 0.6);
+  border-radius: 50%;
+}
+
+.avatar-guest-figure::after {
+  /* 肩：半圆，80% 宽 / 40% 高，紧贴头的下方
+     下沿超出头像圆被自动裁掉，呈弧形肩线 */
+  content: '';
+  position: absolute;
+  top: 38%;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 80%;
+  height: 65%;
+  background: rgba(255, 255, 255, 0.6);
+  border-top-left-radius: 50%;
+  border-top-right-radius: 50%;
+}
+
+/* avatar button（chooseAvatar 必须用 button，不能用 view/image）
+   ⚠️ button 默认有 padding / border / line-height，会破坏圆形布局 —— 重置 */
+.avatar-btn {
+  background: transparent;
+  border: none;
+  padding: 0;
+  line-height: normal;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.avatar-btn::after {
+  border: none;  /* 去掉 button 默认的 after 边框 */
+}
+
+.avatar-img {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+}
+
+.user-info {
+  flex: 1;
+  margin-left: 24rpx;
+  overflow: hidden;
+}
+
+.user-name-row {
+  display: flex;
+  align-items: center;
+}
+
+.user-name {
+  font-size: 36rpx;
+  font-weight: 700;
+  color: #ffffff;
+  max-width: 340rpx;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.user-name--guest {
+  color: #8b949e;
+}
+
+/* 昵称 input（type="nickname"）—— 外观与 user-name 一致，但允许编辑
+   ⚠️ input 默认有 padding / border / line-height —— 重置 */
+.user-name-input {
+  font-size: 36rpx;
+  font-weight: 700;
+  color: #ffffff;
+  max-width: 340rpx;
+  flex: 1;
+  /* input 默认样式重置 */
+  background: transparent;
+  border: none;
+  padding: 0;
+  line-height: 1.4;
+}
+.user-name-input::placeholder {
+  color: #6b7686;
+  font-weight: 400;
+}
+
+/* 「默认」标签：提示该昵称是系统分配的，用户未自定义过 */
+.tag-default {
+  margin-left: 12rpx;
+  padding: 2rpx 12rpx;
+  border-radius: 999rpx;
+  font-size: 20rpx;
+  font-weight: 600;
+  color: #1d9e75;
+  background: rgba(29, 158, 117, 0.16);
+  flex-shrink: 0;
+}
+
+.user-openid {
+  margin-top: 4rpx;
+  font-size: 24rpx;
+  color: #8b949e;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.user-stats {
+  display: flex;
+  margin-top: 28rpx;
+  padding-top: 24rpx;
+  border-top: 1rpx dashed #2a323e;
+}
+
+.stat {
+  flex: 1;
+  text-align: center;
+}
+
+.stat-value {
+  font-size: 32rpx;
+  font-weight: 700;
+  color: #ffffff;
+}
+
+.stat-label {
+  margin-top: 2rpx;
+  font-size: 22rpx;
+  color: #8b949e;
+}
+
+.retry {
+  margin-top: 24rpx;
+  padding: 16rpx 0;
+  border-radius: 46rpx;
+  text-align: center;
+  font-size: 26rpx;
+  font-weight: 600;
+  color: #1d9e75;
+  background: rgba(29, 158, 117, 0.1);
+}
+
+.retry--off {
+  color: #6b7686;
+  background: #1f2630;
+}
+
+/* ---------------- 历史分析 ---------------- */
+
+.history-card {
+  background: #161b22;
+  margin-top: 24rpx;
+}
+
+.card-title {
+  font-size: 32rpx;
+  font-weight: 700;
+  margin-bottom: 8rpx;
+}
+
+.empty {
+  padding: 24rpx 0 8rpx;
+  text-align: center;
+}
+
+/* 空态图标：纯 CSS 绘制，不引入图片资源 */
+.empty-icon {
+  width: 96rpx;
+  height: 96rpx;
+  margin: 16rpx auto 20rpx;
+  border-radius: 50%;
+  border: 4rpx solid #2a323e;
+  position: relative;
+}
+
+.empty-icon::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 40rpx;
+  height: 4rpx;
+  border-radius: 2rpx;
+  background: #2a323e;
+  transform: translate(-50%, -50%);
+}
+
+.empty-title {
+  font-size: 28rpx;
+  color: #ffffff;
+}
+
+.empty-sub {
+  margin-top: 8rpx;
+  font-size: 24rpx;
+  color: #8b949e;
+}
+
+.empty-btn {
+  width: 280rpx;
+  height: 80rpx;
+  line-height: 80rpx;
+  border-radius: 40rpx;
+  font-size: 28rpx;
+  margin: 28rpx auto 8rpx;
+}
+
+/* ---------------- 退出登录 ---------------- */
+
+.logout-card {
+  background: #161b22;
+  margin-top: 24rpx;
+  padding: 0;
+}
+
+.logout {
+  padding: 28rpx 0;
+  text-align: center;
+  font-size: 28rpx;
+  font-weight: 600;
+  color: #f5483b;
+}
+
+.logout--off {
+  color: #6b7686;
+}

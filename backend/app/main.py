@@ -21,13 +21,13 @@ import logging
 from pathlib import Path
 from typing import Any, Dict, Optional
 
-from fastapi import BackgroundTasks, FastAPI, File, Form, Request, UploadFile
+from fastapi import BackgroundTasks, Body, FastAPI, File, Form, Request, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, Response
 from fastapi.staticfiles import StaticFiles
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
-from . import config
+from . import auth, config, user
 from .frame_service import FrameError, phase_metrics, render_frame
 from .pipeline import run_analysis
 from .schemas import AnalysisError, CameraView, TaskStatus
@@ -176,6 +176,161 @@ async def health() -> JSONResponse:
     return ok({"status": "ok", "mediapipe": config.MEDIAPIPE_VERSION})
 
 
+# ---------------------------------------------------------------------------
+# 登录（方案 M1：docs/plans/2026-09-05-wechat-login-and-audit.md）
+#
+# 设计原则：**登录是增强项，不是门槛**。任何失败都返回可识别的响应，
+# 前端降级为匿名后分析功能照常可用（验收标准 8-11）。
+# ---------------------------------------------------------------------------
+
+
+def _client_ip(request: Request) -> str:
+    """取客户端 IP。经反代时未必是真实 IP，仅作审计线索。"""
+    try:
+        return request.client.host if request.client else ""
+    except Exception:
+        return ""
+
+
+def _bearer_token(request: Request) -> str:
+    """从 ``Authorization: Bearer <token>`` 提取明文 token。"""
+    raw = (request.headers.get("authorization") or "").strip()
+    if raw[:6].lower() == "bearer":
+        raw = raw[6:].strip()
+    return raw
+
+
+@app.post(f"{API_PREFIX}/auth/login")
+async def auth_login(
+    request: Request, payload: Dict[str, Any] = Body(default={})
+) -> JSONResponse:
+    """微信静默登录。
+
+    入参 ``{"code": "..."}``，code 来自小程序 ``wx.login()``
+    （5 分钟有效、**一次性**）。
+
+    失败一律返回 5000，前端捕获后降级为匿名，**不阻断**上传分析。
+    """
+    code = str(payload.get("code") or "").strip()
+    if not code:
+        raise ApiError(4001, "缺少登录凭证 code", config.PDD_CODE_BAD_FORMAT)
+
+    result = auth.login(
+        code,
+        ip=_client_ip(request),
+        user_agent=(request.headers.get("user-agent") or "")[:512],
+    )
+    if result is None:
+        # 不抛 ApiError —— 登录失败属于可降级场景，用 5000 让前端走匿名分支
+        logger.warning("auth_login failed (降级为匿名)")
+        return err(5000, "登录失败，将以游客身份继续", config.PDD_CODE_INTERNAL)
+    return ok(result)
+
+
+@app.post(f"{API_PREFIX}/auth/logout")
+async def auth_logout(request: Request) -> JSONResponse:
+    """登出：撤销当前 token。token 无效也返回成功（幂等）。"""
+    token = _bearer_token(request)
+    if token:
+        auth.revoke_token(token)
+    return ok({"revoked": bool(token)})
+
+
+@app.get(f"{API_PREFIX}/auth/me")
+async def auth_me(request: Request) -> JSONResponse:
+    """当前用户信息。未登录返回 ``logged_in=false``（**不是错误**）。
+
+    昵称/头像为空时由后端补默认值（``球手 0007`` + 色块色相），
+    默认值**不回写**数据库，见方案 §3.6。
+    """
+    openid = auth.openid_from_headers(request.headers)
+    if not openid:
+        return ok({"logged_in": False, "user": None})
+
+    user_info = auth.public_user(openid)
+    if user_info is None:
+        return ok({"logged_in": False, "user": None})
+    return ok({"logged_in": True, "user": user_info})
+
+
+# ---------------------------------------------------------------------------
+# 用户资料修改（M2.5：头像 + 昵称）
+#
+# 设计：
+#   - 头像：multipart，字段名 ``file``，PNG/JPEG，≤1MB，每日 10 次
+#   - 昵称：JSON body {nickname}，1~16 字符，每日 5 次
+#   - 失败分类用 ``user.classify_*`` 在路由层映射 HTTP/业务码
+# ---------------------------------------------------------------------------
+
+
+@app.post(f"{API_PREFIX}/user/avatar")
+async def user_upload_avatar(
+    request: Request,
+    file: UploadFile = File(...),
+) -> JSONResponse:
+    """上传头像（PNG / JPEG，≤1MB）。成功后头像 URL 写入库，前端刷新即可见。"""
+    openid = auth.openid_from_headers(request.headers)
+    if not openid:
+        raise ApiError(4001, "请先登录", config.PDD_CODE_INTERNAL)
+
+    data = await file.read()
+    await file.close()
+
+    failure = user.classify_avatar_failure(openid, data)
+    if failure == user.ERR_SIZE:
+        raise ApiError(
+            4001,
+            f"头像大小不能超过 {user.AVATAR_MAX_BYTES // (1024 * 1024)}MB",
+            config.PDD_CODE_FILE_TOO_LARGE,
+        )
+    if failure in (user.ERR_FORMAT, user.ERR_EMPTY):
+        raise ApiError(
+            4001, "头像必须是 PNG 或 JPEG 格式", config.PDD_CODE_BAD_FORMAT
+        )
+    if failure == user.ERR_LIMIT:
+        raise ApiError(
+            4009,
+            f"今日头像修改次数已达上限（{user.AVATAR_DAILY_LIMIT} 次）",
+            config.PDD_CODE_RATE_LIMITED,
+        )
+    # ERR_OPENID 已在上面拦截
+
+    result = user.update_avatar(openid, data)
+    if result is None:
+        raise ApiError(5000, "头像保存失败", config.PDD_CODE_INTERNAL)
+    return ok(result)
+
+
+@app.post(f"{API_PREFIX}/user/profile")
+async def user_update_profile(
+    request: Request, payload: Dict[str, Any] = Body(default={})
+) -> JSONResponse:
+    """更新昵称（1~16 字符）。"""
+    openid = auth.openid_from_headers(request.headers)
+    if not openid:
+        raise ApiError(4001, "请先登录", config.PDD_CODE_INTERNAL)
+
+    nickname = str(payload.get("nickname") or "")
+    failure = user.classify_nickname_failure(openid, nickname)
+    if failure == user.ERR_FORMAT:
+        raise ApiError(
+            4001,
+            f"昵称长度需在 {user.NICKNAME_MIN_LEN}~{user.NICKNAME_MAX_LEN} 个字符之间",
+            config.PDD_CODE_BAD_FORMAT,
+        )
+    if failure == user.ERR_LIMIT:
+        raise ApiError(
+            4009,
+            f"今日昵称修改次数已达上限（{user.NICKNAME_DAILY_LIMIT} 次）",
+            config.PDD_CODE_RATE_LIMITED,
+        )
+
+    result = user.update_nickname(openid, nickname)
+    if result is None:
+        raise ApiError(5000, "昵称保存失败", config.PDD_CODE_INTERNAL)
+    return ok(result)
+
+
 def _validate_filename(filename: Optional[str], content_type: Optional[str]) -> None:
     """扩展名 / content-type 校验（PDD 放开 .mov）。
 
@@ -207,6 +362,7 @@ def _pick_upload(
 @app.post(f"{API_PREFIX}/task/create")
 @app.post(f"{API_PREFIX}/tasks")
 async def create_task(
+    request: Request,
     background_tasks: BackgroundTasks,
     video: UploadFile = File(None),
     file: UploadFile = File(None),
@@ -217,7 +373,13 @@ async def create_task(
     - 文件字段名：``video``（PDD 主）/ ``file``（旧兼容）；
     - ``camera_view``：``face_on`` / ``down_the_line``（``auto`` 内部可接受），
       缺省/非法值按 ``face_on`` 落值，不硬拒。
+
+    登录归属（M1）：从 ``Authorization`` 头解析 openid 回填到任务上。
+    **无 token / token 无效一律按匿名处理，不拒绝上传**（验收标准 10）。
     """
+    # 登录失败不影响上传：openid 为 None 时任务照常创建
+    openid = auth.openid_from_headers(request.headers)
+
     upload = _pick_upload(video, file)
     if upload is None:
         raise ApiError(
@@ -227,7 +389,7 @@ async def create_task(
 
     parsed_view = _parse_camera_view(camera_view)
 
-    state = task_store.create(camera_view=parsed_view)
+    state = task_store.create(camera_view=parsed_view, openid=openid)
     target = Path(state.out_dir or str(config.DATA_DIR / state.task_id))
     ext = Path(upload.filename or ".mp4").suffix or ".mp4"
     video_path = target / config.upload_filename(ext)

@@ -11,6 +11,13 @@
     6. 渲染
     7. 文案（错误码中文映射、免责声明）
     8. 球杆检测（club-detection-design.md §5.2 T01）
+    9. v2 风险引擎与接口契约
+    10. 手动帧微调
+    11. SwingNet(AI DTL 事件检测)
+    12. GolfPose ONNX(球杆检测器 + 关键点)
+    13. 规则法 Hough 真值源
+    14. 数据库(MySQL, 登录 / 操作记录 / 任务持久化)
+    15. 微信登录与用户资料
 """
 
 from __future__ import annotations
@@ -18,6 +25,10 @@ from __future__ import annotations
 import os
 from pathlib import Path
 from typing import Dict, Final, FrozenSet, Tuple
+
+# 副作用导入：把项目根 .env 的键值载入 os.environ（真环境变量优先）。
+# 必须在本模块任何 os.getenv() 之前完成，因此放在所有常量定义之前。
+from . import env  # noqa: F401
 
 # ---------------------------------------------------------------------------
 # 1. 目录与运行时
@@ -702,6 +713,9 @@ PDD_CODE_FRAME_OUT_OF_RANGE: Final[int] = 20003
 #: PDD 错误码 20004（阶段标识非法，非 8 阶段之一）。结果域顺延，纯增量新增。
 PDD_CODE_PHASE_INVALID: Final[int] = 20004
 
+#: 频率超限（M2.5 头像/昵称每日修改次数限制）
+PDD_CODE_RATE_LIMITED: Final[int] = 20005
+
 
 # ---------------------------------------------------------------------------
 # 11. SwingNet（AI DTL 事件检测，M1 封装，M2 才切换 pipeline）
@@ -810,3 +824,99 @@ CLUB_RULE_MIN_CONF: Final[float] = 0.30
 #: 太窄容易连锁失败；放宽到 35° 能在「错一帧方向预测」时仍能命中下一帧。
 #: ⚠️ 这是经验值，与 ``CLUB_ROI_FAN_DEG`` 的 (45, 25) 中的 track 取值不同。
 CLUB_RULE_FAN_DEG: Final[float] = 35.0
+
+
+# ---------------------------------------------------------------------------
+# 14. 数据库（MySQL 8.0）
+#
+# 方案：docs/plans/2026-09-05-wechat-login-and-audit.md
+# 表结构：deploy/mysql/001_init.sql（任务）+ 002_auth.sql（登录）
+#
+# ⚠️ 安全约定：密码**严禁硬编码**，统一走 ``GOLF_DB_PASSWORD`` 环境变量。
+#    未配置时 :data:`DB_ENABLED` 为 False，:mod:`app.db` 所有操作静默跳过 ——
+#    保证「MySQL 不可用不影响分析主链路」（方案验收标准 8）。
+# ---------------------------------------------------------------------------
+
+DB_HOST: Final[str] = os.getenv("GOLF_DB_HOST", "39.102.63.30")
+DB_PORT: Final[int] = int(os.getenv("GOLF_DB_PORT", "3306"))
+DB_USER: Final[str] = os.getenv("GOLF_DB_USER", "geo")
+DB_PASSWORD: Final[str] = os.getenv("GOLF_DB_PASSWORD", "")
+DB_NAME: Final[str] = os.getenv("GOLF_DB_NAME", "golf")
+DB_CHARSET: Final[str] = "utf8mb4"
+
+#: 连接池最大连接数。项目 ``--workers 1``，分析任务是 CPU 密集且串行，
+#: DB 操作只集中在接口进出的一瞬，5 条足够。
+DB_MAX_CONNECTIONS: Final[int] = int(os.getenv("GOLF_DB_MAX_CONN", "5"))
+
+#: 连接 / 读写超时（秒）。网络抖动时快速失败，避免拖慢接口响应。
+DB_CONNECT_TIMEOUT: Final[int] = 5
+DB_READ_TIMEOUT: Final[int] = 5
+DB_WRITE_TIMEOUT: Final[int] = 5
+
+#: 数据库总开关。**未配置密码时自动为 False** —— 此时所有 DB 调用静默返回
+#: 空结果，登录降级为匿名，分析功能完全不受影响。
+DB_ENABLED: Final[bool] = bool(DB_PASSWORD)
+
+
+# ---------------------------------------------------------------------------
+# 15. 微信登录与用户资料
+#
+# 方案：docs/plans/2026-09-05-wechat-login-and-audit.md（2026-09-05 评审通过）
+#
+# ⚠️ AppSecret 属敏感凭据，**严禁硬编码**，走 ``GOLF_WX_SECRET`` 环境变量。
+# ⚠️ 前置依赖（非代码）：需在微信公众平台提交《小程序用户隐私保护指引》
+#    并声明收集「头像」「昵称」，否则 ``chooseAvatar`` / ``nickname`` 组件
+#    **直接禁用**（报 api scope is not declared）。审核异步 1~3 个工作日。
+# ---------------------------------------------------------------------------
+
+#: 小程序 appid（非敏感，取自 miniprogram/project.config.json）
+WX_APPID: Final[str] = os.getenv("GOLF_WX_APPID", "wxa165d2626b823c37")
+
+#: 小程序 AppSecret。**敏感**，只走环境变量，不进 git。
+WX_SECRET: Final[str] = os.getenv("GOLF_WX_SECRET", "")
+
+#: 登录总开关。未配置 AppSecret 时自动为 False —— ``/auth/login`` 直接返回失败，
+#: 前端降级为匿名，分析主链路不受影响。
+WX_LOGIN_ENABLED: Final[bool] = bool(WX_SECRET)
+
+#: ``jscode2session`` 接口地址
+WX_CODE2SESSION_URL: Final[str] = "https://api.weixin.qq.com/sns/jscode2session"
+
+#: 请求微信接口的超时（秒）
+WX_HTTP_TIMEOUT: Final[int] = 5
+
+#: 自建登录态 token：随机字节数（``secrets.token_urlsafe(32)`` ≈ 43 字符）
+TOKEN_BYTES: Final[int] = 32
+
+#: 登录态有效期（天）。不用 JWT 是因为无法主动失效，而 MVP 需要
+#: 「禁用用户立即生效」；服务端 token + revoked 标记更简单可控。
+TOKEN_TTL_DAYS: Final[int] = 30
+
+#: 默认昵称（用户未设置时接口兜底）：``前缀 + LPAD(id, 宽度, '0')`` →"球手 0007"。
+#: ⚠️ 默认值**不入库** —— 库中保持空串，见方案 §3.6。
+DEFAULT_NICKNAME_PREFIX: Final[str] = "球手"
+DEFAULT_NICKNAME_ID_WIDTH: Final[int] = 4
+
+#: 默认头像色块配色：``sha256(openid)[:4] % 360`` 得色相。
+#: 深色主题下取中饱和度中等亮度，避免过亮刺眼或过暗看不清。
+AVATAR_FALLBACK_SATURATION: Final[int] = 55
+AVATAR_FALLBACK_LIGHTNESS: Final[int] = 45
+
+#: 资料修改频率限制（次/天）。依据 ``operation_logs`` 当日计数判断，
+#: 无需额外状态表，且天然持久化。
+AVATAR_MAX_PER_DAY: Final[int] = 10
+NICKNAME_MAX_PER_DAY: Final[int] = 5
+
+#: 头像存储目录名（位于 :data:`DATA_DIR` 下），复用现有 ``/static`` 挂载。
+#: 文件名 = ``sha256(openid)[:16].png``，固定名**覆盖写**，不堆积、无需清理。
+AVATAR_DIRNAME: Final[str] = "avatars"
+
+#: 头像大小上限（字节）。1MB 是微信 ``imgSecCheck`` 的硬限制，
+#: 且头像展示尺寸远小于此，无需高清。
+AVATAR_MAX_BYTES: Final[int] = 1024 * 1024
+
+#: 头像允许的格式（**按 magic bytes 判断，不信扩展名**）
+AVATAR_ALLOWED_FORMATS: Final[FrozenSet[str]] = frozenset({"png", "jpeg", "jpg"})
+
+#: 昵称长度限制（字符）。微信昵称上限 32，emoji 按 1 字符计。
+NICKNAME_MAX_LEN: Final[int] = 32
