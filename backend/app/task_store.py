@@ -1,7 +1,12 @@
 """进程内任务表。
 
-不引入 Celery / Redis / 数据库：``dict`` + ``threading.Lock`` 足以支撑 MVP
+不引入 Celery / Redis：``dict`` + ``threading.Lock`` 足以支撑 MVP
 （并发预期 < 3）。过期清理由 :meth:`TaskStore.sweep` 在每次状态查询时顺带触发。
+
+**持久化（M3.1 2026-09-07 落地）**：所有写操作同时通过
+:mod:`app.persistence` 同步落 MySQL ``tasks`` 表；DB 是真源，
+``sweep`` 清内存时**不动 DB**（重启由 :func:`app.persistence.load_terminal_tasks`
+回灌）。写入失败仅 warn，不阻断主流程。
 """
 
 from __future__ import annotations
@@ -14,7 +19,7 @@ import uuid
 from pathlib import Path
 from typing import Dict, List, Optional
 
-from . import config
+from . import config, persistence
 from .schemas import (
     AnalysisResult,
     CameraView,
@@ -84,6 +89,7 @@ class TaskStore:
         )
         with self._lock:
             self._tasks[task_id] = state
+        persistence.upsert_task(state)
         logger.info("task created: %s -> %s", task_id, target_dir)
         return state
 
@@ -102,6 +108,7 @@ class TaskStore:
                 if hasattr(state, key):
                     setattr(state, key, value)
             state.updated_at = time.time()
+        persistence.upsert_task(state)
 
     # -- 状态流转 ---------------------------------------------------------
 
@@ -126,6 +133,7 @@ class TaskStore:
             state.message = message
             state.step_text = step_text or config.STEP_TEXTS.get(int(step), "")
             state.updated_at = time.time()
+        persistence.upsert_task(state)
 
     def fail(self, task_id: str, code: ErrorCode, message: str = "") -> None:
         """置为失败态，写入错误码与中文文案。"""
@@ -138,10 +146,17 @@ class TaskStore:
             state.error_message = message or config.error_message(code.value)
             state.message = "分析失败"
             state.updated_at = time.time()
+        persistence.upsert_task(state)
         logger.warning("task failed: %s code=%s", task_id, code.value)
 
     def succeed(self, task_id: str, result: AnalysisResult) -> None:
-        """置为成功态，挂载结果。"""
+        """置为成功态，挂载结果。
+
+        Note:
+            阶段数据由 :func:`app.persistence.insert_phases` 在
+            :func:`app.pipeline.run_analysis` 终态分支统一写入（保持 8 行
+            与 result.phases 完全一致），不在本方法里。
+        """
         with self._lock:
             state = self._tasks.get(task_id)
             if state is None:
@@ -154,6 +169,7 @@ class TaskStore:
             state.error_code = None
             state.error_message = None
             state.updated_at = time.time()
+        persistence.upsert_task(state)
         logger.info("task succeeded: %s", task_id)
 
     # -- 清理 -------------------------------------------------------------
@@ -179,7 +195,12 @@ class TaskStore:
             self._purge(state)
 
     def _purge(self, state: TaskState) -> None:
-        """删除任务目录并从任务表中移除。"""
+        """删除任务目录并从任务表中移除。
+
+        DB 中的行**保留**——sweep 清的是内存（dict）+ 磁盘（视频+骨架图），
+        业务表是历史真相，不能因过期被删。``tasks`` 表按
+        :attr:`app.config.RESULT_TTL_HOURS` 自然淘汰由 DBA 后台清理。
+        """
         with self._lock:
             self._tasks.pop(state.task_id, None)
         if not state.out_dir:

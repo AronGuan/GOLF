@@ -32,6 +32,7 @@ from . import (
     impact_refiner,
     landmark_cache,
     metrics,
+    persistence,
     pose_extractor,
     renderer,
     risk_engine,
@@ -682,6 +683,8 @@ def _run(task_id: str) -> None:
     task_store.set_progress(task_id, 4, _P_DONE, "分析完成")
     _cleanup_upload(video_path)
     task_store.succeed(task_id, result)
+    # 阶段行落库（task_phases，8 行；M3.1 持久化）
+    persistence.insert_phases(task_id, result.phases)
     logger.info(
         "analysis done: %s in %.2fs (frames=%d view=%s risks=%d)",
         task_id, time.time() - started, len(frames), view.value,

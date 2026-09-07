@@ -13,11 +13,16 @@ v2 接口契约（架构 §6）：
   （0 / 4001 / 4004 / 4009 / 5000），由 ``config.API_CODE_STYLE`` 一键回滚；
 - **字段兼容**：``step`` 保持 int + 并列 ``step_text``；``video`` / ``file`` 双字段名；
   ``camera_view`` 必填二选一（缺省按 ``face_on`` 落值不硬拒）。
+
+M3.1 持久化（2026-09-07）：启动时通过 ``lifespan`` 调
+:func:`app.persistence.load_terminal_tasks` 从 MySQL ``tasks`` 表回灌
+最近 7 天的终态任务到内存 :data:`task_store`，避免重启后用户查不到历史结果。
 """
 
 from __future__ import annotations
 
 import logging
+from contextlib import asynccontextmanager
 from pathlib import Path
 from typing import Any, Dict, Optional
 
@@ -27,7 +32,7 @@ from fastapi.responses import JSONResponse, Response
 from fastapi.staticfiles import StaticFiles
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
-from . import audit, auth, config, user
+from . import audit, auth, config, persistence, user
 from .frame_service import FrameError, phase_metrics, render_frame
 from .pipeline import run_analysis
 from .schemas import AnalysisError, CameraView, TaskStatus
@@ -131,7 +136,38 @@ def _parse_camera_view(raw: Optional[str]) -> CameraView:
 # 应用
 # ---------------------------------------------------------------------------
 
-app = FastAPI(title="Golf Swing Analyzer", version="1.0.0", docs_url="/docs")
+
+def _build_lifespan():
+    """构造 lifespan 上下文管理器：启动时从 DB 回灌历史任务，关闭时无操作。
+
+    写成函数返回 asynccontextmanager 是为了**延迟绑定** `task_store` 单例——
+    测试 ``monkeypatch.setattr(task_store, 'create', ...)`` 在 import-time
+    不会生效，但 lifespan 是 startup 时才跑，能拿到最新引用。
+    """
+    from .task_store import task_store as _store
+
+    @asynccontextmanager
+    async def _lifespan(app: FastAPI):
+        # 回灌：把 DB 里最近 RESULT_TTL_HOURS 小时内的终态任务拉回内存，
+        # 让重启后 ``GET /api/v1/tasks/{id}/result`` 仍能命中。
+        states = persistence.load_terminal_tasks()
+        rehydrated = 0
+        for s in states:
+            _store._tasks[s.task_id] = s  # 跳过 lock：单 worker 启动期无并发
+            rehydrated += 1
+        if rehydrated:
+            logger.info("rehydrate: %d terminal tasks restored from DB", rehydrated)
+        yield
+
+    return _lifespan
+
+
+app = FastAPI(
+    title="Golf Swing Analyzer",
+    version="1.0.0",
+    docs_url="/docs",
+    lifespan=_build_lifespan(),
+)
 
 app.add_middleware(
     CORSMiddleware,
