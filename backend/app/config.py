@@ -564,6 +564,28 @@ CLUBLITE_MIN_FOLLOW_THROUGH_SEC: Final[float] = 0.25
 #: 后者管「离收杆太近」，两者都命中物理窗口的边界。
 CLUBLITE_MAX_DOWNSTROKE_SEC: Final[float] = 0.40
 
+#: **DTL（侧面）专属**下杆时长上界（秒）。2026-09-08 新增，仅供
+#: :func:`app.impact_refiner.refine_impact_lowest_point`（M3 fresh Hough）使用。
+#:
+#: 背景（样本 13aca5f0，女选手 + 720×1280 竖拍 + 短挥杆）：
+#: M3 正确找到了杆头最低点 f48（真实击球 ≈f49，误差 1 帧），但被
+#: ``down_ok`` 守卫拒绝——该视频实际下杆 ``48-32=16 帧 = 0.53s``，
+#: 超过 :data:`CLUBLITE_MAX_DOWNSTROKE_SEC` 0.40s（30fps 下 12 帧）上限。
+#: M3 返回 None 后系统回退规则引擎的 f45，偏早 4 帧。
+#:
+#: **为什么单独给 DTL 一个更宽的值而不是全局放宽**：
+#: 1. 9 个 DTL 样本的下杆时长分布 ``6/6/8/9/9/9/11/11/16`` 帧——
+#:    **16 帧是唯一离群点**，且确为慢下杆选手的真实特征（非假阳性）；
+#:    放宽到 18 帧不会误放行任何 25+ 帧的异常候选。
+#: 2. face-on 节奏稳定（职业/进阶用户居多），0.40s 依然合理，
+#:    全局放宽会无谓扩大 face-on 的假阳性窗口。
+#: 3. 影响面实测：9 个样本里**只有 13aca5f0 这 1 个**行为会变
+#:    （f45→f48），其余 8 个输出逐帧不变。
+#:
+#: 0.60s 留 2 帧缓冲（16 帧实际 vs 18 帧上限）；若后续发现 0.60 过宽，
+#: 0.55s（30fps→16 帧）刚好卡住该样本但余量为 0，不建议更低。
+CLUBLITE_MAX_DOWNSTROKE_SEC_DTL: Final[float] = 0.60
+
 #: **M2 全窗口化**总开关（2026-09-04 用户拍板「方案 A」）。
 #: True = 锚点来源由「M1 Top-K 候选」扩大为「refine 窗口内全部帧」
 #: （``[impact - SEARCH_BACK_SEC, impact + SEARCH_FWD_SEC]``，30fps 下约 11 帧），

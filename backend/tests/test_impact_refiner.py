@@ -171,6 +171,12 @@ def _swing_signals():
     return segmenter.build_signals(frames, FPS, aspect=1.0)
 
 
+#: 模块导入时（autouse fixture 生效**之前**）快照的守卫真实值。
+#: :class:`TestM3FreshAnchor` 里专测守卫的用例需要它来还原 face-on 的
+#: 0.40——否则 autouse fixture 的 999 会让 face-on 那条守卫永远放行。
+_REAL_MAX_DOWNSTROKE_SEC = config.CLUBLITE_MAX_DOWNSTROKE_SEC
+
+
 @pytest.fixture(autouse=True)
 def _physical_guards_off(monkeypatch):
     """默认**关闭** 2026-09-04 新增的物理窗口守卫。
@@ -1138,6 +1144,87 @@ class TestM3FreshAnchor:
             CameraView.FACE_ON, video_meta,
         )
         assert result is None
+
+    # -- DTL 专属下杆上界（2026-09-08 新增）--------------------------------
+
+    @staticmethod
+    def _probe_downstroke(view, tmp_path, video_meta, monkeypatch, offset=9):
+        """跑一次 M3，返回候选下标；``offset``=9 使候选落在 top+16（见用例注释）。
+
+        ⚠️ **刻意不** monkeypatch ``CLUBLITE_MAX_DOWNSTROKE_SEC_DTL``——让它读
+        config 里的真实值，这样「有人把 0.60 改回 0.40」时本组用例会**变红**
+        （变异测试已验证：改成 0.40 → DTL 用例失败）。若在测试里写死 0.60，
+        就成了「自己测自己写死的常量」，config 再怎么改都是绿的。
+
+        face-on 那条必须显式 monkeypatch：autouse fixture 把
+        ``CLUBLITE_MAX_DOWNSTROKE_SEC`` 设成 999 绕过了守卫，这里要恢复成
+        模块导入时的真实值（:data:`_REAL_MAX_DOWNSTROKE_SEC`）。
+        """
+        monkeypatch.setattr(config, "CLUBLITE_M3_FRESH_ANCHOR", True)
+        monkeypatch.setattr(
+            config, "CLUBLITE_MAX_DOWNSTROKE_SEC", _REAL_MAX_DOWNSTROKE_SEC
+        )
+        path = _write_club_video(str(tmp_path / f"m3_ds_{view.value}.mp4"))
+        monkeypatch.setattr(
+            impact_refiner, "_shaft_scan_window_fresh",
+            lambda *a, **k: {offset: 900.0},
+        )
+        monkeypatch.setattr(
+            impact_refiner, "_pick_full_window_anchor",
+            lambda shaft_ys, raw_motion, ratio: offset,
+        )
+        return impact_refiner.refine_impact_lowest_point(
+            path, make_swing_frames(), _swing_events(), _swing_signals(),
+            view, video_meta,
+        )
+
+    def test_lowest_point_dtl_allows_slower_downstroke(
+        self, tmp_path, video_meta, monkeypatch
+    ):
+        """DTL 慢下杆（16 帧 = 0.53s）应放行 —— 复现 13aca5f0。
+
+        真实样本 13aca5f0（女选手 + 720×1280 竖拍 + 短挥杆）：M3 正确找到
+        杆头最低点 f48，但下杆 48-32=16 帧 = 0.53s 超过 face-on 的
+        0.40s（12 帧）上限被误杀，系统回退规则引擎 f45（偏早 4 帧）。
+
+        合成数据：top=42、窗口起点 49、偏移 9 -> 候选 58 = top+16。
+        """
+        result = self._probe_downstroke(
+            CameraView.DOWN_THE_LINE, tmp_path, video_meta, monkeypatch
+        )
+        assert result is not None, "DTL 下杆 16 帧应被 0.60s（18 帧）上限放行"
+        top = next(e for e in _swing_events() if e.key is PhaseKey.TOP)
+        assert result - top.array_index == 16
+
+    def test_lowest_point_faceon_still_rejects_slower_downstroke(
+        self, tmp_path, video_meta, monkeypatch
+    ):
+        """face-on 同一慢下杆（16 帧）仍须被 0.40s 上限拒绝。
+
+        这是本改动的**回归护栏**：确保为 DTL 放宽参数没有顺带放宽 face-on。
+        face-on 节奏稳定（职业/进阶用户居多），0.40s 依然合理。
+        """
+        result = self._probe_downstroke(
+            CameraView.FACE_ON, tmp_path, video_meta, monkeypatch
+        )
+        assert result is None, (
+            "face-on 下杆 16 帧 > 0.40s（12 帧）上限，必须拒绝；"
+            "若本用例失败说明 DTL 放宽误伤了 face-on"
+        )
+
+    def test_lowest_point_dtl_boundary_still_enforced(
+        self, tmp_path, video_meta, monkeypatch
+    ):
+        """DTL 放宽不等于取消守卫：下杆远超 0.60s 仍须拒绝。
+
+        防止后人把 DTL 上界理解成「随便多长都行」——18 帧（0.60s）仍是硬上限。
+        偏移 20 -> 候选 69 = top+27 帧 = 0.90s，且 finish=73 距其仅 4 帧
+        （< min_follow 8），两道守卫都应拦。
+        """
+        result = self._probe_downstroke(
+            CameraView.DOWN_THE_LINE, tmp_path, video_meta, monkeypatch, offset=20
+        )
+        assert result is None, "下杆 27 帧远超 DTL 0.60s 上限，必须拒绝"
 
 
 # ---------------------------------------------------------------------------

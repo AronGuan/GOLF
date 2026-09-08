@@ -1543,9 +1543,19 @@ def refine_impact_lowest_point(
         min_follow = max(
             1, int(round(config.CLUBLITE_MIN_FOLLOW_THROUGH_SEC * fe_eff))
         )
-        max_down = max(
-            min_gap, int(round(config.CLUBLITE_MAX_DOWNSTROKE_SEC * fe_eff))
+        # DTL 下杆上界放宽（:data:`config.CLUBLITE_MAX_DOWNSTROKE_SEC_DTL`）。
+        # 理由：DTL 侧面对初学/女选手的慢下杆更敏感，实测 9 样本分布
+        # 6/6/8/9/9/9/11/11/16 帧，16 帧（0.53s）是唯一离群点且为真信号，
+        # 被 face-on 的 0.40s（12 帧）上限误杀。face-on 保持 0.40 不变。
+        # 注：本函数当前只被 :func:`app.pipeline._try_m3_lowest_point` 以
+        # DTL 调用（调用点已 gate），此处仍按 view 显式分支——不依赖调用方
+        # 的隐含约定，未来 face-on 复用本函数时行为依旧正确。
+        max_down_sec = (
+            config.CLUBLITE_MAX_DOWNSTROKE_SEC_DTL
+            if view is CameraView.DOWN_THE_LINE
+            else config.CLUBLITE_MAX_DOWNSTROKE_SEC
         )
+        max_down = max(min_gap, int(round(max_down_sec * fe_eff)))
         in_range = 0 <= new_array_index < signals.n
         lower_ok = in_range and new_array_index - top.array_index >= min_gap
         follow_ok = (
